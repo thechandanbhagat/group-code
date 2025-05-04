@@ -140,17 +140,29 @@ function matchCodeGroupPattern(commentLine: string, langInfo: LanguageInfo): Reg
     const defaultPatternStr = config.commentPattern.pattern;
     const patternFlags = config.commentPattern.flags;
     
+    // Add detailed logging for debugging
+    console.log(`Trying to match comment line: "${commentLine}"`);
+    console.log(`Using pattern: ${defaultPatternStr} with flags: ${patternFlags}`);
+    
     // Try to match with default pattern first
     const defaultPattern = new RegExp(defaultPatternStr, patternFlags);
     let match = commentLine.match(defaultPattern);
     
-    // If no match with default pattern and we have extra patterns, try those
-    if (!match && langInfo.extraPatterns && langInfo.extraPatterns.length > 0) {
-        for (const extraPatternStr of langInfo.extraPatterns) {
-            const extraPattern = new RegExp(extraPatternStr, patternFlags);
-            match = commentLine.match(extraPattern);
-            if (match) {
-                break;
+    if (match) {
+        console.log(`Match found with default pattern: ${JSON.stringify(match)}`);
+    } else {
+        console.log('No match with default pattern');
+        
+        // If no match with default pattern and we have extra patterns, try those
+        if (langInfo.extraPatterns && langInfo.extraPatterns.length > 0) {
+            for (const extraPatternStr of langInfo.extraPatterns) {
+                console.log(`Trying extra pattern: ${extraPatternStr}`);
+                const extraPattern = new RegExp(extraPatternStr, patternFlags);
+                match = commentLine.match(extraPattern);
+                if (match) {
+                    console.log(`Match found with extra pattern: ${JSON.stringify(match)}`);
+                    break;
+                }
             }
         }
     }
@@ -174,29 +186,57 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
     
     // Process line by line
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
+        const line = lines[i];
+        const trimmedLine = line.trim();
         
         // Skip empty lines
-        if (!line) continue;
+        if (!trimmedLine) continue;
         
         let commentLine = '';
         let isComment = false;
         
-        // Check if this is a line comment
-        if (langInfo.commentMarkers.line && line.startsWith(langInfo.commentMarkers.line)) {
-            commentLine = line.substring(langInfo.commentMarkers.line.length);
+        // Check if this is a line comment (at the start of the line)
+        if (langInfo.commentMarkers.line && trimmedLine.startsWith(langInfo.commentMarkers.line)) {
+            commentLine = trimmedLine.substring(langInfo.commentMarkers.line.length);
             isComment = true;
+            console.log(`Found line comment at start: "${commentLine}"`);
         } 
         // Check if this is a block comment (single line)
         else if (langInfo.commentMarkers.blockStart && langInfo.commentMarkers.blockEnd && 
-                 line.startsWith(langInfo.commentMarkers.blockStart) && 
-                 line.endsWith(langInfo.commentMarkers.blockEnd)) {
+                 trimmedLine.startsWith(langInfo.commentMarkers.blockStart) && 
+                 trimmedLine.endsWith(langInfo.commentMarkers.blockEnd)) {
             
-            commentLine = line.substring(
+            commentLine = trimmedLine.substring(
                 langInfo.commentMarkers.blockStart.length, 
-                line.length - langInfo.commentMarkers.blockEnd.length
+                trimmedLine.length - langInfo.commentMarkers.blockEnd.length
             );
+            console.log(`Found block comment: "${commentLine}"`);
             isComment = true;
+        }
+        // Check for inline comments (comments after code on the same line)
+        else if (langInfo.commentMarkers.line) {
+            const lineCommentIndex = line.indexOf(langInfo.commentMarkers.line);
+            if (lineCommentIndex > 0) {
+                // This is an inline comment
+                commentLine = line.substring(lineCommentIndex + langInfo.commentMarkers.line.length);
+                console.log(`Found inline line comment: "${commentLine}"`);
+                isComment = true;
+            }
+        }
+        // Check for inline block comments
+        else if (langInfo.commentMarkers.blockStart && langInfo.commentMarkers.blockEnd) {
+            const blockStartIndex = line.indexOf(langInfo.commentMarkers.blockStart);
+            const blockEndIndex = line.lastIndexOf(langInfo.commentMarkers.blockEnd);
+            
+            if (blockStartIndex >= 0 && blockEndIndex > blockStartIndex) {
+                // This is an inline block comment
+                commentLine = line.substring(
+                    blockStartIndex + langInfo.commentMarkers.blockStart.length,
+                    blockEndIndex
+                );
+                console.log(`Found inline block comment: "${commentLine}"`);
+                isComment = true;
+            }
         }
         
         // If it's a comment, check for code group pattern
@@ -206,7 +246,7 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
             if (match) {
                 // Extract functionality name and description
                 const functionality = match[1].trim().toLowerCase();
-                const description = match[2].trim();
+                const description = match[2] ? match[2].trim() : '';
                 
                 console.log(`Found code group: ${functionality} - ${description}`);
                 
@@ -218,88 +258,122 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
                     filePath
                 };
                 
-                // Capture associated code block
-                let j = i + 1;
-                let braceLevel = 0;
-                let captureStarted = false;
-                
-                // Language-specific block detection
-                if (langInfo.name === "Python") {
-                    // For Python, use indentation to detect block
-                    const currentIndent = getIndentation(lines[i]);
-                    
-                    while (j < lines.length) {
-                        const nextLine = lines[j];
-                        const nextLineText = nextLine.trim();
-                        
-                        // Stop at empty lines or new comments
-                        if (!nextLineText || (langInfo.commentMarkers.line && nextLineText.startsWith(langInfo.commentMarkers.line))) {
-                            break;
-                        }
-                        
-                        // Check indentation for Python
-                        if (j > i + 1 && nextLineText && getIndentation(nextLine) <= currentIndent) {
-                            // Only break for significant indentation changes
-                            if (getIndentation(nextLine) < currentIndent) {
-                                break;
-                            }
-                        }
-                        
-                        // Add line to code group
-                        codeGroup.lineNumbers.push(j + 1);
-                        j++;
-                    }
-                } else if (["JavaScript/TypeScript", "C#", "Java", "C/C++", "Go"].includes(langInfo.name)) {
-                    // For curly brace languages, use braces to detect blocks
-                    while (j < lines.length) {
-                        const nextLine = lines[j].trim();
-                        
-                        // Start capturing when we hit open brace
-                        if (nextLine.includes('{')) {
-                            braceLevel++;
-                            captureStarted = true;
-                        }
-                        if (nextLine.includes('}')) {
-                            braceLevel--;
-                        }
-                        
-                        // Stop at new comments or when block is closed
-                        if ((langInfo.commentMarkers.line && nextLine.startsWith(langInfo.commentMarkers.line)) || 
-                            (captureStarted && braceLevel < 0)) {
-                            break;
-                        }
-                        
-                        // Add line to code group
-                        codeGroup.lineNumbers.push(j + 1);
-                        j++;
-                    }
-                } else {
-                    // Generic approach for other languages - capture until next empty line or comment
-                    while (j < lines.length) {
-                        const nextLine = lines[j].trim();
-                        
-                        // Stop at empty lines or comments
-                        if (!nextLine || 
-                            (langInfo.commentMarkers.line && nextLine.startsWith(langInfo.commentMarkers.line)) ||
-                            (langInfo.commentMarkers.blockStart && nextLine.startsWith(langInfo.commentMarkers.blockStart))) {
-                            break;
-                        }
-                        
-                        // Add line to code group
-                        codeGroup.lineNumbers.push(j + 1);
-                        j++;
-                    }
+                // Capture associated code block - only if the comment is on its own line
+                // For inline comments, we only want to include the line with the comment
+                if (shouldCaptureCodeBlock(line, langInfo)) {
+                    captureCodeBlock(codeGroup, lines, i, langInfo);
                 }
                 
                 codeGroups.push(codeGroup);
-                
-                // Skip processed lines
-                i = j - 1;
             }
         }
     }
     
     return codeGroups;
+}
+
+/**
+ * Determines if we should capture code block following a comment
+ * We don't want to capture code blocks for inline comments that are on the same line as code
+ */
+function shouldCaptureCodeBlock(line: string, langInfo: LanguageInfo): boolean {
+    if (!langInfo.commentMarkers.line) {
+        return true;
+    }
+    
+    const trimmedLine = line.trim();
+    
+    // If the line is just a comment (starts with comment marker and has no other content before it)
+    if (trimmedLine.startsWith(langInfo.commentMarkers.line)) {
+        return true;
+    }
+    
+    // If it's a block comment that takes up the whole line
+    if (langInfo.commentMarkers.blockStart && langInfo.commentMarkers.blockEnd &&
+        trimmedLine.startsWith(langInfo.commentMarkers.blockStart) && 
+        trimmedLine.endsWith(langInfo.commentMarkers.blockEnd)) {
+        return true;
+    }
+    
+    // Otherwise it's an inline comment, don't capture following code
+    return false;
+}
+
+/**
+ * Captures code block following a comment
+ */
+function captureCodeBlock(codeGroup: CodeGroup, lines: string[], startLineIndex: number, langInfo: LanguageInfo): void {
+    let j = startLineIndex + 1;
+    let braceLevel = 0;
+    let captureStarted = false;
+    
+    // Language-specific block detection
+    if (langInfo.name === "Python") {
+        // For Python, use indentation to detect block
+        const currentIndent = getIndentation(lines[startLineIndex]);
+        
+        while (j < lines.length) {
+            const nextLine = lines[j];
+            const nextLineText = nextLine.trim();
+            
+            // Stop at empty lines or new comments
+            if (!nextLineText || (langInfo.commentMarkers.line && nextLineText.startsWith(langInfo.commentMarkers.line))) {
+                break;
+            }
+            
+            // Check indentation for Python
+            if (j > startLineIndex + 1 && nextLineText && getIndentation(nextLine) <= currentIndent) {
+                // Only break for significant indentation changes
+                if (getIndentation(nextLine) < currentIndent) {
+                    break;
+                }
+            }
+            
+            // Add line to code group
+            codeGroup.lineNumbers.push(j + 1);
+            j++;
+        }
+    } else if (["JavaScript/TypeScript", "C#", "Java", "C/C++", "Go"].includes(langInfo.name)) {
+        // For curly brace languages, use braces to detect blocks
+        while (j < lines.length) {
+            const nextLine = lines[j].trim();
+            
+            // Start capturing when we hit open brace
+            if (nextLine.includes('{')) {
+                braceLevel++;
+                captureStarted = true;
+            }
+            if (nextLine.includes('}')) {
+                braceLevel--;
+            }
+            
+            // Stop at new comments or when block is closed
+            if ((langInfo.commentMarkers.line && nextLine.startsWith(langInfo.commentMarkers.line)) || 
+                (captureStarted && braceLevel < 0)) {
+                break;
+            }
+            
+            // Add line to code group
+            codeGroup.lineNumbers.push(j + 1);
+            j++;
+        }
+    } else {
+        // Generic approach for other languages - capture until next empty line or comment
+        while (j < lines.length) {
+            const nextLine = lines[j].trim();
+            
+            // Stop at empty lines or comments
+            if (!nextLine || 
+                (langInfo.commentMarkers.line && nextLine.startsWith(langInfo.commentMarkers.line)) ||
+                (langInfo.commentMarkers.blockStart && nextLine.startsWith(langInfo.commentMarkers.blockStart))) {
+                break;
+            }
+            
+            // Add line to code group
+            codeGroup.lineNumbers.push(j + 1);
+            j++;
+        }
+    }
 }
 
 /**

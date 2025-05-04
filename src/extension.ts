@@ -178,6 +178,148 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('codeCompass.navigateToGroup', (group) => {
             log('Executing command: navigateToGroup');
             codeGroupProvider.navigateToGroup(group);
+        }),
+        
+        vscode.commands.registerCommand('codeCompass.addCodeGroupDialog', async () => {
+            log('Executing command: addCodeGroupDialog');
+            
+            // Get current editor
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor found. Please open a file first.');
+                return;
+            }
+            
+            // Get all existing functionality names for autocomplete
+            const existingFunctionalities = codeGroupProvider.getFunctionalities();
+            
+            // Use a simple showQuickPick for group name selection
+            let selectedGroupName: string | undefined;
+            
+            // If we have existing functionalities, show them as options first
+            if (existingFunctionalities.length > 0) {
+                // Add a "Create new..." option at the top
+                const quickPickOptions = ['Create new group...'].concat(existingFunctionalities);
+                
+                const selectedOption = await vscode.window.showQuickPick(quickPickOptions, {
+                    placeHolder: 'Select existing group or create new'
+                });
+                
+                if (!selectedOption) {
+                    log('User cancelled group selection');
+                    return;
+                }
+                
+                if (selectedOption === 'Create new group...') {
+                    // User wants to create a new group
+                    selectedGroupName = await vscode.window.showInputBox({
+                        prompt: 'Enter a name for the new code group',
+                        placeHolder: 'Group name'
+                    });
+                } else {
+                    // User selected an existing group
+                    selectedGroupName = selectedOption;
+                }
+            } else {
+                // No existing groups, just prompt for a new name
+                selectedGroupName = await vscode.window.showInputBox({
+                    prompt: 'Enter a name for the code group',
+                    placeHolder: 'Group name'
+                });
+            }
+            
+            // Check if user cancelled
+            if (!selectedGroupName) {
+                log('User cancelled group name input');
+                return;
+            }
+            
+            // Now prompt for description
+            const description = await vscode.window.showInputBox({
+                prompt: 'Enter description for this code group (optional)',
+                placeHolder: 'Description'
+            });
+            
+            if (description === undefined) {
+                log('User cancelled description input');
+                return;
+            }
+            
+            // Insert the code group comment at the current cursor position
+            const document = editor.document;
+            const selection = editor.selection;
+            
+            // Determine comment syntax based on file type
+            const filePath = document.uri.fsPath;
+            const fileExtension = filePath.split('.').pop()?.toLowerCase();
+            
+            let commentPrefix = '';
+            let commentSuffix = '';
+            
+            // Set comment syntax based on file type
+            switch (fileExtension) {
+                case 'js':
+                case 'ts':
+                case 'jsx':
+                case 'tsx':
+                case 'css':
+                case 'scss':
+                case 'less':
+                case 'c':
+                case 'cpp':
+                case 'cs':
+                case 'java':
+                    commentPrefix = '// * ';
+                    break;
+                    
+                case 'py':
+                    commentPrefix = '# * ';
+                    break;
+                    
+                case 'html':
+                case 'xml':
+                case 'svg':
+                    commentPrefix = '<!-- * ';
+                    commentSuffix = ' -->';
+                    break;
+                    
+                case 'php':
+                    commentPrefix = '// * ';
+                    break;
+                    
+                default:
+                    commentPrefix = '// * ';
+                    break;
+            }
+            
+            // Create the comment
+            let commentText = `${commentPrefix}${selectedGroupName}`;
+            if (description) {
+                commentText += `: ${description}`;
+            }
+            commentText += commentSuffix;
+            
+            // Insert the comment
+            await editor.edit(editBuilder => {
+                editBuilder.insert(selection.start, commentText + '\n');
+            });
+            
+            // Process the document to update the code groups
+            await codeGroupProvider.processActiveDocument();
+            
+            // Refresh the tree view to show the new code group
+            codeGroupTreeProvider.refresh();
+            
+            // Focus the Code Compass panel
+            try {
+                // Try to show the Code Compass view
+                await vscode.commands.executeCommand('codeCompassExplorer.focus');
+            } catch (error) {
+                // Fallback to just showing the panel without focus
+                log(`Could not focus Code Compass panel: ${error}`);
+            }
+            
+            vscode.window.showInformationMessage(`Added code group: ${selectedGroupName}`);
         })
     );
     

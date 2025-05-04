@@ -27,9 +27,9 @@ export class CodeGroupProvider implements vscode.Disposable {
     constructor(outputChannel?: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-        this.statusBarItem.text = "$(map) Code Compass"; // Changed from $(compass) to $(map)
+        this.statusBarItem.text = "$(map) Group Code"; // Changed from "Code Compass" to "Group Code"
         this.statusBarItem.tooltip = "View and navigate code functionalities";
-        this.statusBarItem.command = "codeCompass.showGroups";
+        this.statusBarItem.command = "groupCode.showGroups"; // Updated command prefix
         this.statusBarItem.show();
         
         this.log('CodeGroupProvider initialized');
@@ -921,7 +921,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     
     private updateStatusBar(): void {
         const functionalities = this.getFunctionalities();
-        this.statusBarItem.text = `$(compass) Code Compass (${functionalities.length})`;
+        this.statusBarItem.text = `$(map) Group Code (${functionalities.length})`;  // Changed from "$(compass) Code Compass" to "$(map) Group Code"
     }
     
     // Clear all code groups and refresh

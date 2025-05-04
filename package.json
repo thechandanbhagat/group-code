@@ -10,15 +10,15 @@
     "vscode": "^1.99.1"
   },
   "activationEvents": [
-    "onView:codeCompassExplorer",
-    "onView:codeCompassExplorerView",
-    "onCommand:codeCompass.groupCode",
-    "onCommand:codeCompass.groupWorkspace",
-    "onCommand:codeCompass.showGroups",
-    "onCommand:codeCompass.scanExternalFolder",
-    "onCommand:codeCompass.refreshTreeView",
-    "onCommand:codeCompass.navigateToGroup",
-    "onCommand:codeCompass.addCodeGroupDialog",
+    "onView:groupCodeExplorer",
+    "onView:groupCodeExplorerView",
+    "onCommand:groupCode.groupCode",
+    "onCommand:groupCode.groupWorkspace",
+    "onCommand:groupCode.showGroups",
+    "onCommand:groupCode.scanExternalFolder",
+    "onCommand:groupCode.refreshTreeView",
+    "onCommand:groupCode.navigateToGroup",
+    "onCommand:groupCode.addCodeGroupDialog",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -26,68 +26,68 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "code-compass-container",
-          "title": "Code Compass",
+          "id": "group-code-container",
+          "title": "Group Code",
           "icon": "resources/compass-icon.svg"
         }
       ]
     },
     "views": {
-      "code-compass-container": [
+      "group-code-container": [
         {
-          "id": "codeCompassExplorer",
-          "name": "Code Compass"
+          "id": "groupCodeExplorer",
+          "name": "Group Code"
         }
       ],
       "explorer": [
         {
-          "id": "codeCompassExplorerView",
-          "name": "Code Compass"
+          "id": "groupCodeExplorerView",
+          "name": "Group Code"
         }
       ]
     },
     "commands": [
       {
-        "command": "codeCompass.groupCode",
+        "command": "groupCode.groupCode",
         "title": "Group Code in Current File"
       },
       {
-        "command": "codeCompass.groupWorkspace",
+        "command": "groupCode.groupWorkspace",
         "title": "Group Code in Workspace",
         "icon": "$(search)"
       },
       {
-        "command": "codeCompass.scanExternalFolder",
+        "command": "groupCode.scanExternalFolder",
         "title": "Scan External Project Folder",
         "icon": "$(folder-opened)"
       },
       {
-        "command": "codeCompass.showGroups",
+        "command": "groupCode.showGroups",
         "title": "Show Code Groups"
       },
       {
-        "command": "codeCompass.refreshTreeView",
+        "command": "groupCode.refreshTreeView",
         "title": "Refresh Code Groups",
         "icon": "$(refresh)"
       },
       {
-        "command": "codeCompass.navigateToGroup",
+        "command": "groupCode.navigateToGroup",
         "title": "Navigate to Code Group"
       },
       {
-        "command": "codeCompass.addCodeGroupDialog",
+        "command": "groupCode.addCodeGroupDialog",
         "title": "Add Code Group (Dialog)",
         "icon": "$(add)"
       }
     ],
     "keybindings": [
       {
-        "command": "codeCompass.showGroups",
+        "command": "groupCode.showGroups",
         "key": "ctrl+shift+g",
         "mac": "cmd+shift+g"
       },
       {
-        "command": "codeCompass.addCodeGroupDialog",
+        "command": "groupCode.addCodeGroupDialog",
         "key": "ctrl+alt+k",
         "mac": "cmd+alt+k",
         "when": "editorTextFocus"
@@ -96,38 +96,38 @@
     "menus": {
       "editor/context": [
         {
-          "command": "codeCompass.groupCode",
+          "command": "groupCode.groupCode",
           "group": "navigation"
         },
         {
-          "command": "codeCompass.showGroups",
+          "command": "groupCode.showGroups",
           "group": "navigation"
         },
         {
-          "command": "codeCompass.addCodeGroupDialog",
+          "command": "groupCode.addCodeGroupDialog",
           "group": "navigation"
         }
       ],
       "explorer/context": [
         {
-          "command": "codeCompass.groupWorkspace",
+          "command": "groupCode.groupWorkspace",
           "group": "navigation"
         }
       ],
       "view/title": [
         {
-          "command": "codeCompass.refreshTreeView",
-          "when": "view == codeCompassExplorer || view == codeCompassExplorerView",
+          "command": "groupCode.refreshTreeView",
+          "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
           "group": "navigation"
         },
         {
-          "command": "codeCompass.groupWorkspace",
-          "when": "view == codeCompassExplorer || view == codeCompassExplorerView",
+          "command": "groupCode.groupWorkspace",
+          "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
           "group": "navigation"
         },
         {
-          "command": "codeCompass.scanExternalFolder",
-          "when": "view == codeCompassExplorer || view == codeCompassExplorerView",
+          "command": "groupCode.scanExternalFolder",
+          "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
           "group": "navigation"
         }
       ]

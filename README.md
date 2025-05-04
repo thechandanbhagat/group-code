@@ -24,29 +24,13 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 ### Manual Installation
 
-1. Download the .vsix file from the [releases page](https://github.com/yourusername/group-code/releases)
+1. Download the `groupcode-1.0.0.vsix` file included with this extension
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
-### Development Setup
+## Getting Started
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/group-code.git
-   ```
-2. Navigate to the project directory:
-   ```
-   cd group-code
-   ```
-3. Install the dependencies:
-   ```
-   npm install
-   ```
-4. Build the extension:
-   ```
-   npm run build
-   ```
-5. Press F5 to launch a new VS Code window with your extension loaded
+After installing the extension, you'll see a new Group Code icon in your Activity Bar. The extension will automatically scan your workspace for code groups when you open a folder.
 
 ## Usage
 
@@ -101,7 +85,7 @@ user_role = get_user_role(user_id) # * Authorization: User permission check
 
 ### Inline Comment Detection
 
-The extension now detects code group patterns in inline comments, which allows you to:
+The extension detects code group patterns in inline comments, which allows you to:
 
 1. **Add code groups to existing code**: Tag important lines without restructuring your code
 2. **Create more targeted groups**: Mark specific lines rather than entire blocks
@@ -168,10 +152,6 @@ Each language uses its native comment syntax to define code groups.
 - For inline comments, make sure there's a space after the comment marker (e.g., `// * Group` not `//* Group`)
 - Check the Output panel (View → Output → Group Code) for detailed logs
 - For large workspaces, the initial scan may take a moment to complete
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request on our [GitHub repository](https://github.com/yourusername/group-code).
 
 ## License
 

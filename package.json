@@ -2,8 +2,8 @@
   "name": "code-compass",
   "displayName": "Code Compass",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "0.1.0",
-  "publisher": "your-name",
+  "version": "1.0.0",
+  "publisher": "Chandan Bhagat",
   "engines": {
     "vscode": "^1.60.0"
   },

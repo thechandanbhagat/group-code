@@ -11,6 +11,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Automatic Scanning**: Automatically detects code groups in your workspace
 - **Status Bar Integration**: Quick access to code groups from the VS Code status bar
 - **External Folder Support**: Scan code in folders outside your current workspace
+- **Inline Comment Detection**: Find and group code with special patterns in inline comments
 
 ## Installation
 
@@ -64,6 +65,9 @@ The extension automatically recognizes different comment formats based on the fi
 function login(username, password) {
     // Your code here
 }
+
+// Inline comments also work
+const userData = getUserData(); // * UserData: Access user information
 ```
 
 #### HTML/XML/SVG
@@ -72,6 +76,8 @@ function login(username, password) {
 <form class="login-form">
     <!-- Your HTML here -->
 </form>
+
+<div class="user-panel"><!-- * UserPanel: User interaction area --></div>
 ```
 
 #### CSS/SCSS/Less
@@ -80,6 +86,8 @@ function login(username, password) {
 .login-form {
     /* Your CSS here */
 }
+
+.avatar { border-radius: 50%; } /* * UserInterface: Profile picture styling */
 ```
 
 #### Python/Ruby/Shell/YAML
@@ -87,6 +95,24 @@ function login(username, password) {
 # * Authentication: User authentication backend
 def authenticate_user(username, password):
     # Your Python code here
+
+user_role = get_user_role(user_id) # * Authorization: User permission check
+```
+
+### Inline Comment Detection
+
+The extension now detects code group patterns in inline comments, which allows you to:
+
+1. **Add code groups to existing code**: Tag important lines without restructuring your code
+2. **Create more targeted groups**: Mark specific lines rather than entire blocks
+3. **Document as you code**: Add functionality markers without breaking your flow
+
+Example of inline comment detection:
+```javascript
+// These will all be detected properly:
+const apiKey = process.env.API_KEY; // * Security: API authentication
+fetchUserData(userId); // * UserData: Fetch user information
+updateUI(userData); // * UserInterface: Update display with user data
 ```
 
 ### Viewing & Navigating Code Groups
@@ -132,11 +158,14 @@ Each language uses its native comment syntax to define code groups.
 - **Hierarchical Organization**: Consider using prefixes like "Auth:" for related groups
 - **Regular Refreshing**: Use the "Refresh Code Groups" command after significant changes
 - **External Code**: For monorepos or multi-project setups, use "Scan External Project Folder"
+- **Inline Comments**: Use inline code group comments for pinpointing specific functionality without affecting surrounding code
+- **Mixed Approaches**: Combine standalone comments for major blocks with inline comments for important individual lines
 
 ## Troubleshooting
 
 - If groups aren't appearing, try the "Refresh Code Groups" command
 - Ensure comments follow the exact pattern: `* GroupName: Description`
+- For inline comments, make sure there's a space after the comment marker (e.g., `// * Group` not `//* Group`)
 - Check the Output panel (View → Output → Code Compass) for detailed logs
 - For large workspaces, the initial scan may take a moment to complete
 

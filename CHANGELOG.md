@@ -29,3 +29,10 @@
 ## [1.2.1] - YYYY-MM-DD
 - Fixed issues with line number retrieval in C# support.
 - Updated language support files for better accuracy.
+
+## [1.3.0] - 2025-05-04
+- Added support for detecting code group patterns in inline comments.
+- Improved comment parsing algorithm to handle mixed code and comment lines.
+- Enhanced logging for better debuggability of comment detection.
+- Updated documentation with examples of inline comment usage.
+- Fixed an issue with code block detection for inline comments.

@@ -25,9 +25,9 @@ export class CodeGroupProvider implements vscode.Disposable {
     constructor(outputChannel?: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-        this.statusBarItem.text = "$(list-unordered) Code Groups";
-        this.statusBarItem.tooltip = "View and navigate code groups";
-        this.statusBarItem.command = "codeGrouping.showGroups";
+        this.statusBarItem.text = "$(map) Code Compass"; // Changed from $(compass) to $(map)
+        this.statusBarItem.tooltip = "View and navigate code functionalities";
+        this.statusBarItem.command = "codeCompass.showGroups";
         this.statusBarItem.show();
         
         this.log('CodeGroupProvider initialized');
@@ -255,62 +255,42 @@ export class CodeGroupProvider implements vscode.Disposable {
             title: 'Scanning workspace for code groups',
             cancellable: false
         }, async (progress) => {
-            // Only process open editors if we're not forcing a full scan
-            if (!forceFullScan) {
-                // First, try to process already open text editors
-                const openEditors = vscode.window.visibleTextEditors;
-                this.log(`Processing ${openEditors.length} open editors first`);
+            // Always process open editors first for immediate feedback
+            const openEditors = vscode.window.visibleTextEditors;
+            this.log(`Processing ${openEditors.length} open editors first`);
+            
+            // Process each open editor
+            for (const editor of openEditors) {
+                const document = editor.document;
+                const filePath = document.uri.fsPath;
                 
-                // Process each open editor
-                for (const editor of openEditors) {
-                    const document = editor.document;
-                    const filePath = document.uri.fsPath;
+                // Get file extension
+                const fileType = getFileType(filePath);
+                
+                progress.report({
+                    message: `Processing open file: ${getFileName(filePath)}`
+                });
+                
+                // Process the document for code groups
+                this.log(`Processing open document ${filePath}`);
+                const codeGroups = parseLanguageSpecificComments(document);
+                
+                if (codeGroups.length > 0) {
+                    this.log(`Found ${codeGroups.length} code groups in ${filePath}`);
                     
-                    // Get file extension
-                    const fileType = getFileType(filePath);
+                    // Add the groups to our collection
+                    this.addGroups(fileType, codeGroups);
                     
-                    progress.report({
-                        message: `Processing open file: ${getFileName(filePath)}`
+                    // Update functionalities set
+                    codeGroups.forEach(group => {
+                        if (group && group.functionality) {
+                            this.functionalities.add(group.functionality);
+                        }
                     });
-                    
-                    // Process the document for code groups
-                    this.log(`Processing open document ${filePath}`);
-                    const codeGroups = parseLanguageSpecificComments(document);
-                    
-                    if (codeGroups.length > 0) {
-                        this.log(`Found ${codeGroups.length} code groups in ${filePath}`);
-                        
-                        // Add the groups to our collection
-                        this.addGroups(fileType, codeGroups);
-                        
-                        // Update functionalities set
-                        codeGroups.forEach(group => {
-                            if (group && group.functionality) {
-                                this.functionalities.add(group.functionality);
-                            }
-                        });
-                    }
-                }
-                
-                // If we've found groups from open editors and we're not forcing a full scan,
-                // we can skip the full workspace search
-                if (this.functionalities.size > 0 && !forceFullScan) {
-                    // Update the status bar
-                    this.updateStatusBar();
-                    
-                    // Save the groups to .groupcode folder
-                    await this.saveGroups();
-                    
-                    // Notify listeners that groups have been updated
-                    this.onDidUpdateGroupsEventEmitter.fire();
-                    
-                    this.log(`Found ${this.functionalities.size} code groups in open files`);
-                    vscode.window.showInformationMessage(`Found ${this.functionalities.size} code groups in open files`);
-                    return;
                 }
             }
             
-            // If we're forcing a full scan or no groups were found in open files, search the entire workspace
+            // Always perform a full workspace scan regardless of what was found in open editors
             this.log('Performing full workspace scan');
             progress.report({ message: 'Performing full workspace scan...' });
             
@@ -827,7 +807,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     
     private updateStatusBar(): void {
         const functionalities = this.getFunctionalities();
-        this.statusBarItem.text = `$(list-unordered) Code Groups (${functionalities.length})`;
+        this.statusBarItem.text = `$(compass) Code Compass (${functionalities.length})`;
     }
     
     // Clear all code groups and refresh

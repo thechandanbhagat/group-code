@@ -15,10 +15,10 @@ function log(message: string) {
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize the output channel
-    outputChannel = vscode.window.createOutputChannel('Code Grouping Extension');
+    outputChannel = vscode.window.createOutputChannel('Code Compass');
     context.subscriptions.push(outputChannel);
     
-    log('Code Grouping Extension is now active');
+    log('Code Compass is now active');
     
     // Create a new instance of our CodeGroupProvider
     const codeGroupProvider = new CodeGroupProvider(outputChannel);
@@ -33,11 +33,11 @@ export function activate(context: vscode.ExtensionContext) {
         showCollapseAll: true
     };
     
-    const treeView = vscode.window.createTreeView('codeGroupExplorer', treeViewOptions);
-    log('Created tree view for codeGroupExplorer');
+    const treeView = vscode.window.createTreeView('codeCompassExplorer', treeViewOptions);
+    log('Created tree view for codeCompassExplorer');
     
-    const explorerTreeView = vscode.window.createTreeView('codeGroupExplorerView', treeViewOptions);
-    log('Created tree view for codeGroupExplorerView');
+    const explorerTreeView = vscode.window.createTreeView('codeCompassExplorerView', treeViewOptions);
+    log('Created tree view for codeCompassExplorerView');
     
     // Add visibility change listeners to help debug tree view issues
     treeView.onDidChangeVisibility(e => {
@@ -64,19 +64,19 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Register our commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('codeGrouping.groupCode', async () => {
+        vscode.commands.registerCommand('codeCompass.groupCode', async () => {
             log('Executing command: groupCode');
             await codeGroupProvider.processActiveDocument();
             // The refresh will happen via the onDidUpdateGroups event
         }),
         
-        vscode.commands.registerCommand('codeGrouping.groupWorkspace', async () => {
+        vscode.commands.registerCommand('codeCompass.groupWorkspace', async () => {
             log('Executing command: groupWorkspace');
             await codeGroupProvider.processWorkspace();
             // The refresh will happen via the onDidUpdateGroups event
         }),
         
-        vscode.commands.registerCommand('codeGrouping.scanExternalFolder', async () => {
+        vscode.commands.registerCommand('codeCompass.scanExternalFolder', async () => {
             log('Executing command: scanExternalFolder');
             // Prompt user to select a folder
             const folderUris = await vscode.window.showOpenDialog({
@@ -94,12 +94,12 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
         
-        vscode.commands.registerCommand('codeGrouping.showGroups', () => {
+        vscode.commands.registerCommand('codeCompass.showGroups', () => {
             log('Executing command: showGroups');
             codeGroupProvider.showFunctionalities();
         }),
         
-        vscode.commands.registerCommand('codeGrouping.refreshTreeView', async () => {
+        vscode.commands.registerCommand('codeCompass.refreshTreeView', async () => {
             log('Executing command: refreshTreeView - performing complete rescan');
             
             // Show confirmation dialog for full rescan
@@ -175,7 +175,7 @@ export function activate(context: vscode.ExtensionContext) {
             });
         }),
         
-        vscode.commands.registerCommand('codeGrouping.navigateToGroup', (group) => {
+        vscode.commands.registerCommand('codeCompass.navigateToGroup', (group) => {
             log('Executing command: navigateToGroup');
             codeGroupProvider.navigateToGroup(group);
         })
@@ -211,7 +211,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    log('Code Grouping Extension is now deactivated');
+    log('Code Compass is now deactivated');
     
     // Clean up the output channel
     if (outputChannel) {

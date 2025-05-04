@@ -60,7 +60,7 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
                     
                     // Make code groups clickable to navigate to them
                     this.command = {
-                        command: 'codeGrouping.navigateToGroup',
+                        command: 'codeCompass.navigateToGroup',
                         title: 'Navigate to Code Group',
                         arguments: [codeGroup]
                     };

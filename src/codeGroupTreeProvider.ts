@@ -35,13 +35,19 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
                 // Top-level functionality item
                 this.contextValue = 'functionality';
                 this.tooltip = `${functionality} functionality group`;
+                this.iconPath = vscode.ThemeIcon.Folder;
                 break;
 
             case CodeGroupTreeItemType.FileType:
                 // File type level within a functionality
                 this.contextValue = 'fileType';
-                if (functionality) {
+                if (functionality && fileType) {
                     this.tooltip = `${fileType} files for ${functionality}`;
+                    
+                    // Use the language file icon based on file type
+                    // This tells VS Code to use its built-in file type icons
+                    this.resourceUri = vscode.Uri.parse(`file:///dummy/file.${fileType}`);
+                    this.iconPath = vscode.ThemeIcon.File;
                 }
                 break;
 
@@ -57,6 +63,10 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
                         
                     this.description = codeGroup.description || '';
                     this.tooltip = `${fileName} (Line ${lineNumber}): ${codeGroup.description || ''}`;
+                    
+                    // Use real file path for proper icon
+                    this.resourceUri = vscode.Uri.file(codeGroup.filePath);
+                    this.iconPath = vscode.ThemeIcon.File;
                     
                     // Make code groups clickable to navigate to them
                     this.command = {
@@ -154,7 +164,8 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                 return Promise.resolve(
                     sortedFileTypes.map(fileType => {
                         const groups = functionalityGroups.get(fileType) || [];
-                        const label = `${fileType.toUpperCase()}: ${groups.length} item${groups.length !== 1 ? 's' : ''}`;
+                        // More concise label format that doesn't repeat the file extension which is already shown in the icon
+                        const label = `${groups.length} ${groups.length === 1 ? 'item' : 'items'}`;
                         
                         return new CodeGroupTreeItem(
                             label,

@@ -4,6 +4,7 @@ import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvide
 
 // Create an output channel for logging
 let outputChannel: vscode.OutputChannel;
+let codeGroupProvider: CodeGroupProvider;
 
 // Helper function for logging
 function log(message: string) {
@@ -15,13 +16,13 @@ function log(message: string) {
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize the output channel
-    outputChannel = vscode.window.createOutputChannel('Code Compass');
+    outputChannel = vscode.window.createOutputChannel('Group Code');
     context.subscriptions.push(outputChannel);
     
-    log('Code Compass is now active');
+    log('Group Code is now active');
     
     // Create a new instance of our CodeGroupProvider
-    const codeGroupProvider = new CodeGroupProvider(outputChannel);
+    codeGroupProvider = new CodeGroupProvider(outputChannel);
     
     // Create the tree data provider with explicit logging for debugging
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider, outputChannel);
@@ -33,11 +34,11 @@ export function activate(context: vscode.ExtensionContext) {
         showCollapseAll: true
     };
     
-    const treeView = vscode.window.createTreeView('codeCompassExplorer', treeViewOptions);
-    log('Created tree view for codeCompassExplorer');
+    const treeView = vscode.window.createTreeView('groupCodeExplorer', treeViewOptions);
+    log('Created tree view for groupCodeExplorer');
     
-    const explorerTreeView = vscode.window.createTreeView('codeCompassExplorerView', treeViewOptions);
-    log('Created tree view for codeCompassExplorerView');
+    const explorerTreeView = vscode.window.createTreeView('groupCodeExplorerView', treeViewOptions);
+    log('Created tree view for groupCodeExplorerView');
     
     // Add visibility change listeners to help debug tree view issues
     treeView.onDidChangeVisibility(e => {
@@ -62,21 +63,52 @@ export function activate(context: vscode.ExtensionContext) {
         codeGroupTreeProvider.refresh();
     });
     
+    // Add file system watcher to track file changes on save
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.*');
+    
+    fileWatcher.onDidChange(async (uri) => {
+        log(`File changed: ${uri.fsPath}`);
+        // Process the changed file if it might contain code groups
+        const document = await vscode.workspace.openTextDocument(uri);
+        await codeGroupProvider.processFileOnSave(document);
+    });
+    
+    // Save data when workspace is about to close
+    context.subscriptions.push(
+        vscode.workspace.onWillSaveTextDocument(async (e) => {
+            log(`File will be saved: ${e.document.uri.fsPath}`);
+            // Add a save task to the will-save event
+            e.waitUntil(Promise.resolve([])); // No edits needed, just want to trigger the event
+            await codeGroupProvider.processFileOnSave(e.document);
+        }),
+        
+        vscode.window.onDidChangeWindowState(async (e) => {
+            if (!e.focused) {
+                // Window lost focus, save state
+                log('Window lost focus, saving state...');
+                await codeGroupProvider.saveGroups();
+            }
+        })
+    );
+    
+    // Make sure the watcher is disposed when the extension is deactivated
+    context.subscriptions.push(fileWatcher);
+    
     // Register our commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('codeCompass.groupCode', async () => {
+        vscode.commands.registerCommand('groupCode.groupCode', async () => {
             log('Executing command: groupCode');
             await codeGroupProvider.processActiveDocument();
             // The refresh will happen via the onDidUpdateGroups event
         }),
         
-        vscode.commands.registerCommand('codeCompass.groupWorkspace', async () => {
+        vscode.commands.registerCommand('groupCode.groupWorkspace', async () => {
             log('Executing command: groupWorkspace');
             await codeGroupProvider.processWorkspace();
             // The refresh will happen via the onDidUpdateGroups event
         }),
         
-        vscode.commands.registerCommand('codeCompass.scanExternalFolder', async () => {
+        vscode.commands.registerCommand('groupCode.scanExternalFolder', async () => {
             log('Executing command: scanExternalFolder');
             // Prompt user to select a folder
             const folderUris = await vscode.window.showOpenDialog({
@@ -94,12 +126,12 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
         
-        vscode.commands.registerCommand('codeCompass.showGroups', () => {
+        vscode.commands.registerCommand('groupCode.showGroups', () => {
             log('Executing command: showGroups');
             codeGroupProvider.showFunctionalities();
         }),
         
-        vscode.commands.registerCommand('codeCompass.refreshTreeView', async () => {
+        vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {
             log('Executing command: refreshTreeView - performing complete rescan');
             
             // Show confirmation dialog for full rescan
@@ -175,12 +207,12 @@ export function activate(context: vscode.ExtensionContext) {
             });
         }),
         
-        vscode.commands.registerCommand('codeCompass.navigateToGroup', (group) => {
+        vscode.commands.registerCommand('groupCode.navigateToGroup', (group) => {
             log('Executing command: navigateToGroup');
             codeGroupProvider.navigateToGroup(group);
         }),
         
-        vscode.commands.registerCommand('codeCompass.addCodeGroupDialog', async () => {
+        vscode.commands.registerCommand('groupCode.addCodeGroupDialog', async () => {
             log('Executing command: addCodeGroupDialog');
             
             // Get current editor
@@ -310,13 +342,13 @@ export function activate(context: vscode.ExtensionContext) {
             // Refresh the tree view to show the new code group
             codeGroupTreeProvider.refresh();
             
-            // Focus the Code Compass panel
+            // Focus the Group Code panel
             try {
-                // Try to show the Code Compass view
-                await vscode.commands.executeCommand('codeCompassExplorer.focus');
+                // Try to show the Group Code view
+                await vscode.commands.executeCommand('groupCodeExplorer.focus');
             } catch (error) {
                 // Fallback to just showing the panel without focus
-                log(`Could not focus Code Compass panel: ${error}`);
+                log(`Could not focus Group Code panel: ${error}`);
             }
             
             vscode.window.showInformationMessage(`Added code group: ${selectedGroupName}`);
@@ -353,7 +385,21 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    log('Code Compass is now deactivated');
+    log('Group Code is now deactivated');
+    
+    // Save all code groups data before extension is deactivated
+    if (codeGroupProvider) {
+        log('Saving code groups before extension deactivation');
+        
+        // Use a synchronous approach for deactivation to ensure it completes
+        try {
+            // Calling saveGroups directly without awaiting since deactivate isn't async
+            codeGroupProvider.saveGroups();
+            log('Successfully saved code groups during deactivation');
+        } catch (error) {
+            log(`Error saving code groups during deactivation: ${error}`);
+        }
+    }
     
     // Clean up the output channel
     if (outputChannel) {

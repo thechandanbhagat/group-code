@@ -18,6 +18,8 @@ export class CodeGroupProvider implements vscode.Disposable {
     private statusBarItem: vscode.StatusBarItem;
     private onDidUpdateGroupsEventEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     private outputChannel?: vscode.OutputChannel;
+    private lastSaveTime: number = Date.now();
+    private saveThrottleTime: number = 1000; // Wait at least 1 second between saves
     
     // Event that fires whenever code groups are updated
     public readonly onDidUpdateGroups: vscode.Event<void> = this.onDidUpdateGroupsEventEmitter.event;
@@ -25,9 +27,9 @@ export class CodeGroupProvider implements vscode.Disposable {
     constructor(outputChannel?: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-        this.statusBarItem.text = "$(map) Code Compass"; // Changed from $(compass) to $(map)
+        this.statusBarItem.text = "$(map) Group Code"; // Changed from "Code Compass" to "Group Code"
         this.statusBarItem.tooltip = "View and navigate code functionalities";
-        this.statusBarItem.command = "codeCompass.showGroups";
+        this.statusBarItem.command = "groupCode.showGroups"; // Updated command prefix
         this.statusBarItem.show();
         
         this.log('CodeGroupProvider initialized');
@@ -126,6 +128,106 @@ export class CodeGroupProvider implements vscode.Disposable {
         vscode.window.showInformationMessage(`Found ${codeGroups.length} code groups in ${getFileName(filePath)}`);
     }
     
+    /**
+     * Process a file when it's saved to update code groups
+     */
+    public async processFileOnSave(document: vscode.TextDocument): Promise<void> {
+        try {
+            const filePath = document.uri.fsPath;
+            const fileType = getFileType(filePath);
+            
+            // Only process supported file types
+            if (!isSupportedFileType(fileType)) {
+                return;
+            }
+            
+            this.log(`Processing saved file: ${filePath}`);
+            
+            // Parse the document for code groups
+            const codeGroups = parseLanguageSpecificComments(document);
+            
+            // If we found code groups, update the collection
+            if (codeGroups.length > 0) {
+                this.log(`Found ${codeGroups.length} code groups in saved file`);
+                
+                // First, remove any existing groups for this file
+                this.removeGroupsForFile(filePath);
+                
+                // Then add the new groups
+                this.addGroups(fileType, codeGroups);
+                
+                // Update functionalities set
+                codeGroups.forEach(group => {
+                    if (group && group.functionality) {
+                        this.functionalities.add(group.functionality);
+                    }
+                });
+                
+                // Update the status bar
+                this.updateStatusBar();
+                
+                // Save the groups to .groupcode folder (with throttling)
+                await this.saveGroups();
+                
+                // Notify listeners that groups have been updated
+                this.onDidUpdateGroupsEventEmitter.fire();
+            } else {
+                // If no code groups found but we previously had groups for this file,
+                // we need to remove them
+                const removedAny = this.removeGroupsForFile(filePath);
+                
+                if (removedAny) {
+                    this.log(`Removed groups for file that no longer has any: ${filePath}`);
+                    await this.saveGroups();
+                    this.onDidUpdateGroupsEventEmitter.fire();
+                }
+            }
+        } catch (error) {
+            this.log(`Error processing file on save: ${error}`);
+        }
+    }
+    
+    /**
+     * Remove all code groups associated with a specific file
+     * @returns true if any groups were removed
+     */
+    private removeGroupsForFile(filePath: string): boolean {
+        let removedAny = false;
+        
+        this.groups.forEach((groups, fileType) => {
+            const originalLength = groups.length;
+            const filteredGroups = groups.filter(group => group.filePath !== filePath);
+            
+            if (filteredGroups.length !== originalLength) {
+                this.groups.set(fileType, filteredGroups);
+                removedAny = true;
+            }
+        });
+        
+        // Re-calculate functionalities
+        if (removedAny) {
+            this.recalculateFunctionalities();
+            this.updateStatusBar();
+        }
+        
+        return removedAny;
+    }
+    
+    /**
+     * Recalculate the set of functionalities based on existing groups
+     */
+    private recalculateFunctionalities(): void {
+        this.functionalities.clear();
+        
+        this.groups.forEach((groups) => {
+            groups.forEach(group => {
+                if (group && group.functionality) {
+                    this.functionalities.add(group.functionality);
+                }
+            });
+        });
+    }
+
     /**
      * Get glob patterns to ignore based on .gitignore and common folders to exclude
      */
@@ -621,9 +723,18 @@ export class CodeGroupProvider implements vscode.Disposable {
 
     /**
      * Save code groups to .groupcode folder
+     * Now public so it can be called from extension.ts
      */
-    private async saveGroups(folderPath?: string): Promise<void> {
+    public async saveGroups(folderPath?: string): Promise<void> {
         try {
+            // Implement throttling to avoid excessive saves
+            const now = Date.now();
+            if (now - this.lastSaveTime < this.saveThrottleTime) {
+                // Skip this save call if it's too soon after the last one
+                this.log(`Throttling save request - only ${now - this.lastSaveTime}ms since last save`);
+                return;
+            }
+            
             const workspaceFolders = getWorkspaceFolders();
             const targetFolder = folderPath || (workspaceFolders.length > 0 ? workspaceFolders[0] : undefined);
             
@@ -634,6 +745,9 @@ export class CodeGroupProvider implements vscode.Disposable {
             
             this.log(`Saving code groups to ${targetFolder}`);
             await saveCodeGroups(targetFolder, this.groups);
+            
+            // Update last save time
+            this.lastSaveTime = Date.now();
         } catch (error) {
             this.log(`Error saving code groups: ${error}`);
         }
@@ -807,7 +921,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     
     private updateStatusBar(): void {
         const functionalities = this.getFunctionalities();
-        this.statusBarItem.text = `$(compass) Code Compass (${functionalities.length})`;
+        this.statusBarItem.text = `$(map) Group Code (${functionalities.length})`;  // Changed from "$(compass) Code Compass" to "$(map) Group Code"
     }
     
     // Clear all code groups and refresh

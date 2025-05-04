@@ -4,6 +4,7 @@ import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvide
 
 // Create an output channel for logging
 let outputChannel: vscode.OutputChannel;
+let codeGroupProvider: CodeGroupProvider;
 
 // Helper function for logging
 function log(message: string) {
@@ -21,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
     log('Code Compass is now active');
     
     // Create a new instance of our CodeGroupProvider
-    const codeGroupProvider = new CodeGroupProvider(outputChannel);
+    codeGroupProvider = new CodeGroupProvider(outputChannel);
     
     // Create the tree data provider with explicit logging for debugging
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider, outputChannel);
@@ -61,6 +62,37 @@ export function activate(context: vscode.ExtensionContext) {
         log('Groups updated, refreshing tree view');
         codeGroupTreeProvider.refresh();
     });
+    
+    // Add file system watcher to track file changes on save
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.*');
+    
+    fileWatcher.onDidChange(async (uri) => {
+        log(`File changed: ${uri.fsPath}`);
+        // Process the changed file if it might contain code groups
+        const document = await vscode.workspace.openTextDocument(uri);
+        await codeGroupProvider.processFileOnSave(document);
+    });
+    
+    // Save data when workspace is about to close
+    context.subscriptions.push(
+        vscode.workspace.onWillSaveTextDocument(async (e) => {
+            log(`File will be saved: ${e.document.uri.fsPath}`);
+            // Add a save task to the will-save event
+            e.waitUntil(Promise.resolve([])); // No edits needed, just want to trigger the event
+            await codeGroupProvider.processFileOnSave(e.document);
+        }),
+        
+        vscode.window.onDidChangeWindowState(async (e) => {
+            if (!e.focused) {
+                // Window lost focus, save state
+                log('Window lost focus, saving state...');
+                await codeGroupProvider.saveGroups();
+            }
+        })
+    );
+    
+    // Make sure the watcher is disposed when the extension is deactivated
+    context.subscriptions.push(fileWatcher);
     
     // Register our commands
     context.subscriptions.push(
@@ -354,6 +386,20 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
     log('Code Compass is now deactivated');
+    
+    // Save all code groups data before extension is deactivated
+    if (codeGroupProvider) {
+        log('Saving code groups before extension deactivation');
+        
+        // Use a synchronous approach for deactivation to ensure it completes
+        try {
+            // Calling saveGroups directly without awaiting since deactivate isn't async
+            codeGroupProvider.saveGroups();
+            log('Successfully saved code groups during deactivation');
+        } catch (error) {
+            log(`Error saving code groups during deactivation: ${error}`);
+        }
+    }
     
     // Clean up the output channel
     if (outputChannel) {

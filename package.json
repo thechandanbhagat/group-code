@@ -1,11 +1,13 @@
 {
-  "name": "code-compass",
-  "displayName": "Code Compass",
+  "name": "group-code",
+  "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
   "version": "1.0.0",
+  "icon": "resources/compass-icon.png",
   "publisher": "Chandan Bhagat",
+  "repository": "https://github.com/thechandanbhagat/code-compass",
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.99.1"
   },
   "activationEvents": [
     "onView:codeCompassExplorer",

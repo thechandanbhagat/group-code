@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "tsc",
+            "args": [
+                "-p",
+                "tsconfig.json"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$tsc"],
+            "detail": "Compiles the TypeScript files."
+        },
+        {
+            "label": "watch",
+            "type": "shell",
+            "command": "tsc",
+            "args": [
+                "-p",
+                "tsconfig.json",
+                "--watch"
+            ],
+            "group": "build",
+            "problemMatcher": ["$tsc"],
+            "detail": "Compiles the TypeScript files in watch mode."
+        }
+    ]
+}

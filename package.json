@@ -1,0 +1,130 @@
+{
+  "name": "code-grouping-extension",
+  "displayName": "Code Grouping Extension",
+  "description": "A VS Code extension to group code based on functionality across different file types.",
+  "version": "0.1.0",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "activationEvents": [
+    "onView:codeGroupExplorer",
+    "onView:codeGroupExplorerView",
+    "onCommand:codeGrouping.groupCode",
+    "onCommand:codeGrouping.groupWorkspace",
+    "onCommand:codeGrouping.showGroups",
+    "onCommand:codeGrouping.scanExternalFolder",
+    "onCommand:codeGrouping.refreshTreeView",
+    "onCommand:codeGrouping.navigateToGroup",
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "code-groups-container",
+          "title": "Code Groups",
+          "icon": "$(symbol-folder)"
+        }
+      ]
+    },
+    "views": {
+      "code-groups-container": [
+        {
+          "id": "codeGroupExplorer",
+          "name": "Code Groups"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "codeGroupExplorerView",
+          "name": "Code Groups"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "codeGrouping.groupCode",
+        "title": "Group Code in Current File"
+      },
+      {
+        "command": "codeGrouping.groupWorkspace",
+        "title": "Group Code in Workspace",
+        "icon": "$(search)"
+      },
+      {
+        "command": "codeGrouping.scanExternalFolder",
+        "title": "Scan External Project Folder",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "codeGrouping.showGroups",
+        "title": "Show Code Groups"
+      },
+      {
+        "command": "codeGrouping.refreshTreeView",
+        "title": "Refresh Code Groups",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codeGrouping.navigateToGroup",
+        "title": "Navigate to Code Group"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "codeGrouping.showGroups",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codeGrouping.groupCode",
+          "group": "navigation"
+        },
+        {
+          "command": "codeGrouping.showGroups",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "codeGrouping.groupWorkspace",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "codeGrouping.refreshTreeView",
+          "when": "view == codeGroupExplorer || view == codeGroupExplorerView",
+          "group": "navigation"
+        },
+        {
+          "command": "codeGrouping.groupWorkspace",
+          "when": "view == codeGroupExplorer || view == codeGroupExplorerView",
+          "group": "navigation"
+        },
+        {
+          "command": "codeGrouping.scanExternalFolder",
+          "when": "view == codeGroupExplorer || view == codeGroupExplorerView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json",
+    "watch": "tsc -watch -p ./tsconfig.json",
+    "prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "@types/vscode": "^1.99.1",
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.4.3",
+    "vscode": "^1.1.37"
+  }
+}

@@ -1,0 +1,396 @@
+{
+  "languages": [
+    {
+      "name": "JavaScript/TypeScript",
+      "fileTypes": ["js", "jsx", "ts", "tsx"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "HTML",
+      "fileTypes": ["html", "htm", "xml", "svg"],
+      "commentMarkers": {
+        "blockStart": "<!--",
+        "blockEnd": "-->"
+      }
+    },
+    {
+      "name": "CSS",
+      "fileTypes": ["css", "scss", "less"],
+      "commentMarkers": {
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Python",
+      "fileTypes": ["py", "python", "ipynb"],
+      "commentMarkers": {
+        "line": "#"
+      },
+      "extraPatterns": [
+        "\\s*\\*\\s*([^:]+?)\\s*:\\s*(.*?)\\s*$",
+        "#.*?\\*\\s*([^:]+?)\\s*:\\s*(.*?)\\s*$"
+      ]
+    },
+    {
+      "name": "C#",
+      "fileTypes": ["cs", "csharp"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Go",
+      "fileTypes": ["go"],
+      "commentMarkers": {
+        "line": "//"
+      }
+    },
+    {
+      "name": "Ruby",
+      "fileTypes": ["rb", "ruby"],
+      "commentMarkers": {
+        "line": "#",
+        "blockStart": "=begin",
+        "blockEnd": "=end"
+      }
+    },
+    {
+      "name": "PHP",
+      "fileTypes": ["php"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Java",
+      "fileTypes": ["java"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Shell/Bash",
+      "fileTypes": ["sh", "bash"],
+      "commentMarkers": {
+        "line": "#"
+      }
+    },
+    {
+      "name": "PowerShell",
+      "fileTypes": ["ps1", "psm1", "psd1"],
+      "commentMarkers": {
+        "line": "#",
+        "blockStart": "<#",
+        "blockEnd": "#>"
+      }
+    },
+    {
+      "name": "Markdown",
+      "fileTypes": ["md", "markdown"],
+      "commentMarkers": {
+        "blockStart": "<!--",
+        "blockEnd": "-->"
+      }
+    },
+    {
+      "name": "SQL",
+      "fileTypes": ["sql"],
+      "commentMarkers": {
+        "line": "--",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Rust",
+      "fileTypes": ["rs"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Swift",
+      "fileTypes": ["swift"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Kotlin",
+      "fileTypes": ["kt", "kts"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Dart",
+      "fileTypes": ["dart"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "C/C++",
+      "fileTypes": ["c", "cpp", "h", "hpp"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Haskell",
+      "fileTypes": ["hs", "lhs"],
+      "commentMarkers": {
+        "line": "--",
+        "blockStart": "{-",
+        "blockEnd": "-}"
+      }
+    },
+    {
+      "name": "Lua",
+      "fileTypes": ["lua"],
+      "commentMarkers": {
+        "line": "--",
+        "blockStart": "--[[",
+        "blockEnd": "]]"
+      }
+    },
+    {
+      "name": "R",
+      "fileTypes": ["r", "R"],
+      "commentMarkers": {
+        "line": "#"
+      }
+    },
+    {
+      "name": "MATLAB/Octave",
+      "fileTypes": ["m", "mat"],
+      "commentMarkers": {
+        "line": "%",
+        "blockStart": "%{",
+        "blockEnd": "%}"
+      }
+    },
+    {
+      "name": "VBScript/VB.NET",
+      "fileTypes": ["vbs", "vb"],
+      "commentMarkers": {
+        "line": "'"
+      }
+    },
+    {
+      "name": "Groovy",
+      "fileTypes": ["groovy", "gvy", "gy", "gsh"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "F#",
+      "fileTypes": ["fs", "fsx", "fsi"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "(*",
+        "blockEnd": "*)"
+      }
+    },
+    {
+      "name": "Perl",
+      "fileTypes": ["pl", "pm", "t", "pod"],
+      "commentMarkers": {
+        "line": "#",
+        "blockStart": "=pod",
+        "blockEnd": "=cut"
+      }
+    },
+    {
+      "name": "Clojure",
+      "fileTypes": ["clj", "cljs", "cljc", "edn"],
+      "commentMarkers": {
+        "line": ";",
+        "blockStart": "(comment",
+        "blockEnd": ")"
+      }
+    },
+    {
+      "name": "Scala",
+      "fileTypes": ["scala", "sc"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Erlang",
+      "fileTypes": ["erl", "hrl"],
+      "commentMarkers": {
+        "line": "%"
+      }
+    },
+    {
+      "name": "Julia",
+      "fileTypes": ["jl"],
+      "commentMarkers": {
+        "line": "#",
+        "blockStart": "#=",
+        "blockEnd": "=#"
+      }
+    },
+    {
+      "name": "D",
+      "fileTypes": ["d"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Crystal",
+      "fileTypes": ["cr"],
+      "commentMarkers": {
+        "line": "#"
+      }
+    },
+    {
+      "name": "COBOL",
+      "fileTypes": ["cob", "cbl", "cpy"],
+      "commentMarkers": {
+        "line": "*>"
+      }
+    },
+    {
+      "name": "Fortran",
+      "fileTypes": ["f", "for", "f90", "f95", "f03", "f08"],
+      "commentMarkers": {
+        "line": "!"
+      }
+    },
+    {
+      "name": "Assembly",
+      "fileTypes": ["asm", "s"],
+      "commentMarkers": {
+        "line": ";"
+      }
+    },
+    {
+      "name": "Objective-C",
+      "fileTypes": ["m", "mm"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "TypeScript Definition",
+      "fileTypes": ["d.ts"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "YAML",
+      "fileTypes": ["yml", "yaml"],
+      "commentMarkers": {
+        "line": "#"
+      }
+    },
+    {
+      "name": "JSON with Comments",
+      "fileTypes": ["jsonc"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "/*",
+        "blockEnd": "*/"
+      }
+    },
+    {
+      "name": "Vue",
+      "fileTypes": ["vue"],
+      "commentMarkers": {
+        "line": "//",
+        "blockStart": "<!--",
+        "blockEnd": "-->"
+      }
+    },
+    {
+      "name": "Elm",
+      "fileTypes": ["elm"],
+      "commentMarkers": {
+        "line": "--",
+        "blockStart": "{-",
+        "blockEnd": "-}"
+      }
+    },
+    {
+      "name": "Dockerfile",
+      "fileTypes": ["dockerfile"],
+      "commentMarkers": {
+        "line": "#"
+      }
+    },
+    {
+      "name": "Elixir",
+      "fileTypes": ["ex", "exs"],
+      "commentMarkers": {
+        "line": "#",
+        "blockStart": "@doc \"\"\"",
+        "blockEnd": "\"\"\""
+      }
+    },
+    {
+      "name": "CoffeeScript",
+      "fileTypes": ["coffee", "litcoffee"],
+      "commentMarkers": {
+        "line": "#",
+        "blockStart": "###",
+        "blockEnd": "###"
+      }
+    },
+    {
+      "name": "Protocol Buffers",
+      "fileTypes": ["proto"],
+      "commentMarkers": {
+        "line": "//"
+      }
+    },
+    {
+      "name": "TCL",
+      "fileTypes": ["tcl"],
+      "commentMarkers": {
+        "line": "#"
+      }
+    }
+  ],
+  "commentPattern": {
+    "description": "The regex pattern to match for code groups",
+    "pattern": "\\s*\\*\\s*([^:]+?)\\s*:\\s*(.*?)\\s*$",
+    "flags": "i"
+  }
+}

@@ -16,6 +16,7 @@
     "onCommand:codeCompass.scanExternalFolder",
     "onCommand:codeCompass.refreshTreeView",
     "onCommand:codeCompass.navigateToGroup",
+    "onCommand:codeCompass.addCodeGroupDialog",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -70,6 +71,11 @@
       {
         "command": "codeCompass.navigateToGroup",
         "title": "Navigate to Code Group"
+      },
+      {
+        "command": "codeCompass.addCodeGroupDialog",
+        "title": "Add Code Group (Dialog)",
+        "icon": "$(add)"
       }
     ],
     "keybindings": [
@@ -77,6 +83,12 @@
         "command": "codeCompass.showGroups",
         "key": "ctrl+shift+g",
         "mac": "cmd+shift+g"
+      },
+      {
+        "command": "codeCompass.addCodeGroupDialog",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k",
+        "when": "editorTextFocus"
       }
     ],
     "menus": {
@@ -87,6 +99,10 @@
         },
         {
           "command": "codeCompass.showGroups",
+          "group": "navigation"
+        },
+        {
+          "command": "codeCompass.addCodeGroupDialog",
           "group": "navigation"
         }
       ],

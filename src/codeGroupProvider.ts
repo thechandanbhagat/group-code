@@ -140,6 +140,20 @@ export class CodeGroupProvider implements vscode.Disposable {
             if (!isSupportedFileType(fileType)) {
                 return;
             }
+
+            // Check if file should be ignored
+            const ignorePatterns = await this.getIgnorePatterns();
+            if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
+                this.log(`Skipping ignored file: ${filePath}`);
+                // Remove any existing groups for this file since it's now ignored
+                const removedAny = this.removeGroupsForFile(filePath);
+                if (removedAny) {
+                    this.log(`Removed groups for ignored file: ${filePath}`);
+                    await this.saveGroups();
+                    this.onDidUpdateGroupsEventEmitter.fire();
+                }
+                return;
+            }
             
             this.log(`Processing saved file: ${filePath}`);
             
@@ -229,87 +243,98 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
 
     /**
+     * Convert a gitignore pattern to a regular expression that matches file paths
+     */
+    private gitignorePatternToRegex(pattern: string): RegExp {
+        // Remove leading slash to keep patterns relative to any folder
+        let processedPattern = pattern.startsWith('/') ? pattern.substring(1) : pattern;
+
+        // Remove trailing slash (directory marker)
+        processedPattern = processedPattern.endsWith('/') ? processedPattern.slice(0, -1) : processedPattern;
+
+        // Escape special regex chars except * and ?
+        processedPattern = processedPattern.replace(/[.+\-\^${}()|[\]\\]/g, '\\$&');
+
+        // Handle special case for .venv to match both /.venv/ and .venv/ at any level
+        if (processedPattern === '.venv' || processedPattern === '**/.venv' || processedPattern === '**/.venv/**') {
+            return new RegExp('(/|^)\\.venv(/|$)');
+        }
+
+        // Convert gitignore glob patterns to regex patterns
+        processedPattern = processedPattern
+            .replace(/\*\*/g, '.*') // ** matches anything (including slashes)
+            .replace(/\*/g, '[^/]*') // * matches anything except slashes
+            .replace(/\?/g, '[^/]'); // ? matches a single non-slash character
+
+        // Make sure the pattern matches full segments
+        if (!processedPattern.includes('/')) {
+            // For patterns without slashes, match the full path segment
+            processedPattern = '(/|^)' + processedPattern + '(/|$)';
+        } else {
+            // For patterns with slashes, anchor appropriately
+            if (!processedPattern.startsWith('^')) {
+                processedPattern = '(?:/|^)' + processedPattern;
+            }
+            if (!processedPattern.endsWith('$')) {
+                processedPattern = processedPattern + '(?:/|$)';
+            }
+        }
+
+        return new RegExp(processedPattern);
+    }
+
+    /**
+     * Check if a file path should be ignored based on ignore patterns
+     */
+    private shouldIgnoreFile(filePath: string, ignorePatterns: string[]): boolean {
+        // Forward slashes for consistency
+        const normalizedPath = filePath.replace(/\\/g, '/');
+
+        return ignorePatterns.some(pattern => {
+            try {
+                const regex = this.gitignorePatternToRegex(pattern);
+                return regex.test(normalizedPath);
+            } catch (error) {
+                this.log(`Error in ignore pattern ${pattern}: ${error}`);
+                return false;
+            }
+        });
+    }
+
+    /**
      * Get glob patterns to ignore based on .gitignore and common folders to exclude
      */
     private async getIgnorePatterns(folderPath?: string): Promise<string[]> {
-        const ignorePatterns = [
-            // Common folders to always ignore
-            '**/node_modules/**',
-            '**/jspm_packages/**',
-            '**/bower_components/**',
-            '**/dist/**',
-            '**/out/**',
-            '**/build/**',
-            '**/.next/**',
-            '**/.nuxt/**',
-            '**/.cache/**',
-            '**/coverage/**',
-            
-            // Virtual environments
-            '**/venv/**',
-            '**/.venv/**',
-            '**/env/**',
-            '**/.env/**',
-            '**/virtualenv/**',
-            '**/virtual/**',
-            '**/.virtualenv/**',
-            '**/pythonenv/**',
-            '**/.python-version/**',
-            '**/ENV/**',
-            
-            // Bin directories
-            '**/bin/**',
-            
-            // Package folders
-            '**/packages/**',
-            '**/package/**',
-            
-            // Common VSCode folders
-            '**/.vscode/**',
-            '**/.vscode-test/**',
-            
-            // Git directories
-            '**/.git/**',
-            
-            // Our own metadata folder
-            '**/.groupcode/**'
-        ];
+        const ignorePatterns: string[] = [];
         
         // Try to read .gitignore patterns from the specified folder
         if (folderPath) {
             try {
                 // Safely construct .gitignore path
-                let gitignorePath = folderPath;
-                if (!gitignorePath.endsWith('/') && !gitignorePath.endsWith('\\')) {
-                    gitignorePath += '/';
-                }
-                gitignorePath += '.gitignore';
+                const normalizedPath = folderPath.replace(/\\/g, '/');
+                const gitignorePath = normalizedPath.endsWith('/') ? 
+                    `${normalizedPath}.gitignore` : 
+                    `${normalizedPath}/.gitignore`;
                 
                 try {
                     await fs.promises.access(gitignorePath);
-                    
                     const gitignoreContent = await fs.promises.readFile(gitignorePath, 'utf8');
                     const gitignoreLines = gitignoreContent.split('\n')
                         .map(line => line.trim())
                         .filter(line => line && !line.startsWith('#'));
-                    
-                    // Convert .gitignore patterns to glob patterns
+
+                    // Add all non-empty, non-comment lines
                     for (const line of gitignoreLines) {
-                        if (line.includes('/')) {
-                            // Patterns with slashes are more specific
-                            const pattern = line.startsWith('/') 
-                                ? `**${line}/**` // For patterns starting with /, they're relative to root
-                                : `**/${line}/**`; // For patterns with / elsewhere
+                        // Skip negation patterns for now (patterns starting with !)
+                        if (!line.startsWith('!')) {
+                            const pattern = line.endsWith('/') ? line + '**' : line;
                             ignorePatterns.push(pattern);
-                        } else {
-                            // Simple filename patterns should be excluded anywhere
-                            ignorePatterns.push(`**/${line}`);
                         }
                     }
                     
                     this.log(`Loaded ${gitignoreLines.length} patterns from .gitignore in ${folderPath}`);
                 } catch (error) {
-                    // No .gitignore file, just use default patterns
+                    // No .gitignore file, use default patterns
                     this.log(`No .gitignore file found in ${folderPath}, using default ignore patterns`);
                 }
             } catch (error) {
@@ -317,6 +342,30 @@ export class CodeGroupProvider implements vscode.Disposable {
             }
         }
         
+        // Add some common default patterns that should always be ignored
+        const defaultPatterns = [
+            '**/node_modules/**',
+            '**/.git/**',
+            '**/dist/**',
+            '**/build/**',
+            '**/.next/**',
+            '**/out/**',
+            '**/coverage/**',
+            '**/venv/**',
+            '**/.venv/**',
+            '**/env/**',
+            '**/.env/**',
+            '**/bin/**',
+            '**/obj/**',
+            '**/.vs/**',
+            '**/.idea/**',
+            '**/tmp/**',
+            '**/temp/**',
+            '**/.cache/**',
+            '.DS_Store'
+        ];
+        
+        ignorePatterns.push(...defaultPatterns);
         return ignorePatterns;
     }
     
@@ -327,21 +376,23 @@ export class CodeGroupProvider implements vscode.Disposable {
         
         this.log('Starting workspace scan...');
         
-        // Delete the .groupcode folder to start fresh
-        try {
-            const workspaceFolders = getWorkspaceFolders();
-            if (workspaceFolders.length > 0) {
-                const groupCodeDir = workspaceFolders[0].endsWith('/') ? 
-                    `${workspaceFolders[0]}.groupcode` : 
-                    `${workspaceFolders[0]}/.groupcode`;
-                
-                if (fs.existsSync(groupCodeDir)) {
-                    fs.rmdirSync(groupCodeDir, { recursive: true });
-                    this.log(`Deleted ${groupCodeDir} for fresh start`);
+        // Delete the .groupcode folder to start fresh if doing a forced scan
+        if (forceFullScan) {
+            try {
+                const workspaceFolders = getWorkspaceFolders();
+                if (workspaceFolders.length > 0) {
+                    const groupCodeDir = workspaceFolders[0].endsWith('/') ? 
+                        `${workspaceFolders[0]}.groupcode` : 
+                        `${workspaceFolders[0]}/.groupcode`;
+                    
+                    if (fs.existsSync(groupCodeDir)) {
+                        fs.rmdirSync(groupCodeDir, { recursive: true });
+                        this.log(`Deleted ${groupCodeDir} for fresh start`);
+                    }
                 }
+            } catch (error) {
+                this.log(`Failed to delete .groupcode directory: ${error}`);
             }
-        } catch (error) {
-            this.log(`Failed to delete .groupcode directory: ${error}`);
         }
         
         const workspaceFolders = getWorkspaceFolders();
@@ -357,14 +408,27 @@ export class CodeGroupProvider implements vscode.Disposable {
             title: 'Scanning workspace for code groups',
             cancellable: false
         }, async (progress) => {
+            // Get ignore patterns first
+            const ignorePatterns = await this.getIgnorePatterns();
+
+            // Convert ignore patterns to VS Code glob patterns
+            const ignoreGlob = ignorePatterns
+                .map(pattern => pattern.startsWith('!') ? pattern : `**/${pattern}`)
+                .join(',');
+
             // Always process open editors first for immediate feedback
             const openEditors = vscode.window.visibleTextEditors;
             this.log(`Processing ${openEditors.length} open editors first`);
             
-            // Process each open editor
+            // Process each open editor that isn't ignored
             for (const editor of openEditors) {
                 const document = editor.document;
                 const filePath = document.uri.fsPath;
+                
+                if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
+                    this.log(`Skipping ignored open file: ${filePath}`);
+                    continue;
+                }
                 
                 // Get file extension
                 const fileType = getFileType(filePath);
@@ -392,30 +456,35 @@ export class CodeGroupProvider implements vscode.Disposable {
                 }
             }
             
-            // Always perform a full workspace scan regardless of what was found in open editors
-            this.log('Performing full workspace scan');
-            progress.report({ message: 'Performing full workspace scan...' });
-            
-            const ignorePatterns = await this.getIgnorePatterns();
+            // Now scan the rest of the workspace
+            this.log('Performing workspace scan');
+            progress.report({ message: 'Scanning workspace files...' });
             
             // First, scan for all files in the workspace to identify which extensions actually exist
             progress.report({ message: 'Identifying file types in the workspace...' });
             
-            // Use a more efficient pattern to find all files first
-            const allFiles = await vscode.workspace.findFiles('**/*.*', `{${ignorePatterns.join(',')}}`);
+            // Use findFiles API with our converted glob patterns
+            const allFiles = await vscode.workspace.findFiles('**/*.*', `{${ignoreGlob}}`);
             
             // Group files by extension
             const filesByExtension = new Map<string, vscode.Uri[]>();
             
-            allFiles.forEach(file => {
-                const fileType = getFileType(file.fsPath);
+            // Additional ignore check for each file
+            for (const file of allFiles) {
+                const filePath = file.fsPath;
+                if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
+                    this.log(`Skipping ignored file: ${filePath}`);
+                    continue;
+                }
+
+                const fileType = getFileType(filePath);
                 if (fileType && isSupportedFileType(fileType)) {
                     if (!filesByExtension.has(fileType)) {
                         filesByExtension.set(fileType, []);
                     }
                     filesByExtension.get(fileType)!.push(file);
                 }
-            });
+            }
             
             // Log the extensions found
             this.log('File types found in the workspace:');
@@ -458,8 +527,21 @@ export class CodeGroupProvider implements vscode.Disposable {
                             
                             progress.report({
                                 message: `Processing file ${processedCount} of ${totalFilesToScan}: ${getFileName(filePath)}`,
-                                increment: (100 * batchSize) / totalFilesToScan
+                                increment: (100 * batch.length) / totalFilesToScan
                             });
+                            
+                            // Final check that the file isn't ignored (in case pattern was just added)
+                            if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
+                                this.log(`Skipping ignored file during scan: ${filePath}`);
+                                continue;
+                            }
+                            
+                            // Remove any existing groups for ignored files
+                            const removedAny = this.removeGroupsForFile(filePath);
+                            if (removedAny) {
+                                this.log(`Removed groups for ignored file: ${filePath}`);
+                                continue;
+                            }
                             
                             // Open and process the document
                             const document = await vscode.workspace.openTextDocument(fileUri);
@@ -534,7 +616,6 @@ export class CodeGroupProvider implements vscode.Disposable {
                 progress.report({ message: 'Identifying file types in the external folder...' });
                 
                 try {
-                    // Use a more generic pattern to find all files first
                     const relativePattern = new vscode.RelativePattern(folderPath, '**/*.*');
                     const allFiles = await vscode.workspace.findFiles(relativePattern, `{${ignorePatterns.join(',')}}`);
                     
@@ -594,6 +675,12 @@ export class CodeGroupProvider implements vscode.Disposable {
                                         message: `Processing file ${processedCount} of ${totalFilesToScan}: ${getFileName(filePath)}`,
                                         increment: (100 * batch.length) / totalFilesToScan
                                     });
+                                    
+                                    // Double-check file isn't ignored
+                                    if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
+                                        this.log(`Skipping ignored file during external scan: ${filePath}`);
+                                        continue;
+                                    }
                                     
                                     // Open and process the document
                                     try {
@@ -804,6 +891,15 @@ export class CodeGroupProvider implements vscode.Disposable {
     // Get all available functionalities
     public getFunctionalities(): string[] {
         return Array.from(this.functionalities);
+    }
+    
+    // Get all code groups across all file types
+    public getAllGroups(): CodeGroup[] {
+        const allGroups: CodeGroup[] = [];
+        this.groups.forEach((groups) => {
+            allGroups.push(...groups);
+        });
+        return allGroups;
     }
     
     // Navigate to a specific group

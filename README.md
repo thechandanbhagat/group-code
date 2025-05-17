@@ -11,8 +11,11 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Automatic Scanning**: Automatically detects code groups in your workspace
 - **Status Bar Integration**: Quick access to code groups from the VS Code status bar
 - **External Folder Support**: Scan code in folders outside your current workspace
-- **Intelligent Code Completion**: Get smart suggestions for @group tags and existing group names
-- **Smart File Filtering**: Automatically respects .gitignore patterns and common ignore rules
+- **Smart Code Completion**: Get intelligent suggestions for @group tags and existing group names
+- **Git-Aware Scanning**: Automatically respects .gitignore patterns and common ignore rules
+- **Inline Documentation**: See where each code group is used while typing
+- **Block Comment Support**: Improved detection of groups in block comments across all languages
+- **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
 ## Installation
 
@@ -25,7 +28,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.0.1.vsix` file included with this extension
+1. Download the `groupcode-1.1.0.vsix` file included with this extension
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
@@ -86,12 +89,17 @@ user_role = get_user_role(user_id) # @group Authorization: User permission check
 
 ### Smart Code Completion
 
-The extension provides intelligent code completion for group tags:
+The extension now provides even smarter code completion for group tags:
 
 1. Type `@` in a comment to trigger the group completion
-2. The extension suggests existing group names and formats
-3. Select from existing groups to maintain consistency
-4. Get inline documentation about where each group is used
+2. Get suggestions for the `@group` tag format
+3. After typing `@group`, see intelligent suggestions of existing group names
+4. Get inline documentation showing where each group is used
+5. Maintain consistent naming with smart filtering and sorting
+6. Works in both line comments and block comments
+7. Supports case-insensitive matching
+
+The completion provider is language-aware and only activates inside valid comments for each language.
 
 ### Inline Comment Detection
 

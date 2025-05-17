@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvider';
+import { GroupCompletionProvider } from './utils/completionProvider';
 
 // Create an output channel for logging
 let outputChannel: vscode.OutputChannel;
@@ -23,6 +24,17 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Create a new instance of our CodeGroupProvider
     codeGroupProvider = new CodeGroupProvider(outputChannel);
+    
+    // Create and register the completion provider
+    const completionProvider = new GroupCompletionProvider(codeGroupProvider);
+    context.subscriptions.push(
+        vscode.languages.registerCompletionItemProvider(
+            { pattern: '**/*.*' }, // Register for all files
+            completionProvider,
+            '@', // Trigger on @ character
+            ' '  // And on space character
+        )
+    );
     
     // Create the tree data provider with explicit logging for debugging
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider, outputChannel);

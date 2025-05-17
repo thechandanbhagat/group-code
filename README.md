@@ -11,7 +11,8 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Automatic Scanning**: Automatically detects code groups in your workspace
 - **Status Bar Integration**: Quick access to code groups from the VS Code status bar
 - **External Folder Support**: Scan code in folders outside your current workspace
-- **Inline Comment Detection**: Find and group code with special patterns in inline comments
+- **Intelligent Code Completion**: Get smart suggestions for @group tags and existing group names
+- **Smart File Filtering**: Automatically respects .gitignore patterns and common ignore rules
 
 ## Installation
 
@@ -24,7 +25,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.0.0.vsix` file included with this extension
+1. Download the `groupcode-1.0.1.vsix` file included with this extension
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
@@ -36,52 +37,61 @@ After installing the extension, you'll see a new Group Code icon in your Activit
 
 ### Creating Code Groups
 
-Add special comments to your code following this pattern:
+Add special comments to your code using the @group tag:
 ```
-* GroupName: Description of functionality
+@group GroupName: Description of functionality
 ```
 
 The extension automatically recognizes different comment formats based on the file type:
 
 #### JavaScript/TypeScript/C#/Java/C++
 ```javascript
-//* Authentication: User login process
+// @group Authentication: User login process
 function login(username, password) {
     // Your code here
 }
 
 // Inline comments also work
-const userData = getUserData(); // * UserData: Access user information
+const userData = getUserData(); // @group UserData: Access user information
 ```
 
 #### HTML/XML/SVG
 ```html
-<!-- * Authentication: Login form layout -->
+<!-- @group Authentication: Login form layout -->
 <form class="login-form">
     <!-- Your HTML here -->
 </form>
 
-<div class="user-panel"><!-- * UserPanel: User interaction area --></div>
+<div class="user-panel"><!-- @group UserPanel: User interaction area --></div>
 ```
 
 #### CSS/SCSS/Less
 ```css
-/* * Authentication: Login form styling */
+/* @group Authentication: Login form styling */
 .login-form {
     /* Your CSS here */
 }
 
-.avatar { border-radius: 50%; } /* * UserInterface: Profile picture styling */
+.avatar { border-radius: 50%; } /* @group UserInterface: Profile picture styling */
 ```
 
 #### Python/Ruby/Shell/YAML
 ```python
-# * Authentication: User authentication backend
+# @group Authentication: User authentication backend
 def authenticate_user(username, password):
     # Your Python code here
 
-user_role = get_user_role(user_id) # * Authorization: User permission check
+user_role = get_user_role(user_id) # @group Authorization: User permission check
 ```
+
+### Smart Code Completion
+
+The extension provides intelligent code completion for group tags:
+
+1. Type `@` in a comment to trigger the group completion
+2. The extension suggests existing group names and formats
+3. Select from existing groups to maintain consistency
+4. Get inline documentation about where each group is used
 
 ### Inline Comment Detection
 
@@ -90,13 +100,14 @@ The extension detects code group patterns in inline comments, which allows you t
 1. **Add code groups to existing code**: Tag important lines without restructuring your code
 2. **Create more targeted groups**: Mark specific lines rather than entire blocks
 3. **Document as you code**: Add functionality markers without breaking your flow
+4. **Stay consistent**: Smart completion helps maintain naming consistency
 
 Example of inline comment detection:
 ```javascript
 // These will all be detected properly:
-const apiKey = process.env.API_KEY; // * Security: API authentication
-fetchUserData(userId); // * UserData: Fetch user information
-updateUI(userData); // * UserInterface: Update display with user data
+const apiKey = process.env.API_KEY; // @group Security: API authentication
+fetchUserData(userId); // @group UserData: Fetch user information
+updateUI(userData); // @group UserInterface: Update display with user data
 ```
 
 ### Viewing & Navigating Code Groups
@@ -148,8 +159,8 @@ Each language uses its native comment syntax to define code groups.
 ## Troubleshooting
 
 - If groups aren't appearing, try the "Refresh Code Groups" command
-- Ensure comments follow the exact pattern: `* GroupName: Description`
-- For inline comments, make sure there's a space after the comment marker (e.g., `// * Group` not `//* Group`)
+- Ensure comments follow the exact pattern: `@group GroupName: Description`
+- For inline comments, make sure there's a space after the comment marker (e.g., `// @group Group` not `//@group Group`)
 - Check the Output panel (View → Output → Group Code) for detailed logs
 - For large workspaces, the initial scan may take a moment to complete
 

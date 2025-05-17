@@ -1,10 +1,10 @@
 {
-  "name": "group-code",
+  "name": "groupcode",
   "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "icon": "resources/compass-icon.png",
-  "publisher": "Chandan Bhagat",
+  "publisher": "thechandanbhagat",
   "repository": "https://github.com/thechandanbhagat/code-compass",
   "engines": {
     "vscode": "^1.99.1"
@@ -136,7 +136,8 @@
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
     "watch": "tsc -watch -p ./tsconfig.json",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "start":"code --extensionDevelopmentPath='$PWD'"
   },
   "devDependencies": {
     "@types/node": "^16.11.6",

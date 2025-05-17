@@ -1,13 +1,15 @@
 {
   "languages": [
-    {
-      "name": "JavaScript/TypeScript",
+    {      "name": "JavaScript/TypeScript",
       "fileTypes": ["js", "jsx", "ts", "tsx"],
       "commentMarkers": {
         "line": "//",
         "blockStart": "/*",
         "blockEnd": "*/"
-      }
+      },
+      "extraPatterns": [
+        "@group\\s+([^:]+):\\s*(.*?)\\s*$"
+      ]
     },
     {
       "name": "HTML",
@@ -30,10 +32,8 @@
       "fileTypes": ["py", "python", "ipynb"],
       "commentMarkers": {
         "line": "#"
-      },
-      "extraPatterns": [
-        "\\s*\\*\\s*([^:]+?)\\s*:\\s*(.*?)\\s*$",
-        "#.*?\\*\\s*([^:]+?)\\s*:\\s*(.*?)\\s*$"
+      },      "extraPatterns": [
+        "@group\\s+([^:]+):\\s*(.*?)\\s*$"
       ]
     },
     {
@@ -386,11 +386,15 @@
       "commentMarkers": {
         "line": "#"
       }
-    }
-  ],
+    }  ],
   "commentPattern": {
-    "description": "The regex pattern to match for code groups",
-    "pattern": "\\s*\\*\\s*([^:]+?)\\s*:\\s*(.*?)\\s*$",
+    "description": "The regex pattern to match for code groups in format '@group groupname: description'",
+    "pattern": "@group\\s+([^:]+):\\s*(.*?)\\s*$",
+    "flags": "i"
+  },
+  "blockCommentPattern": {
+    "description": "Pattern to match @group in block comments",
+    "pattern": "\\s*\\*\\s*@group\\s+([^:]+):\\s*(.*?)\\s*$",
     "flags": "i"
   }
 }

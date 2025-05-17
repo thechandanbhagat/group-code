@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvider';
+import { GroupCompletionProvider } from './utils/completionProvider';
+import { RatingPromptManager } from './utils/ratingPrompt';
 
 // Create an output channel for logging
 let outputChannel: vscode.OutputChannel;
 let codeGroupProvider: CodeGroupProvider;
+let ratingPromptManager: RatingPromptManager;
 
 // Helper function for logging
 function log(message: string) {
@@ -23,6 +26,20 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Create a new instance of our CodeGroupProvider
     codeGroupProvider = new CodeGroupProvider(outputChannel);
+    
+    // Initialize rating prompt manager
+    ratingPromptManager = new RatingPromptManager(context);
+    
+    // Create and register the completion provider
+    const completionProvider = new GroupCompletionProvider(codeGroupProvider);
+    context.subscriptions.push(
+        vscode.languages.registerCompletionItemProvider(
+            { pattern: '**/*.*' }, // Register for all files
+            completionProvider,
+            '@', // Trigger on @ character
+            ' '  // And on space character
+        )
+    );
     
     // Create the tree data provider with explicit logging for debugging
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider, outputChannel);
@@ -99,13 +116,13 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('groupCode.groupCode', async () => {
             log('Executing command: groupCode');
             await codeGroupProvider.processActiveDocument();
-            // The refresh will happen via the onDidUpdateGroups event
+            await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
         vscode.commands.registerCommand('groupCode.groupWorkspace', async () => {
             log('Executing command: groupWorkspace');
             await codeGroupProvider.processWorkspace();
-            // The refresh will happen via the onDidUpdateGroups event
+            await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
         vscode.commands.registerCommand('groupCode.scanExternalFolder', async () => {
@@ -122,13 +139,15 @@ export function activate(context: vscode.ExtensionContext) {
                 const folderPath = folderUris[0].fsPath;
                 log(`Scanning external folder: ${folderPath}`);
                 await codeGroupProvider.processExternalFolder(folderPath);
+                await ratingPromptManager.incrementUsageAndCheckPrompt();
                 codeGroupTreeProvider.refresh();
             }
         }),
         
-        vscode.commands.registerCommand('groupCode.showGroups', () => {
+        vscode.commands.registerCommand('groupCode.showGroups', async () => {
             log('Executing command: showGroups');
             codeGroupProvider.showFunctionalities();
+            await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
         vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {

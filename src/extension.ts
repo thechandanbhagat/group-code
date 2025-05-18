@@ -320,26 +320,42 @@ export function activate(context: vscode.ExtensionContext) {
                 case 'cpp':
                 case 'cs':
                 case 'java':
-                    commentPrefix = '// * ';
+                case 'swift':
+                case 'go':
+                case 'rust':
+                case 'kotlin':
+                    commentPrefix = '// @group ';
                     break;
                     
                 case 'py':
-                    commentPrefix = '# * ';
+                case 'gitignore':
+                case 'yml':
+                case 'yaml':
+                case 'bash':
+                case 'sh':
+                case 'zsh':
+                case 'dockerfile':
+                case 'makefile':
+                case 'properties':
+                    commentPrefix = '# @group ';
                     break;
                     
                 case 'html':
                 case 'xml':
                 case 'svg':
-                    commentPrefix = '<!-- * ';
+                    commentPrefix = '<!-- @group ';
                     commentSuffix = ' -->';
                     break;
-                    
+                case 'sql':
+                    commentPrefix = '-- @group ';
+                    break;
+
                 case 'php':
-                    commentPrefix = '// * ';
+                    commentPrefix = '// @group ';
                     break;
                     
                 default:
-                    commentPrefix = '// * ';
+                    commentPrefix = '// @group ';
                     break;
             }
             

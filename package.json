@@ -8,12 +8,10 @@
   "repository": "https://github.com/thechandanbhagat/code-compass",
   "engines": {
     "vscode": "^1.99.1"
-  },
-  "activationEvents": [
+  },  "activationEvents": [
     "onView:groupCodeExplorer",
     "onView:groupCodeExplorerView",
     "onCommand:groupCode.groupCode",
-    "onCommand:groupCode.groupWorkspace",
     "onCommand:groupCode.showGroups",
     "onCommand:groupCode.scanExternalFolder",
     "onCommand:groupCode.refreshTreeView",
@@ -31,30 +29,42 @@
           "icon": "resources/compass-icon.svg"
         }
       ]
-    },
-    "views": {
+    },    "views": {
       "group-code-container": [
         {
           "id": "groupCodeExplorer",
-          "name": "Group Code"
+          "name": "Group Code",
+          "type": "tree"
         }
       ],
       "explorer": [
         {
           "id": "groupCodeExplorerView",
-          "name": "Group Code"
+          "name": "Group Code",
+          "type": "tree"
         }
       ]
     },
-    "commands": [
+    "viewsWelcome": [
+      {
+        "view": "groupCodeExplorer",
+        "contents": "Filter code groups by typing in the search box above.\n[Search Groups](command:groupCode.filterGroups)"
+      },
+      {
+        "view": "groupCodeExplorerView",
+        "contents": "Filter code groups by typing in the search box above.\n[Search Groups](command:groupCode.filterGroups)"
+      }
+    ],
+    "commands": [      {
+        "command": "groupCode.filterGroups",
+        "title": "Search Groups",
+        "category": "Group Code",
+        "icon": "$(search)",
+        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView"
+      },
       {
         "command": "groupCode.groupCode",
         "title": "Group Code in Current File"
-      },
-      {
-        "command": "groupCode.groupWorkspace",
-        "title": "Group Code in Workspace",
-        "icon": "$(search)"
       },
       {
         "command": "groupCode.scanExternalFolder",
@@ -107,28 +117,21 @@
           "command": "groupCode.addCodeGroupDialog",
           "group": "navigation"
         }
-      ],
-      "explorer/context": [
+      ],      "explorer/context": [],"view/title": [
         {
-          "command": "groupCode.groupWorkspace",
-          "group": "navigation"
-        }
-      ],
-      "view/title": [
+          "command": "groupCode.filterGroups",
+          "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
+          "group": "navigation@0"
+        },
         {
           "command": "groupCode.refreshTreeView",
           "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
-          "group": "navigation"
-        },
-        {
-          "command": "groupCode.groupWorkspace",
-          "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "groupCode.scanExternalFolder",
           "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
-          "group": "navigation"
+          "group": "navigation@3"
         }
       ]
     }

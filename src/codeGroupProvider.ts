@@ -86,6 +86,73 @@ export class CodeGroupProvider implements vscode.Disposable {
         }
     }
 
+    /**
+     * Initialize the workspace by either loading existing groups or scanning for new ones
+     */
+    public async initializeWorkspace(): Promise<void> {
+        try {
+            // First try to load existing groups
+            let loaded = false;
+            const workspaceFolders = getWorkspaceFolders();
+            
+            for (const folder of workspaceFolders) {
+                try {
+                    const groups = await loadCodeGroups(folder);
+                    if (groups) {
+                        // Add loaded groups to our collection
+                        groups.forEach((groupArray, fileType) => {
+                            if (groupArray && groupArray.length > 0) {
+                                this.addGroups(fileType, groupArray);
+                                loaded = true;
+                                
+                                // Update functionalities set
+                                groupArray.forEach(group => {
+                                    if (group && group.functionality) {
+                                        this.functionalities.add(group.functionality);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                } catch (err) {
+                    this.log(`Error loading groups from ${folder}: ${err}`);
+                }
+            }
+
+            // If no groups were loaded, scan the workspace
+            if (!loaded) {
+                this.log('No existing groups found, scanning workspace...');
+                await this.processWorkspace();
+            } else {
+                // Update UI for loaded groups
+                this.updateStatusBar();
+                // Notify listeners that groups have been loaded
+                this.onDidUpdateGroupsEventEmitter.fire();
+            }
+        } catch (err) {
+            this.log(`Error initializing workspace: ${err}`);
+            throw err;
+        }
+    }
+
+    /**
+     * Scan a document for code groups
+     */
+    private async scanDocument(document: vscode.TextDocument): Promise<void> {
+        const fileName = document.fileName;
+        const fileType = getFileType(fileName);
+        
+        if (!fileType || !isSupportedFileType(fileName)) {
+            return;
+        }        // Parse comments and extract functionalities
+        const comments = await parseLanguageSpecificComments(document);
+        const groups = groupCodeByFunctionality(comments);
+        
+        if (groups.length > 0) {
+            this.addGroups(fileType, groups);
+        }
+    }
+
     // Process the active document and extract code groups based on comments
     public async processActiveDocument(): Promise<void> {
         const editor = vscode.window.activeTextEditor;
@@ -370,227 +437,58 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Process all documents in the workspace
-    public async processWorkspace(forceFullScan: boolean = false): Promise<void> {
-        // First clear existing groups
-        this.clearGroups();
-        
-        this.log('Starting workspace scan...');
-        
-        // Delete the .groupcode folder to start fresh if doing a forced scan
-        if (forceFullScan) {
-            try {
-                const workspaceFolders = getWorkspaceFolders();
-                if (workspaceFolders.length > 0) {
-                    const groupCodeDir = workspaceFolders[0].endsWith('/') ? 
-                        `${workspaceFolders[0]}.groupcode` : 
-                        `${workspaceFolders[0]}/.groupcode`;
-                    
-                    if (fs.existsSync(groupCodeDir)) {
-                        fs.rmdirSync(groupCodeDir, { recursive: true });
-                        this.log(`Deleted ${groupCodeDir} for fresh start`);
-                    }
-                }
-            } catch (error) {
-                this.log(`Failed to delete .groupcode directory: ${error}`);
-            }
-        }
-        
-        const workspaceFolders = getWorkspaceFolders();
-        if (workspaceFolders.length === 0) {
-            this.log('No workspace folders found');
-            vscode.window.showInformationMessage('No workspace folders found. Open a folder to scan for code groups.');
+    public async processWorkspace(): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
             return;
         }
-        
-        // Show scanning progress indicator
-        vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: 'Scanning workspace for code groups',
-            cancellable: false
-        }, async (progress) => {
-            // Get ignore patterns first
-            const ignorePatterns = await this.getIgnorePatterns();
 
-            // Convert ignore patterns to VS Code glob patterns
-            const ignoreGlob = ignorePatterns
-                .map(pattern => pattern.startsWith('!') ? pattern : `**/${pattern}`)
-                .join(',');
-
-            // Always process open editors first for immediate feedback
-            const openEditors = vscode.window.visibleTextEditors;
-            this.log(`Processing ${openEditors.length} open editors first`);
-            
-            // Process each open editor that isn't ignored
-            for (const editor of openEditors) {
-                const document = editor.document;
-                const filePath = document.uri.fsPath;
-                
-                if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
-                    this.log(`Skipping ignored open file: ${filePath}`);
-                    continue;
-                }
-                
-                // Get file extension
-                const fileType = getFileType(filePath);
-                
-                progress.report({
-                    message: `Processing open file: ${getFileName(filePath)}`
-                });
-                
-                // Process the document for code groups
-                this.log(`Processing open document ${filePath}`);
-                const codeGroups = parseLanguageSpecificComments(document);
-                
-                if (codeGroups.length > 0) {
-                    this.log(`Found ${codeGroups.length} code groups in ${filePath}`);
-                    
-                    // Add the groups to our collection
-                    this.addGroups(fileType, codeGroups);
-                    
-                    // Update functionalities set
-                    codeGroups.forEach(group => {
-                        if (group && group.functionality) {
-                            this.functionalities.add(group.functionality);
-                        }
-                    });
-                }
-            }
-            
-            // Now scan the rest of the workspace
-            this.log('Performing workspace scan');
-            progress.report({ message: 'Scanning workspace files...' });
-            
-            // First, scan for all files in the workspace to identify which extensions actually exist
-            progress.report({ message: 'Identifying file types in the workspace...' });
-            
-            // Use findFiles API with our converted glob patterns
-            const allFiles = await vscode.workspace.findFiles('**/*.*', `{${ignoreGlob}}`);
-            
-            // Group files by extension
-            const filesByExtension = new Map<string, vscode.Uri[]>();
-            
-            // Additional ignore check for each file
-            for (const file of allFiles) {
-                const filePath = file.fsPath;
-                if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
-                    this.log(`Skipping ignored file: ${filePath}`);
-                    continue;
-                }
-
-                const fileType = getFileType(filePath);
-                if (fileType && isSupportedFileType(fileType)) {
-                    if (!filesByExtension.has(fileType)) {
-                        filesByExtension.set(fileType, []);
-                    }
-                    filesByExtension.get(fileType)!.push(file);
-                }
-            }
-            
-            // Log the extensions found
-            this.log('File types found in the workspace:');
-            filesByExtension.forEach((files, ext) => {
-                this.log(`- ${ext}: ${files.length} files`);
-            });
-            
-            // If no supported files were found, show a message and return
-            if (filesByExtension.size === 0) {
-                this.log('No supported file types found in the workspace');
-                vscode.window.showInformationMessage('No supported files found in the workspace');
-                return;
-            }
-            
-            // Now scan only the files with extensions we actually found
+        try {
+            const files = await vscode.workspace.findFiles('**/*.*', '**/node_modules/**');
             let processedCount = 0;
-            let totalFilesToScan = 0;
-            
-            // Count total files to scan
-            filesByExtension.forEach(files => {
-                totalFilesToScan += files.length;
-            });
-            
-            this.log(`Total files to scan: ${totalFilesToScan}`);
-            
-            // Scan files in batches, grouped by extension for more efficient processing
-            const batchSize = 10;
-            
-            for (const [fileType, files] of filesByExtension.entries()) {
-                this.log(`Scanning ${files.length} ${fileType} files...`);
-                
-                for (let i = 0; i < files.length; i += batchSize) {
-                    const batch = files.slice(i, Math.min(i + batchSize, files.length));
-                    
-                    // Process this batch
-                    for (const fileUri of batch) {
-                        try {
+
+            for (const file of files) {
+                if (isSupportedFileType(file.fsPath)) {
+                    try {
+                        const document = await vscode.workspace.openTextDocument(file);
+                        const fileType = getFileType(file.fsPath);
+                        if (!fileType) continue;
+
+                        const groups = parseLanguageSpecificComments(document);
+                        if (groups.length > 0) {
+                            this.addGroups(fileType, groups);
                             processedCount++;
-                            const filePath = fileUri.fsPath;
-                            
-                            progress.report({
-                                message: `Processing file ${processedCount} of ${totalFilesToScan}: ${getFileName(filePath)}`,
-                                increment: (100 * batch.length) / totalFilesToScan
+
+                            // Update functionalities set
+                            groups.forEach(group => {
+                                if (group && group.functionality) {
+                                    this.functionalities.add(group.functionality);
+                                }
                             });
-                            
-                            // Final check that the file isn't ignored (in case pattern was just added)
-                            if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
-                                this.log(`Skipping ignored file during scan: ${filePath}`);
-                                continue;
-                            }
-                            
-                            // Remove any existing groups for ignored files
-                            const removedAny = this.removeGroupsForFile(filePath);
-                            if (removedAny) {
-                                this.log(`Removed groups for ignored file: ${filePath}`);
-                                continue;
-                            }
-                            
-                            // Open and process the document
-                            const document = await vscode.workspace.openTextDocument(fileUri);
-                            const codeGroups = parseLanguageSpecificComments(document);
-                            
-                            if (codeGroups.length > 0) {
-                                this.log(`Found ${codeGroups.length} code groups in ${filePath}`);
-                                
-                                // Add the groups to our collection
-                                this.addGroups(fileType, codeGroups);
-                                
-                                // Update functionalities set
-                                codeGroups.forEach(group => {
-                                    if (group && group.functionality) {
-                                        this.functionalities.add(group.functionality);
-                                    }
-                                });
-                            }
-                        } catch (error) {
-                            this.log(`Error processing file: ${error}`);
                         }
+                    } catch (err) {
+                        this.log(`Error processing file ${file.fsPath}: ${err}`);
                     }
-                    
-                    // Give UI a chance to update
-                    await new Promise(resolve => setTimeout(resolve, 0));
                 }
             }
-            
-            // Update the status bar
+
+            // Update UI
             this.updateStatusBar();
-            
-            // Save the groups to .groupcode folder
             await this.saveGroups();
-            
-            // Notify listeners that groups have been updated
             this.onDidUpdateGroupsEventEmitter.fire();
-            
-            const functionalityCount = this.functionalities.size;
-            if (functionalityCount > 0) {
-                vscode.window.showInformationMessage(`Found ${functionalityCount} code groups in ${processedCount} files`);
-            } else {
-                vscode.window.showInformationMessage('No code groups found in workspace. Check console for details.');
+
+            if (this.functionalities.size > 0) {
+                vscode.window.showInformationMessage(
+                    `Found ${this.functionalities.size} code groups in ${processedCount} files`
+                );
             }
-        });
+        } catch (err) {
+            this.log(`Error scanning workspace: ${err}`);
+            throw err;
+        }
     }
     
-    /**
-     * Process files in an external folder (outside of the current workspace)
-     */
+    // Process files in an external folder (outside of the current workspace)
     public async processExternalFolder(folderPath: string): Promise<void> {
         if (!folderPath) {
             vscode.window.showErrorMessage('Invalid folder path');

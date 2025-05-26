@@ -27,6 +27,13 @@ export function activate(context: vscode.ExtensionContext) {
     // Create a new instance of our CodeGroupProvider
     codeGroupProvider = new CodeGroupProvider(outputChannel);
     
+    // Load existing groups or scan workspace if none exist
+    codeGroupProvider.initializeWorkspace().then(() => {
+        log('Workspace initialized with code groups');
+    }).catch(err => {
+        log(`Error initializing workspace: ${err}`);
+    });
+    
     // Initialize rating prompt manager
     ratingPromptManager = new RatingPromptManager(context);
     
@@ -45,41 +52,74 @@ export function activate(context: vscode.ExtensionContext) {
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider, outputChannel);
     log('Tree data provider created');
     
-    // Register the tree views with consistent options and explicit logging
-    const treeViewOptions = { 
+    // Create the tree views    // Create both tree views
+    const viewOptions = {
         treeDataProvider: codeGroupTreeProvider,
         showCollapseAll: true
     };
     
-    const treeView = vscode.window.createTreeView('groupCodeExplorer', treeViewOptions);
+    const treeView = vscode.window.createTreeView('groupCodeExplorer', viewOptions);
+    codeGroupTreeProvider.setTreeView(treeView, 'groupCodeExplorer');
     log('Created tree view for groupCodeExplorer');
     
-    const explorerTreeView = vscode.window.createTreeView('groupCodeExplorerView', treeViewOptions);
+    const explorerTreeView = vscode.window.createTreeView('groupCodeExplorerView', viewOptions);
+    codeGroupTreeProvider.setTreeView(explorerTreeView, 'groupCodeExplorerView');
     log('Created tree view for groupCodeExplorerView');
-    
-    // Add visibility change listeners to help debug tree view issues
-    treeView.onDidChangeVisibility(e => {
-        log(`Tree view visibility changed to: ${e.visible}`);
-        if (e.visible) {
-            // Force refresh when tree becomes visible
-            codeGroupTreeProvider.refresh();
-        }
-    });
-    
-    explorerTreeView.onDidChangeVisibility(e => {
-        log(`Explorer tree view visibility changed to: ${e.visible}`);
-        if (e.visible) {
-            // Force refresh when tree becomes visible
-            codeGroupTreeProvider.refresh();
-        }
-    });
-    
-    // Only subscribe to group updates once to refresh the tree view
-    codeGroupProvider.onDidUpdateGroups(() => {
-        log('Groups updated, refreshing tree view');
-        codeGroupTreeProvider.refresh();
-    });
-    
+
+    // Add tree view event handlers
+    context.subscriptions.push(
+        treeView.onDidChangeVisibility(e => {
+            log(`Tree view visibility changed to: ${e.visible}`);
+            if (e.visible) {
+                // Force refresh when tree becomes visible
+                codeGroupTreeProvider.refresh();
+            }
+        }),
+        explorerTreeView.onDidChangeVisibility(e => {
+            log(`Explorer tree view visibility changed to: ${e.visible}`);
+            if (e.visible) {
+                // Force refresh when tree becomes visible
+                codeGroupTreeProvider.refresh();
+            }
+        })
+    );    // Register the filter command to show a search box
+    context.subscriptions.push(
+        vscode.commands.registerCommand('groupCode.filterGroups', async () => {
+            const currentSearch = codeGroupTreeProvider.getCurrentSearch();
+            const query = await vscode.window.showInputBox({
+                placeHolder: 'Search code groups...',
+                prompt: 'Type to filter groups by name, file type, or description',
+                value: currentSearch
+            });
+            
+            if (query !== undefined) { // Only update if user didn't cancel
+                codeGroupTreeProvider.updateSearch(query);
+            }
+        })
+    );
+
+    // Register keypress handler for the tree views
+    context.subscriptions.push(
+        vscode.commands.registerCommand('workbench.action.treeView.handleKeyboardInput', (args) => {
+            if ((args.treeId === 'groupCodeExplorer' || args.treeId === 'groupCodeExplorerView') && args.key) {
+                // Handle backspace
+                if (args.key === 'Backspace') {
+                    const currentSearch = codeGroupTreeProvider.getCurrentSearch();
+                    if (currentSearch.length > 0) {
+                        codeGroupTreeProvider.updateSearch(currentSearch.slice(0, -1));
+                    }
+                    return;
+                }
+                
+                // Handle single character input
+                if (args.key.length === 1) {
+                    const currentSearch = codeGroupTreeProvider.getCurrentSearch();
+                    codeGroupTreeProvider.updateSearch(currentSearch + args.key);
+                }
+            }
+        })
+    );
+
     // Add file system watcher to track file changes on save
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.*');
     
@@ -118,10 +158,10 @@ export function activate(context: vscode.ExtensionContext) {
             await codeGroupProvider.processActiveDocument();
             await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
-        
-        vscode.commands.registerCommand('groupCode.groupWorkspace', async () => {
-            log('Executing command: groupWorkspace');
+          vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {
+            log('Executing command: refreshTreeView');
             await codeGroupProvider.processWorkspace();
+            codeGroupTreeProvider.refresh();
             await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
@@ -211,10 +251,9 @@ export function activate(context: vscode.ExtensionContext) {
                 } catch (error) {
                     log(`Error while trying to release document caches: ${error}`);
                 }
-                
-                log('Starting fresh workspace scan...');
-                // Force a fresh workspace scan ignoring any cached data
-                await codeGroupProvider.processWorkspace(true); // Pass true to force a full scan
+                  log('Starting fresh workspace scan...');
+                // Force a fresh workspace scan
+                await codeGroupProvider.processWorkspace();
                 
                 progress.report({ message: 'Refreshing tree view...' });
                 

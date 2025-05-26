@@ -85,6 +85,9 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     private _onDidChangeTreeData: vscode.EventEmitter<CodeGroupTreeItem | undefined | null> = new vscode.EventEmitter<CodeGroupTreeItem | undefined | null>();
     readonly onDidChangeTreeData: vscode.Event<CodeGroupTreeItem | undefined | null> = this._onDidChangeTreeData.event;
     private outputChannel?: vscode.OutputChannel;
+    private searchFilter: string = '';
+    private mainTreeView?: vscode.TreeView<CodeGroupTreeItem>;
+    private explorerTreeView?: vscode.TreeView<CodeGroupTreeItem>;
 
     constructor(private codeGroupProvider: CodeGroupProvider, outputChannel?: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
@@ -98,6 +101,39 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
         console.log(message);
     }
 
+    setTreeView(view: vscode.TreeView<CodeGroupTreeItem>, viewId: string) {
+        if (viewId === 'groupCodeExplorer') {
+            this.mainTreeView = view;
+        } else if (viewId === 'groupCodeExplorerView') {
+            this.explorerTreeView = view;
+        }
+        view.message = 'Type to filter groups';
+    }
+
+    public updateSearch(query: string): void {
+        this.searchFilter = query.toLowerCase();
+        // Update both tree views
+        if (this.mainTreeView) {
+            this.mainTreeView.message = query ? `Filtered: ${query}` : 'Type to filter groups';
+        }
+        if (this.explorerTreeView) {
+            this.explorerTreeView.message = query ? `Filtered: ${query}` : 'Type to filter groups';
+        }
+        this.refresh();
+    }
+
+    public getCurrentSearch(): string {
+        return this.searchFilter;
+    }
+
+    private matchesSearch(group: CodeGroup): boolean {
+        if (!this.searchFilter) return true;
+        const searchTerm = this.searchFilter.toLowerCase();
+        return group.functionality.toLowerCase().includes(searchTerm) ||
+            (group.description?.toLowerCase().includes(searchTerm) ?? false) ||
+            group.filePath.toLowerCase().includes(searchTerm);
+    }
+
     refresh(): void {
         this.log('Tree view refresh triggered');
         this._onDidChangeTreeData.fire(null);
@@ -107,138 +143,64 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
         return element;
     }
 
-    getChildren(element?: CodeGroupTreeItem): Thenable<CodeGroupTreeItem[]> {
+    async getChildren(element?: CodeGroupTreeItem): Promise<CodeGroupTreeItem[]> {
         try {
-            // Root level - Show functionalities
             if (!element) {
-                const functionalities = this.codeGroupProvider.getFunctionalities();
-                this.log(`Tree view root: Found ${functionalities.length} functionalities`);
+                // Root level - get all functionalities
+                const groups = await this.codeGroupProvider.getAllGroups();
+                const filteredGroups = groups.filter(g => this.matchesSearch(g));
+                const functionalities = [...new Set(filteredGroups.map(g => g.functionality))];
                 
-                if (functionalities.length === 0) {
-                    return Promise.resolve([
-                        new CodeGroupTreeItem(
-                            'No code groups found. Add special comments to your code.',
-                            vscode.TreeItemCollapsibleState.None,
-                            CodeGroupTreeItemType.CodeGroup
-                        )
-                    ]);
-                }
-                
-                // Sort functionalities alphabetically
-                const sortedFunctionalities = functionalities.sort((a, b) => 
-                    a.toLowerCase().localeCompare(b.toLowerCase())
-                );
-                
-                return Promise.resolve(
-                    sortedFunctionalities.map(functionality => 
-                        new CodeGroupTreeItem(
-                            functionality,
-                            vscode.TreeItemCollapsibleState.Collapsed,
-                            CodeGroupTreeItemType.Functionality,
-                            functionality
-                        )
-                    )
-                );
+                return functionalities.map(func => new CodeGroupTreeItem(
+                    func,
+                    vscode.TreeItemCollapsibleState.Expanded,
+                    CodeGroupTreeItemType.Functionality,
+                    func
+                ));
             }
-            
-            // Functionality level - Show file types
-            if (element.type === CodeGroupTreeItemType.Functionality && element.functionality) {
-                const functionalityGroups = this.codeGroupProvider.getFunctionalityGroups(element.functionality);
-                
-                if (functionalityGroups.size === 0) {
-                    return Promise.resolve([]);
-                }
-                
-                // Group by file type
-                const fileTypes: string[] = [];
-                functionalityGroups.forEach((groups, fileType) => {
-                    if (!fileTypes.includes(fileType)) {
-                        fileTypes.push(fileType);
-                    }
-                });
-                
-                // Sort file types alphabetically
-                const sortedFileTypes = fileTypes.sort();
-                
-                // Create tree items for each file type
-                return Promise.resolve(
-                    sortedFileTypes.map(fileType => {
-                        const groups = functionalityGroups.get(fileType) || [];
-                        // More concise label format that doesn't repeat the file extension which is already shown in the icon
-                        const label = `${groups.length} ${groups.length === 1 ? 'item' : 'items'}`;
-                        
-                        return new CodeGroupTreeItem(
-                            label,
-                            vscode.TreeItemCollapsibleState.Collapsed,
-                            CodeGroupTreeItemType.FileType,
-                            element.functionality,
-                            fileType
-                        );
-                    })
-                );
-            }
-            
-            // File type level - Show individual code groups
-            if (element.type === CodeGroupTreeItemType.FileType && 
-                element.functionality && 
-                element.fileType) {
-                
-                const functionalityGroups = this.codeGroupProvider.getFunctionalityGroups(element.functionality);
-                const fileTypeGroups = functionalityGroups.get(element.fileType) || [];
-                
-                if (fileTypeGroups.length === 0) {
-                    return Promise.resolve([]);
-                }
-                
-                // Sort by filename and line number
-                const sortedGroups = [...fileTypeGroups].sort((a, b) => {
-                    // First by filename
-                    const fileNameA = a.filePath ? getFileName(a.filePath).toLowerCase() : '';
-                    const fileNameB = b.filePath ? getFileName(b.filePath).toLowerCase() : '';
+
+            const allGroups = await this.codeGroupProvider.getAllGroups();
+            const filteredGroups = allGroups.filter(g => this.matchesSearch(g));
+
+            switch (element.type) {
+                case CodeGroupTreeItemType.Functionality: {
+                    // Show file types under functionality
+                    const functionalityGroups = filteredGroups.filter(g => g.functionality === element.functionality);
+                    const fileTypes = [...new Set(functionalityGroups.map(g => {
+                        const ext = g.filePath.split('.').pop() || 'other';
+                        return ext.toLowerCase();
+                    }))];
                     
-                    if (fileNameA !== fileNameB) {
-                        return fileNameA.localeCompare(fileNameB);
-                    }
-                    
-                    // Then by line number
-                    const lineA = a.lineNumbers && a.lineNumbers.length > 0 ? a.lineNumbers[0] : 0;
-                    const lineB = b.lineNumbers && b.lineNumbers.length > 0 ? b.lineNumbers[0] : 0;
-                    return lineA - lineB;
-                });
-                
-                return Promise.resolve(
-                    sortedGroups.map(group => {
-                        let fileName = "Unknown";
-                        if (group.filePath) {
-                            fileName = getFileName(group.filePath);
-                        }
-                        
-                        const lineNumber = group.lineNumbers && group.lineNumbers.length > 0
-                            ? group.lineNumbers[0]
-                            : 1;
-                        
-                        return new CodeGroupTreeItem(
-                            `${fileName} (Line ${lineNumber})`,
+                    return fileTypes.map(fileType => new CodeGroupTreeItem(
+                        fileType,
+                        vscode.TreeItemCollapsibleState.Expanded,
+                        CodeGroupTreeItemType.FileType,
+                        element.functionality,
+                        fileType
+                    ));
+                }
+
+                case CodeGroupTreeItemType.FileType: {
+                    // Show groups for this file type
+                    return filteredGroups
+                        .filter(g => g.functionality === element.functionality &&
+                                   (g.filePath.split('.').pop() || 'other').toLowerCase() === element.fileType)
+                        .map(group => new CodeGroupTreeItem(
+                            getFileName(group.filePath),
                             vscode.TreeItemCollapsibleState.None,
                             CodeGroupTreeItemType.CodeGroup,
                             element.functionality,
                             element.fileType,
                             group
-                        );
-                    })
-                );
+                        ));
+                }
+
+                default:
+                    return [];
             }
-            
-            return Promise.resolve([]);
         } catch (error) {
-            this.log(`Error in getChildren: ${error}`);
-            return Promise.resolve([
-                new CodeGroupTreeItem(
-                    'Error loading code groups. Check logs for details.',
-                    vscode.TreeItemCollapsibleState.None,
-                    CodeGroupTreeItemType.CodeGroup
-                )
-            ]);
+            this.log(`Error getting children: ${error}`);
+            return [];
         }
     }
 }

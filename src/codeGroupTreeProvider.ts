@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroup } from './groupDefinition';
 import { getFileName } from './utils/fileUtils';
+import logger from './utils/logger';
 
 /**
  * Represents the different types of tree items in the code group explorer
@@ -84,21 +85,12 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
 export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<CodeGroupTreeItem | undefined | null> = new vscode.EventEmitter<CodeGroupTreeItem | undefined | null>();
     readonly onDidChangeTreeData: vscode.Event<CodeGroupTreeItem | undefined | null> = this._onDidChangeTreeData.event;
-    private outputChannel?: vscode.OutputChannel;
     private searchFilter: string = '';
     private mainTreeView?: vscode.TreeView<CodeGroupTreeItem>;
     private explorerTreeView?: vscode.TreeView<CodeGroupTreeItem>;
 
-    constructor(private codeGroupProvider: CodeGroupProvider, outputChannel?: vscode.OutputChannel) {
-        this.outputChannel = outputChannel;
-        this.log('CodeGroupTreeProvider initialized');
-    }
-
-    private log(message: string) {
-        if (this.outputChannel) {
-            this.outputChannel.appendLine(message);
-        }
-        console.log(message);
+    constructor(private codeGroupProvider: CodeGroupProvider) {
+        logger.info('CodeGroupTreeProvider initialized');
     }
 
     setTreeView(view: vscode.TreeView<CodeGroupTreeItem>, viewId: string) {
@@ -135,7 +127,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     }
 
     refresh(): void {
-        this.log('Tree view refresh triggered');
+        logger.info('Tree view refresh triggered');
         this._onDidChangeTreeData.fire(null);
     }
 
@@ -199,7 +191,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                     return [];
             }
         } catch (error) {
-            this.log(`Error getting children: ${error}`);
+            logger.error('Error getting children', error);
             return [];
         }
     }

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import logger from './logger';
 import * as path from 'path';
 import { CodeGroup } from '../groupDefinition';
 import { getFileType } from './fileUtils';
@@ -47,7 +48,7 @@ function loadLanguageConfig(): LanguageConfig {
         
         return languageConfigCache;
     } catch (error) {
-        console.error('Failed to load language configuration:', error);
+        logger.error('Failed to load language configuration:', error);
         
         // Return default configuration in case of error
         return {
@@ -122,11 +123,11 @@ export function parseLanguageSpecificComments(document: vscode.TextDocument): Co
     const langInfo = getLanguageInfoForDocument(document);
     
     if (!langInfo) {
-        console.warn(`No language configuration found for ${document.languageId} / ${document.uri.fsPath}`);
+        logger.warn(`No language configuration found for ${document.languageId} / ${document.uri.fsPath}`);
         return [];
     }
     
-    console.log(`Parsing ${document.uri.fsPath} using configuration for ${langInfo.name}`);
+    logger.debug(`Parsing ${document.uri.fsPath} using configuration for ${langInfo.name}`);
     
     return parseDocumentWithLanguageInfo(document, langInfo);
 }
@@ -141,26 +142,26 @@ function matchCodeGroupPattern(commentLine: string, langInfo: LanguageInfo): Reg
     const patternFlags = config.commentPattern.flags;
     
     // Add detailed logging for debugging
-    console.log(`Trying to match comment line: "${commentLine}"`);
-    console.log(`Using pattern: ${defaultPatternStr} with flags: ${patternFlags}`);
+    logger.debug(`Trying to match comment line: "${commentLine}"`);
+    logger.debug(`Using pattern: ${defaultPatternStr} with flags: ${patternFlags}`);
     
     // Try to match with default pattern first
     const defaultPattern = new RegExp(defaultPatternStr, patternFlags);
     let match = commentLine.match(defaultPattern);
     
     if (match) {
-        console.log(`Match found with default pattern: ${JSON.stringify(match)}`);
+        logger.debug(`Match found with default pattern: ${JSON.stringify(match)}`);
     } else {
-        console.log('No match with default pattern');
+        logger.debug('No match with default pattern');
         
         // If no match with default pattern and we have extra patterns, try those
         if (langInfo.extraPatterns && langInfo.extraPatterns.length > 0) {
             for (const extraPatternStr of langInfo.extraPatterns) {
-                console.log(`Trying extra pattern: ${extraPatternStr}`);
+                logger.debug(`Trying extra pattern: ${extraPatternStr}`);
                 const extraPattern = new RegExp(extraPatternStr, patternFlags);
                 match = commentLine.match(extraPattern);
                 if (match) {
-                    console.log(`Match found with extra pattern: ${JSON.stringify(match)}`);
+                    logger.debug(`Match found with extra pattern: ${JSON.stringify(match)}`);
                     break;
                 }
             }
@@ -181,7 +182,7 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
     
     // Special handling for Python files - try multiple patterns
     if (langInfo.name === "Python") {
-        console.log(`Special handling for Python file: ${filePath}`);
+        logger.debug(`Special handling for Python file: ${filePath}`);
     }
     
     // Process line by line
@@ -199,7 +200,7 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
         if (langInfo.commentMarkers.line && trimmedLine.startsWith(langInfo.commentMarkers.line)) {
             commentLine = trimmedLine.substring(langInfo.commentMarkers.line.length);
             isComment = true;
-            console.log(`Found line comment at start: "${commentLine}"`);
+            logger.debug(`Found line comment at start: "${commentLine}"`);
         } 
         // Check if this is a block comment (single line)
         else if (langInfo.commentMarkers.blockStart && langInfo.commentMarkers.blockEnd && 
@@ -210,7 +211,7 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
                 langInfo.commentMarkers.blockStart.length, 
                 trimmedLine.length - langInfo.commentMarkers.blockEnd.length
             );
-            console.log(`Found block comment: "${commentLine}"`);
+            logger.debug(`Found block comment: "${commentLine}"`);
             isComment = true;
         }
         // Check for inline comments (comments after code on the same line)
@@ -219,7 +220,7 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
             if (lineCommentIndex > 0) {
                 // This is an inline comment
                 commentLine = line.substring(lineCommentIndex + langInfo.commentMarkers.line.length);
-                console.log(`Found inline line comment: "${commentLine}"`);
+                logger.debug(`Found inline line comment: "${commentLine}"`);
                 isComment = true;
             }
         }
@@ -234,7 +235,7 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
                     blockStartIndex + langInfo.commentMarkers.blockStart.length,
                     blockEndIndex
                 );
-                console.log(`Found inline block comment: "${commentLine}"`);
+                logger.debug(`Found inline block comment: "${commentLine}"`);
                 isComment = true;
             }
         }
@@ -248,7 +249,7 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
                 const functionality = match[1].trim().toLowerCase();
                 const description = match[2] ? match[2].trim() : '';
                 
-                console.log(`Found code group: ${functionality} - ${description}`);
+                logger.debug(`Found code group: ${functionality} - ${description}`);
                 
                 // Create new code group
                 const codeGroup: CodeGroup = {

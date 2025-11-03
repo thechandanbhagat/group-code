@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { CodeGroup } from '../groupDefinition';
+import logger from './logger';
 
 export function readFile(filePath: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -26,7 +27,7 @@ export function writeFile(filePath: string, data: string): Promise<void> {
 
 export function getFileType(filePath: string | undefined): string {
     if (!filePath) {
-        console.warn("Received undefined filePath in getFileType()");
+        logger.warn("Received undefined filePath in getFileType()");
         return '';
     }
     
@@ -37,7 +38,7 @@ export function getFileType(filePath: string | undefined): string {
         }
         return '';
     } catch (error) {
-        console.error(`Error in getFileType for path ${filePath}:`, error);
+        logger.error(`Error in getFileType for path ${filePath}:`, error);
         return '';
     }
 }
@@ -45,14 +46,14 @@ export function getFileType(filePath: string | undefined): string {
 export function getFileName(filePath: string | undefined | null): string {
     // Early check for invalid inputs
     if (filePath === undefined || filePath === null || filePath === '') {
-        console.warn("Received undefined or empty filePath in getFileName()");
+        logger.warn("Received undefined or empty filePath in getFileName()");
         return 'Unknown file';
     }
     
     try {
         // Extra safeguard against non-string values
         if (typeof filePath !== 'string') {
-            console.warn(`getFileName received non-string filePath: ${typeof filePath}`);
+            logger.warn(`getFileName received non-string filePath: ${typeof filePath}`);
             return 'Unknown file';
         }
         
@@ -70,7 +71,7 @@ export function getFileName(filePath: string | undefined | null): string {
         // If no slash found, return the whole path as the filename
         return filePath || 'Unknown file';
     } catch (error) {
-        console.error(`Error extracting filename from ${filePath}:`, error);
+        logger.error(`Error extracting filename from ${filePath}:`, error);
         return 'Unknown file';
     }
 }
@@ -175,7 +176,7 @@ export async function ensureGroupCodeDir(workspacePath: string): Promise<string>
             normalizedPath = workspacePath.replace(/\\/g, '/');
         }
     } catch (error) {
-        console.error('Error normalizing path:', error);
+        logger.error('Error normalizing path:', error);
         // Continue with original path
     }
     
@@ -188,10 +189,10 @@ export async function ensureGroupCodeDir(workspacePath: string): Promise<string>
         } catch {
             // Directory doesn't exist, create it
             await fs.promises.mkdir(groupCodeDir, { recursive: true });
-            console.log(`Created .groupcode directory at ${groupCodeDir}`);
+            logger.info(`Created .groupcode directory at ${groupCodeDir}`);
         }
     } catch (error) {
-        console.error(`Error with .groupcode directory: ${error}`);
+        logger.error(`Error with .groupcode directory: ${error}`);
         throw error;
     }
     
@@ -244,7 +245,7 @@ export async function saveCodeGroups(
         );
         
     } catch (error) {
-        console.error(`Error saving code groups: ${error}`);
+        logger.error(`Error saving code groups: ${error}`);
         throw error;
     }
 }
@@ -284,7 +285,7 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
         
         return fileTypeGroups;
     } catch (error) {
-        console.error(`Error loading code groups: ${error}`);
+        logger.error(`Error loading code groups: ${error}`);
         return null;
     }
 }
@@ -298,7 +299,7 @@ export function getWorkspaceFolders(): string[] {
         if (!vscode.workspace.workspaceFolders || 
             !Array.isArray(vscode.workspace.workspaceFolders) || 
             vscode.workspace.workspaceFolders.length === 0) {
-            console.warn('No workspace folders found');
+            logger.warn('No workspace folders found');
             return [];
         }
         
@@ -307,14 +308,14 @@ export function getWorkspaceFolders(): string[] {
         for (const folder of vscode.workspace.workspaceFolders) {
             try {
                 if (!folder || !folder.uri || !folder.uri.fsPath) {
-                    console.warn('Invalid workspace folder encountered');
+                    logger.warn('Invalid workspace folder encountered');
                     continue;
                 }
                 
                 const path = folder.uri.fsPath;
                 
                 if (typeof path !== 'string') {
-                    console.warn(`Workspace folder path is not a string: ${typeof path}`);
+                    logger.warn(`Workspace folder path is not a string: ${typeof path}`);
                     continue;
                 }
                 
@@ -322,14 +323,14 @@ export function getWorkspaceFolders(): string[] {
                 const normalizedPath = path.replace ? path.replace(/\\/g, '/') : path;
                 safeFolders.push(normalizedPath);
             } catch (innerError) {
-                console.error('Error processing workspace folder:', innerError);
+                logger.error('Error processing workspace folder:', innerError);
                 // Continue to the next folder
             }
         }
         
         return safeFolders;
     } catch (error) {
-        console.error('Error in getWorkspaceFolders:', error);
+        logger.error('Error in getWorkspaceFolders:', error);
         return [];
     }
 }

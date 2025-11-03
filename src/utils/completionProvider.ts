@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { CodeGroupProvider } from '../codeGroupProvider';
 import * as path from 'path';
 import * as fs from 'fs';
+import logger from './logger';
 
 export class GroupCompletionProvider implements vscode.CompletionItemProvider {
     private readonly triggerCharacters = ['@', ' '];
@@ -19,7 +20,7 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
             const configContent = fs.readFileSync(configPath, 'utf8');
             this.languageConfig = JSON.parse(configContent);
         } catch (error) {
-            console.error('Error loading language config:', error);
+            logger.error('Error loading language config', error);
         }
     }
 

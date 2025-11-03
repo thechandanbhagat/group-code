@@ -11,36 +11,27 @@ import {
     getFileName,
     isSupportedFileType
 } from './utils/fileUtils';
+import logger from './utils/logger';
 
 export class CodeGroupProvider implements vscode.Disposable {
     private groups: Map<string, CodeGroup[]> = new Map();
     private functionalities: Set<string> = new Set();
     private statusBarItem: vscode.StatusBarItem;
     private onDidUpdateGroupsEventEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
-    private outputChannel?: vscode.OutputChannel;
     private lastSaveTime: number = Date.now();
     private saveThrottleTime: number = 1000; // Wait at least 1 second between saves
     
     // Event that fires whenever code groups are updated
     public readonly onDidUpdateGroups: vscode.Event<void> = this.onDidUpdateGroupsEventEmitter.event;
     
-    constructor(outputChannel?: vscode.OutputChannel) {
-        this.outputChannel = outputChannel;
+    constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
         this.statusBarItem.text = "$(map) Group Code"; // Changed from "Code Compass" to "Group Code"
         this.statusBarItem.tooltip = "View and navigate code functionalities";
         this.statusBarItem.command = "groupCode.showGroups"; // Updated command prefix
         this.statusBarItem.show();
         
-        this.log('CodeGroupProvider initialized');
-    }
-    
-    // Helper method for logging
-    private log(message: string) {
-        if (this.outputChannel) {
-            this.outputChannel.appendLine(message);
-        }
-        console.log(message);
+        logger.info('CodeGroupProvider initialized');
     }
     
     public dispose() {
@@ -115,13 +106,13 @@ export class CodeGroupProvider implements vscode.Disposable {
                         });
                     }
                 } catch (err) {
-                    this.log(`Error loading groups from ${folder}: ${err}`);
+                    logger.error('Error loading groups from folder', err);
                 }
             }
 
             // If no groups were loaded, scan the workspace
             if (!loaded) {
-                this.log('No existing groups found, scanning workspace...');
+                logger.info('No existing groups found, scanning workspace...');
                 await this.processWorkspace();
             } else {
                 // Update UI for loaded groups
@@ -130,7 +121,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                 this.onDidUpdateGroupsEventEmitter.fire();
             }
         } catch (err) {
-            this.log(`Error initializing workspace: ${err}`);
+            logger.error('Error initializing workspace', err);
             throw err;
         }
     }
@@ -157,7 +148,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     public async processActiveDocument(): Promise<void> {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
-            this.log('No active editor found');
+            logger.info('No active editor found');
             return;
         }
         
@@ -167,7 +158,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         // Get file type safely
         const fileType = getFileType(filePath);
         
-        this.log(`Processing active document: ${filePath} (${fileType})`);
+        logger.info(`Processing active document: ${filePath} (${fileType})`);
         
         // Parse the document for code groups
         const codeGroups = parseLanguageSpecificComments(document);
@@ -191,7 +182,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         // Notify listeners that groups have been updated
         this.onDidUpdateGroupsEventEmitter.fire();
         
-        this.log(`Found ${codeGroups.length} code groups in ${filePath}`);
+        logger.info(`Found ${codeGroups.length} code groups in ${filePath}`);
         vscode.window.showInformationMessage(`Found ${codeGroups.length} code groups in ${getFileName(filePath)}`);
     }
     
@@ -211,25 +202,25 @@ export class CodeGroupProvider implements vscode.Disposable {
             // Check if file should be ignored
             const ignorePatterns = await this.getIgnorePatterns();
             if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
-                this.log(`Skipping ignored file: ${filePath}`);
+                logger.info(`Skipping ignored file: ${filePath}`);
                 // Remove any existing groups for this file since it's now ignored
                 const removedAny = this.removeGroupsForFile(filePath);
                 if (removedAny) {
-                    this.log(`Removed groups for ignored file: ${filePath}`);
+                    logger.info(`Removed groups for ignored file: ${filePath}`);
                     await this.saveGroups();
                     this.onDidUpdateGroupsEventEmitter.fire();
                 }
                 return;
             }
             
-            this.log(`Processing saved file: ${filePath}`);
+            logger.info(`Processing saved file: ${filePath}`);
             
             // Parse the document for code groups
             const codeGroups = parseLanguageSpecificComments(document);
             
             // If we found code groups, update the collection
             if (codeGroups.length > 0) {
-                this.log(`Found ${codeGroups.length} code groups in saved file`);
+                logger.info(`Found ${codeGroups.length} code groups in saved file`);
                 
                 // First, remove any existing groups for this file
                 this.removeGroupsForFile(filePath);
@@ -258,13 +249,13 @@ export class CodeGroupProvider implements vscode.Disposable {
                 const removedAny = this.removeGroupsForFile(filePath);
                 
                 if (removedAny) {
-                    this.log(`Removed groups for file that no longer has any: ${filePath}`);
+                    logger.info(`Removed groups for file that no longer has any: ${filePath}`);
                     await this.saveGroups();
                     this.onDidUpdateGroupsEventEmitter.fire();
                 }
             }
         } catch (error) {
-            this.log(`Error processing file on save: ${error}`);
+            logger.error('Error processing file on save', error);
         }
     }
     
@@ -362,7 +353,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                 const regex = this.gitignorePatternToRegex(pattern);
                 return regex.test(normalizedPath);
             } catch (error) {
-                this.log(`Error in ignore pattern ${pattern}: ${error}`);
+                logger.error('Error in ignore pattern', error);
                 return false;
             }
         });
@@ -399,13 +390,13 @@ export class CodeGroupProvider implements vscode.Disposable {
                         }
                     }
                     
-                    this.log(`Loaded ${gitignoreLines.length} patterns from .gitignore in ${folderPath}`);
+                    logger.info(`Loaded ${gitignoreLines.length} patterns from .gitignore in ${folderPath}`);
                 } catch (error) {
                     // No .gitignore file, use default patterns
-                    this.log(`No .gitignore file found in ${folderPath}, using default ignore patterns`);
+                    logger.info(`No .gitignore file found in ${folderPath}, using default ignore patterns`);
                 }
             } catch (error) {
-                this.log(`Error reading .gitignore file: ${error}`);
+                logger.error('Error reading .gitignore file', error);
             }
         }
         
@@ -467,7 +458,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                             });
                         }
                     } catch (err) {
-                        this.log(`Error processing file ${file.fsPath}: ${err}`);
+                        logger.error('Error processing file', err);
                     }
                 }
             }
@@ -483,7 +474,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                 );
             }
         } catch (err) {
-            this.log(`Error scanning workspace: ${err}`);
+            logger.error('Error scanning workspace', err);
             throw err;
         }
     }
@@ -495,7 +486,7 @@ export class CodeGroupProvider implements vscode.Disposable {
             return;
         }
         
-        this.log(`Processing external folder: ${folderPath}`);
+        logger.info(`Processing external folder: ${folderPath}`);
         
         // First clear existing groups to avoid mixing results
         this.clearGroups();
@@ -531,14 +522,14 @@ export class CodeGroupProvider implements vscode.Disposable {
                     });
                     
                     // Log the extensions found
-                    this.log('File types found in the external folder:');
+                    logger.info('File types found in the external folder:');
                     filesByExtension.forEach((files, ext) => {
-                        this.log(`- ${ext}: ${files.length} files`);
+                        logger.info(`- ${ext}: ${files.length} files`);
                     });
                     
                     // If no supported files were found, show a message and return
                     if (filesByExtension.size === 0) {
-                        this.log('No supported file types found in the external folder');
+                        logger.info('No supported file types found in the external folder');
                         vscode.window.showInformationMessage('No supported files found in the external folder');
                         return;
                     }
@@ -552,13 +543,13 @@ export class CodeGroupProvider implements vscode.Disposable {
                         totalFilesToScan += files.length;
                     });
                     
-                    this.log(`Total files to scan in external folder: ${totalFilesToScan}`);
+                    logger.info(`Total files to scan in external folder: ${totalFilesToScan}`);
                     
                     // Scan files in batches, grouped by extension for more efficient processing
                     const batchSize = 10;
                     
                     for (const [fileType, files] of filesByExtension.entries()) {
-                        this.log(`Scanning ${files.length} ${fileType} files in external folder...`);
+                        logger.info(`Scanning ${files.length} ${fileType} files in external folder...`);
                         
                         for (let i = 0; i < files.length; i += batchSize) {
                             const batch = files.slice(i, Math.min(i + batchSize, files.length));
@@ -576,7 +567,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                                     
                                     // Double-check file isn't ignored
                                     if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
-                                        this.log(`Skipping ignored file during external scan: ${filePath}`);
+                                        logger.info(`Skipping ignored file during external scan: ${filePath}`);
                                         continue;
                                     }
                                     
@@ -586,7 +577,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                                         const codeGroups = parseLanguageSpecificComments(document);
                                         
                                         if (codeGroups.length > 0) {
-                                            this.log(`Found ${codeGroups.length} code groups in ${filePath}`);
+                                            logger.info(`Found ${codeGroups.length} code groups in ${filePath}`);
                                             
                                             // Add the groups to our collection
                                             this.addGroups(fileType, codeGroups);
@@ -599,10 +590,10 @@ export class CodeGroupProvider implements vscode.Disposable {
                                             });
                                         }
                                     } catch (docError) {
-                                        this.log(`Error opening document ${filePath}: ${docError}`);
+                                        logger.error('Error opening document', docError);
                                     }
                                 } catch (error) {
-                                    this.log(`Error processing file: ${error}`);
+                                    logger.error('Error processing file', error);
                                 }
                             }
                             
@@ -627,11 +618,11 @@ export class CodeGroupProvider implements vscode.Disposable {
                         vscode.window.showInformationMessage('No code groups found in external folder. Check console for details.');
                     }
                 } catch (scanError) {
-                    this.log(`Error scanning for files in external folder: ${scanError}`);
+                    logger.error('Error scanning for files in external folder', scanError);
                     vscode.window.showErrorMessage(`Error scanning files in external folder: ${scanError}`);
                 }
             } catch (error) {
-                this.log(`Error scanning external folder: ${error}`);
+                logger.error('Error scanning external folder', error);
                 vscode.window.showErrorMessage(`Error scanning external folder: ${error}`);
             }
         });
@@ -642,7 +633,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         const codeGroups: CodeGroup[] = [];
         const lines = content.split('\n');
         
-        this.log(`MANUAL PYTHON PARSING: ${filePath}`);
+        logger.info(`MANUAL PYTHON PARSING: ${filePath}`);
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -655,7 +646,7 @@ export class CodeGroupProvider implements vscode.Disposable {
             
             // Python login special case if all else fails
             if (line.toLowerCase().includes('login') && line.startsWith('#')) {
-                this.log(`Special case - found login in Python: ${line}`);
+                logger.info(`Special case - found login in Python: ${line}`);
                 codeGroups.push({
                     functionality: 'login',
                     description: 'login in python',
@@ -667,7 +658,7 @@ export class CodeGroupProvider implements vscode.Disposable {
             
             // Check for Python code groups - ANY line starting with # and containing *
             if (line.startsWith('#') && line.includes('*')) {
-                this.log(`Potential Python code group found: ${line}`);
+                logger.info(`Potential Python code group found: ${line}`);
                 
                 // First try normal regex pattern
                 const regex = /#\s*\*\s*(.*?)(?:\s*:\s*(.*?))?$/i;
@@ -689,7 +680,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                     const functionality = (match[1] || 'Unnamed Group').trim().toLowerCase();
                     const description = (match[2] || '').trim();
                     
-                    this.log(`Found Python code group: functionality="${functionality}", description="${description}"`);
+                    logger.info(`Found Python code group: functionality="${functionality}", description="${description}"`);
                     
                     codeGroups.push({
                         functionality: functionality,
@@ -698,7 +689,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                         filePath: filePath
                     });
                 } else {
-                    this.log(`Failed to parse Python code group: ${line}`);
+                    logger.info(`Failed to parse Python code group: ${line}`);
                 }
             }
         }
@@ -716,7 +707,7 @@ export class CodeGroupProvider implements vscode.Disposable {
             const now = Date.now();
             if (now - this.lastSaveTime < this.saveThrottleTime) {
                 // Skip this save call if it's too soon after the last one
-                this.log(`Throttling save request - only ${now - this.lastSaveTime}ms since last save`);
+                logger.info(`Throttling save request - only ${now - this.lastSaveTime}ms since last save`);
                 return;
             }
             
@@ -724,17 +715,17 @@ export class CodeGroupProvider implements vscode.Disposable {
             const targetFolder = folderPath || (workspaceFolders.length > 0 ? workspaceFolders[0] : undefined);
             
             if (!targetFolder) {
-                this.log('No target folder provided for saving code groups');
+                logger.info('No target folder provided for saving code groups');
                 return;
             }
             
-            this.log(`Saving code groups to ${targetFolder}`);
+            logger.info(`Saving code groups to ${targetFolder}`);
             await saveCodeGroups(targetFolder, this.groups);
             
             // Update last save time
             this.lastSaveTime = Date.now();
         } catch (error) {
-            this.log(`Error saving code groups: ${error}`);
+            logger.error('Error saving code groups', error);
         }
     }
     
@@ -805,7 +796,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         try {
             // Validate group object
             if (!group || !group.filePath) {
-                this.log('Invalid group object');
+                logger.info('Invalid group object');
                 vscode.window.showErrorMessage('Unable to navigate to group: invalid group data');
                 return;
             }
@@ -822,7 +813,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                 );
             }
         } catch (error) {
-            this.log(`Error navigating to group: ${error}`);
+            logger.error('Error navigating to group', error);
             vscode.window.showErrorMessage(`Unable to navigate to the group in ${group.filePath}`);
         }
     }
@@ -841,7 +832,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         functionalityGroups.forEach((groups, fileType) => {
             groups.forEach(group => {
                 if (!group || !group.filePath) {
-                    this.log('Invalid group found');
+                    logger.info('Invalid group found');
                     return;
                 }
                 

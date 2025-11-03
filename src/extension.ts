@@ -3,35 +3,25 @@ import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvider';
 import { GroupCompletionProvider } from './utils/completionProvider';
 import { RatingPromptManager } from './utils/ratingPrompt';
+import logger from './utils/logger';
 
-// Create an output channel for logging
-let outputChannel: vscode.OutputChannel;
 let codeGroupProvider: CodeGroupProvider;
 let ratingPromptManager: RatingPromptManager;
 
-// Helper function for logging
-function log(message: string) {
-    if (outputChannel) {
-        outputChannel.appendLine(message);
-    }
-    console.log(message);
-}
-
 export function activate(context: vscode.ExtensionContext) {
-    // Initialize the output channel
-    outputChannel = vscode.window.createOutputChannel('Group Code');
-    context.subscriptions.push(outputChannel);
+    // Register logger for disposal
+    context.subscriptions.push(logger);
     
-    log('Group Code is now active');
+    logger.info('Group Code is now active');
     
     // Create a new instance of our CodeGroupProvider
-    codeGroupProvider = new CodeGroupProvider(outputChannel);
+    codeGroupProvider = new CodeGroupProvider();
     
     // Load existing groups or scan workspace if none exist
     codeGroupProvider.initializeWorkspace().then(() => {
-        log('Workspace initialized with code groups');
+        logger.info('Workspace initialized with code groups');
     }).catch(err => {
-        log(`Error initializing workspace: ${err}`);
+        logger.error('Error initializing workspace', err);
     });
     
     // Initialize rating prompt manager
@@ -49,8 +39,8 @@ export function activate(context: vscode.ExtensionContext) {
     );
     
     // Create the tree data provider with explicit logging for debugging
-    const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider, outputChannel);
-    log('Tree data provider created');
+    const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider);
+    logger.info('Tree data provider created');
     
     // Create the tree views    // Create both tree views
     const viewOptions = {
@@ -60,23 +50,23 @@ export function activate(context: vscode.ExtensionContext) {
     
     const treeView = vscode.window.createTreeView('groupCodeExplorer', viewOptions);
     codeGroupTreeProvider.setTreeView(treeView, 'groupCodeExplorer');
-    log('Created tree view for groupCodeExplorer');
+    logger.info('Created tree view for groupCodeExplorer');
     
     const explorerTreeView = vscode.window.createTreeView('groupCodeExplorerView', viewOptions);
     codeGroupTreeProvider.setTreeView(explorerTreeView, 'groupCodeExplorerView');
-    log('Created tree view for groupCodeExplorerView');
+    logger.info('Created tree view for groupCodeExplorerView');
 
     // Add tree view event handlers
     context.subscriptions.push(
         treeView.onDidChangeVisibility(e => {
-            log(`Tree view visibility changed to: ${e.visible}`);
+            logger.debug(`Tree view visibility changed to: ${e.visible}`);
             if (e.visible) {
                 // Force refresh when tree becomes visible
                 codeGroupTreeProvider.refresh();
             }
         }),
         explorerTreeView.onDidChangeVisibility(e => {
-            log(`Explorer tree view visibility changed to: ${e.visible}`);
+            logger.debug(`Explorer tree view visibility changed to: ${e.visible}`);
             if (e.visible) {
                 // Force refresh when tree becomes visible
                 codeGroupTreeProvider.refresh();
@@ -124,7 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.*');
     
     fileWatcher.onDidChange(async (uri) => {
-        log(`File changed: ${uri.fsPath}`);
+        logger.info(`File changed: ${uri.fsPath}`);
         // Process the changed file if it might contain code groups
         const document = await vscode.workspace.openTextDocument(uri);
         await codeGroupProvider.processFileOnSave(document);
@@ -133,7 +123,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Save data when workspace is about to close
     context.subscriptions.push(
         vscode.workspace.onWillSaveTextDocument(async (e) => {
-            log(`File will be saved: ${e.document.uri.fsPath}`);
+            logger.info(`File will be saved: ${e.document.uri.fsPath}`);
             // Add a save task to the will-save event
             e.waitUntil(Promise.resolve([])); // No edits needed, just want to trigger the event
             await codeGroupProvider.processFileOnSave(e.document);
@@ -142,7 +132,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.onDidChangeWindowState(async (e) => {
             if (!e.focused) {
                 // Window lost focus, save state
-                log('Window lost focus, saving state...');
+                logger.info('Window lost focus, saving state...');
                 await codeGroupProvider.saveGroups();
             }
         })
@@ -154,19 +144,19 @@ export function activate(context: vscode.ExtensionContext) {
     // Register our commands
     context.subscriptions.push(
         vscode.commands.registerCommand('groupCode.groupCode', async () => {
-            log('Executing command: groupCode');
+            logger.info('Executing command: groupCode');
             await codeGroupProvider.processActiveDocument();
             await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
           vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {
-            log('Executing command: refreshTreeView');
+            logger.info('Executing command: refreshTreeView');
             await codeGroupProvider.processWorkspace();
             codeGroupTreeProvider.refresh();
             await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
         vscode.commands.registerCommand('groupCode.scanExternalFolder', async () => {
-            log('Executing command: scanExternalFolder');
+            logger.info('Executing command: scanExternalFolder');
             // Prompt user to select a folder
             const folderUris = await vscode.window.showOpenDialog({
                 canSelectFiles: false,
@@ -177,7 +167,7 @@ export function activate(context: vscode.ExtensionContext) {
             
             if (folderUris && folderUris.length > 0) {
                 const folderPath = folderUris[0].fsPath;
-                log(`Scanning external folder: ${folderPath}`);
+                logger.info(`Scanning external folder: ${folderPath}`);
                 await codeGroupProvider.processExternalFolder(folderPath);
                 await ratingPromptManager.incrementUsageAndCheckPrompt();
                 codeGroupTreeProvider.refresh();
@@ -185,13 +175,13 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         
         vscode.commands.registerCommand('groupCode.showGroups', async () => {
-            log('Executing command: showGroups');
+            logger.info('Executing command: showGroups');
             codeGroupProvider.showFunctionalities();
             await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
         vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {
-            log('Executing command: refreshTreeView - performing complete rescan');
+            logger.info('Executing command: refreshTreeView - performing complete rescan');
             
             // Show confirmation dialog for full rescan
             const proceed = await vscode.window.showInformationMessage(
@@ -201,7 +191,7 @@ export function activate(context: vscode.ExtensionContext) {
             );
             
             if (proceed !== 'Yes') {
-                log('User cancelled full rescan');
+                logger.info('User cancelled full rescan');
                 return;
             }
             
@@ -226,32 +216,32 @@ export function activate(context: vscode.ExtensionContext) {
                         const groupCodeDir = path.join(rootPath, '.groupcode');
                         
                         if (fs.existsSync(groupCodeDir)) {
-                            log(`Deleting existing .groupcode directory: ${groupCodeDir}`);
+                            logger.info(`Deleting existing .groupcode directory: ${groupCodeDir}`);
                             fs.rmdirSync(groupCodeDir, { recursive: true, force: true });
-                            log('.groupcode directory deleted successfully');
+                            logger.info('.groupcode directory deleted successfully');
                         }
                     }
                 } catch (error) {
-                    log(`Error deleting .groupcode directory: ${error}`);
+                    logger.error('Error deleting .groupcode directory', error);
                 }
                 
                 progress.report({ message: 'Scanning all files in workspace from scratch...' });
                 
                 // Before scanning, close any TextDocuments that might be cached
                 try {
-                    log('Attempting to close any cached text documents...');
+                    logger.info('Attempting to close any cached text documents...');
                     // This won't actually close editor tabs, but will release any document caches
                     // that might be preventing a proper rescan
                     for (const document of vscode.workspace.textDocuments) {
                         if (!document.isClosed && !document.isDirty) {
-                            log(`Releasing cached document: ${document.fileName}`);
+                            logger.info(`Releasing cached document: ${document.fileName}`);
                             // vscode.commands.executeCommand('workbench.action.closeActiveEditor');
                         }
                     }
                 } catch (error) {
-                    log(`Error while trying to release document caches: ${error}`);
+                    logger.error('Error while trying to release document caches', error);
                 }
-                  log('Starting fresh workspace scan...');
+                  logger.info('Starting fresh workspace scan...');
                 // Force a fresh workspace scan
                 await codeGroupProvider.processWorkspace();
                 
@@ -266,12 +256,12 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         
         vscode.commands.registerCommand('groupCode.navigateToGroup', (group) => {
-            log('Executing command: navigateToGroup');
+            logger.info('Executing command: navigateToGroup');
             codeGroupProvider.navigateToGroup(group);
         }),
         
         vscode.commands.registerCommand('groupCode.addCodeGroupDialog', async () => {
-            log('Executing command: addCodeGroupDialog');
+            logger.info('Executing command: addCodeGroupDialog');
             
             // Get current editor
             const editor = vscode.window.activeTextEditor;
@@ -296,7 +286,7 @@ export function activate(context: vscode.ExtensionContext) {
                 });
                 
                 if (!selectedOption) {
-                    log('User cancelled group selection');
+                    logger.info('User cancelled group selection');
                     return;
                 }
                 
@@ -320,7 +310,7 @@ export function activate(context: vscode.ExtensionContext) {
             
             // Check if user cancelled
             if (!selectedGroupName) {
-                log('User cancelled group name input');
+                logger.info('User cancelled group name input');
                 return;
             }
             
@@ -331,7 +321,7 @@ export function activate(context: vscode.ExtensionContext) {
             });
             
             if (description === undefined) {
-                log('User cancelled description input');
+                logger.info('User cancelled description input');
                 return;
             }
             
@@ -422,7 +412,7 @@ export function activate(context: vscode.ExtensionContext) {
                 await vscode.commands.executeCommand('groupCodeExplorer.focus');
             } catch (error) {
                 // Fallback to just showing the panel without focus
-                log(`Could not focus Group Code panel: ${error}`);
+                logger.error('Could not focus Group Code panel', error);
             }
             
             vscode.window.showInformationMessage(`Added code group: ${selectedGroupName}`);
@@ -437,46 +427,41 @@ export function activate(context: vscode.ExtensionContext) {
     );
     
     // Explicitly scan the workspace immediately
-    log('Starting workspace scan on activation');
+    logger.info('Starting workspace scan on activation');
     codeGroupProvider.processWorkspace().then(() => {
-        log('Initial workspace scan completed');
+        logger.info('Initial workspace scan completed');
         codeGroupTreeProvider.refresh(); // Make sure view gets refreshed
     }).catch(error => {
-        log(`Error during initial workspace scan: ${error}`);
+        logger.error('Error during initial workspace scan', error);
     });
     
     // Then initialize to load from cache for future runs
     codeGroupProvider.initialize().then(() => {
-        log('Code Group Provider initialized');
+        logger.info('Code Group Provider initialized');
         // Explicitly refresh the tree view after initialization
         codeGroupTreeProvider.refresh();
     }).catch(error => {
-        log(`Error initializing Code Group Provider: ${error}`);
+        logger.error('Error initializing Code Group Provider', error);
     });
-    
-    // Show the output channel to help with debugging
-    outputChannel.show(true);
 }
 
 export function deactivate() {
-    log('Group Code is now deactivated');
+    logger.info('Group Code is now deactivated');
     
     // Save all code groups data before extension is deactivated
     if (codeGroupProvider) {
-        log('Saving code groups before extension deactivation');
+        logger.info('Saving code groups before extension deactivation');
         
         // Use a synchronous approach for deactivation to ensure it completes
         try {
             // Calling saveGroups directly without awaiting since deactivate isn't async
             codeGroupProvider.saveGroups();
-            log('Successfully saved code groups during deactivation');
+            logger.info('Successfully saved code groups during deactivation');
         } catch (error) {
-            log(`Error saving code groups during deactivation: ${error}`);
+            logger.error('Error saving code groups during deactivation', error);
         }
     }
     
-    // Clean up the output channel
-    if (outputChannel) {
-        outputChannel.dispose();
-    }
+    // Clean up the logger
+    logger.dispose();
 }

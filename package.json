@@ -2,10 +2,10 @@
   "name": "groupcode",
   "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "icon": "resources/compass-icon.png",
   "publisher": "thechandanbhagat",
-  "repository": "https://github.com/thechandanbhagat/code-compass",
+  "repository": "https://github.com/thechandanbhagat/group-code",
   "engines": {
     "vscode": "^1.99.1"
   },
@@ -18,6 +18,7 @@
     "onCommand:groupCode.refreshTreeView",
     "onCommand:groupCode.navigateToGroup",
     "onCommand:groupCode.addCodeGroupDialog",
+    "onLanguageModelTool:groupcode_generate",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -91,7 +92,53 @@
         "command": "groupCode.addCodeGroupDialog",
         "title": "Add Code Group (Dialog)",
         "icon": "$(add)"
+      },
+      {
+        "command": "groupCode.suggestGroupWithAI",
+        "title": "Suggest Code Group with AI",
+        "icon": "$(sparkle)"
       }
+    ],
+    "chatParticipants": [
+      {
+        "id": "groupcode",
+        "name": "groupcode",
+        "description": "Helps you organize and navigate code groups in your workspace",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "generate",
+            "description": "AI-powered: Automatically generate @group comments for the current file"
+          },
+          {
+            "name": "scan",
+            "description": "Scan workspace or current file for code groups"
+          },
+          {
+            "name": "suggest",
+            "description": "Get AI suggestions for grouping selected code"
+          },
+          {
+            "name": "list",
+            "description": "Show all code groups in the workspace"
+          },
+          {
+            "name": "find",
+            "description": "Search for specific code groups"
+          },
+          {
+            "name": "navigate",
+            "description": "Navigate to a specific code group"
+          },
+          {
+            "name": "refresh",
+            "description": "Rescan all files for code groups"
+          }
+        ]
+      }
+    ],
+    "enabledApiProposals": [
+      "languageModels"
     ],
     "keybindings": [
       {
@@ -118,6 +165,10 @@
         },
         {
           "command": "groupCode.addCodeGroupDialog",
+          "group": "navigation"
+        },
+        {
+          "command": "groupCode.suggestGroupWithAI",
           "group": "navigation"
         }
       ],

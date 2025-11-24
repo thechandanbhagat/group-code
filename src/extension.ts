@@ -3,10 +3,15 @@ import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvider';
 import { GroupCompletionProvider } from './utils/completionProvider';
 import { RatingPromptManager } from './utils/ratingPrompt';
+import { copilotIntegration } from './utils/copilotIntegration';
+import { GroupCodeChatParticipant } from './utils/chatParticipant';
+import { AICodeGroupTool, aiCodeGroupToolMetadata } from './utils/aiCodeGroupTool';
 import logger from './utils/logger';
 
 let codeGroupProvider: CodeGroupProvider;
 let ratingPromptManager: RatingPromptManager;
+let chatParticipant: GroupCodeChatParticipant | undefined;
+let aiTool: vscode.Disposable | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     // Register logger for disposal
@@ -55,6 +60,25 @@ export function activate(context: vscode.ExtensionContext) {
     const explorerTreeView = vscode.window.createTreeView('groupCodeExplorerView', viewOptions);
     codeGroupTreeProvider.setTreeView(explorerTreeView, 'groupCodeExplorerView');
     logger.info('Created tree view for groupCodeExplorerView');
+
+    // Initialize GitHub Copilot Chat Participant
+    try {
+        chatParticipant = new GroupCodeChatParticipant(codeGroupProvider, codeGroupTreeProvider);
+        context.subscriptions.push(chatParticipant);
+        logger.info('GitHub Copilot Chat Participant initialized');
+    } catch (error) {
+        logger.warn('Could not initialize chat participant. This feature requires VS Code 1.90.0 or higher with GitHub Copilot installed.', error);
+    }
+
+    // Register AI Code Group Tool for Language Models
+    try {
+        const tool = new AICodeGroupTool();
+        aiTool = vscode.lm.registerTool('groupcode_generate', tool);
+        context.subscriptions.push(aiTool);
+        logger.info('AI Code Group Tool registered for language models');
+    } catch (error) {
+        logger.warn('Could not register AI tool. This feature requires VS Code with language model API support.', error);
+    }
 
     // Add tree view event handlers
     context.subscriptions.push(
@@ -146,12 +170,6 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('groupCode.groupCode', async () => {
             logger.info('Executing command: groupCode');
             await codeGroupProvider.processActiveDocument();
-            await ratingPromptManager.incrementUsageAndCheckPrompt();
-        }),
-          vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {
-            logger.info('Executing command: refreshTreeView');
-            await codeGroupProvider.processWorkspace();
-            codeGroupTreeProvider.refresh();
             await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
@@ -269,6 +287,11 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showErrorMessage('No active editor found. Please open a file first.');
                 return;
             }
+            
+            // Get selected text or current line for AI suggestions
+            const currentSelection = editor.selection;
+            const selectedText = editor.document.getText(currentSelection.isEmpty ? 
+                editor.document.lineAt(currentSelection.start.line).range : currentSelection);
             
             // Get all existing functionality names for autocomplete
             const existingFunctionalities = codeGroupProvider.getFunctionalities();
@@ -416,6 +439,155 @@ export function activate(context: vscode.ExtensionContext) {
             }
             
             vscode.window.showInformationMessage(`Added code group: ${selectedGroupName}`);
+        }),
+        
+        // AI-powered code group suggestion
+        vscode.commands.registerCommand('groupCode.suggestGroupWithAI', async () => {
+            logger.info('Executing command: suggestGroupWithAI');
+            
+            // Get current editor
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor found. Please open a file first.');
+                return;
+            }
+            
+            // Check if Copilot is available
+            if (!await copilotIntegration.isIntegrationAvailable()) {
+                vscode.window.showWarningMessage('GitHub Copilot or Language Model API is not available. Please install GitHub Copilot extension.');
+                return;
+            }
+            
+            // Get selected text or current function/block
+            const selection = editor.selection;
+            const selectedText = editor.document.getText(selection.isEmpty ? 
+                editor.document.lineAt(selection.start.line).range : selection);
+            
+            if (!selectedText || selectedText.trim().length === 0) {
+                vscode.window.showWarningMessage('Please select some code or place cursor on a code block.');
+                return;
+            }
+            
+            // Show progress while getting AI suggestions
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Getting AI suggestions...',
+                cancellable: true
+            }, async (progress, token) => {
+                progress.report({ message: 'Analyzing code...' });
+                
+                // Get AI suggestion for group name
+                const suggestedName = await copilotIntegration.suggestGroupName(selectedText);
+                
+                if (!suggestedName) {
+                    vscode.window.showWarningMessage('Could not generate AI suggestion. Please try again.');
+                    return;
+                }
+                
+                progress.report({ message: 'Generating description...' });
+                
+                // Get AI suggestion for description
+                const suggestedDescription = await copilotIntegration.suggestDescription(selectedText, suggestedName);
+                
+                // Show the suggestions to user
+                const groupName = await vscode.window.showInputBox({
+                    prompt: 'AI suggested group name (you can edit it)',
+                    value: suggestedName,
+                    placeHolder: 'Group name'
+                });
+                
+                if (!groupName) {
+                    return;
+                }
+                
+                const description = await vscode.window.showInputBox({
+                    prompt: 'AI suggested description (you can edit it)',
+                    value: suggestedDescription || '',
+                    placeHolder: 'Description (optional)'
+                });
+                
+                // Insert the code group comment
+                const document = editor.document;
+                const insertPosition = selection.start;
+                const filePath = document.uri.fsPath;
+                const fileExtension = filePath.split('.').pop()?.toLowerCase();
+                
+                let commentPrefix = '';
+                let commentSuffix = '';
+                
+                // Set comment syntax based on file type
+                switch (fileExtension) {
+                    case 'js':
+                    case 'ts':
+                    case 'jsx':
+                    case 'tsx':
+                    case 'css':
+                    case 'scss':
+                    case 'less':
+                    case 'c':
+                    case 'cpp':
+                    case 'cs':
+                    case 'java':
+                    case 'swift':
+                    case 'go':
+                    case 'rust':
+                    case 'kotlin':
+                        commentPrefix = '// @group ';
+                        break;
+                        
+                    case 'py':
+                    case 'gitignore':
+                    case 'yml':
+                    case 'yaml':
+                    case 'bash':
+                    case 'sh':
+                    case 'zsh':
+                    case 'dockerfile':
+                    case 'makefile':
+                    case 'properties':
+                        commentPrefix = '# @group ';
+                        break;
+                        
+                    case 'html':
+                    case 'xml':
+                    case 'svg':
+                        commentPrefix = '<!-- @group ';
+                        commentSuffix = ' -->';
+                        break;
+                        
+                    case 'sql':
+                        commentPrefix = '-- @group ';
+                        break;
+
+                    case 'php':
+                        commentPrefix = '// @group ';
+                        break;
+                        
+                    default:
+                        commentPrefix = '// @group ';
+                        break;
+                }
+                
+                // Create the comment
+                let commentText = `${commentPrefix}${groupName}`;
+                if (description) {
+                    commentText += `: ${description}`;
+                }
+                commentText += commentSuffix;
+                
+                // Insert the comment
+                await editor.edit(editBuilder => {
+                    editBuilder.insert(insertPosition, commentText + '\n');
+                });
+                
+                // Process the document to update the code groups
+                await codeGroupProvider.processActiveDocument();
+                
+                // Refresh the tree view
+                codeGroupTreeProvider.refresh();
+                
+                vscode.window.showInformationMessage(`Added AI-suggested code group: ${groupName}`);
+            });
         })
     );
     

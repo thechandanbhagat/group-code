@@ -133,3 +133,4 @@ dist
 excluded/*
 *.vsix
 website
+exclude

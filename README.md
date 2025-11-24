@@ -6,6 +6,9 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 - **Cross-File Code Organization**: Group related code blocks from different file types under a common functionality
 - **Unified View**: Access all related code sections through the dedicated Group Code Explorer
+- **AI-Powered Code Organization**: Automatically generate code groups using GitHub Copilot integration
+- **Chat Participant Integration**: Interact with code groups directly through GitHub Copilot Chat
+- **Language Model Tool**: AI tool that analyzes and generates group comments for your entire codebase
 - **Extensive Language Support**: Works with 40+ programming languages including JavaScript, TypeScript, Python, C#, Java, Go, HTML, CSS, Ruby, PHP, Rust, and many more
 - **Quick Navigation**: Jump between related code sections with a single click
 - **Automatic Scanning**: Automatically detects code groups in your workspace
@@ -16,6 +19,39 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Inline Documentation**: See where each code group is used while typing
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
+
+## What's New in Version 1.2.0
+
+### AI-Powered Features
+
+- **Automatic Code Group Generation**: Use AI to automatically analyze your code and generate appropriate @group comments
+- **GitHub Copilot Chat Integration**: Interact with your code groups using natural language through @groupcode chat participant
+- **Workspace-Wide Generation**: Process entire workspaces or individual files with a single command
+- **Smart Format Detection**: Automatically detects and fixes incorrect group comment formats
+- **Real-time Tree View Updates**: Tree view refreshes automatically after generating groups
+
+### Chat Participant Commands
+
+Use `@groupcode` in GitHub Copilot Chat with these commands:
+
+- `@groupcode generate` - Auto-generate group comments for current file
+- `@groupcode generate workspace` - Generate groups for entire workspace
+- `@groupcode scan` - Scan workspace for existing code groups
+- `@groupcode scan this file` - Scan only the current file
+- `@groupcode suggest` - Get AI suggestions for selected code
+- `@groupcode list` - Show all code groups in workspace
+- `@groupcode find <name>` - Search for specific code groups
+- `@groupcode navigate to <name>` - Jump to a specific group
+- `@groupcode refresh` - Rescan all files for updates
+- `@groupcode help` - Show all available commands
+
+### Language Model Tool
+
+The extension includes a language model tool (`groupcode_generate`) that can be invoked by GitHub Copilot for:
+
+- **Analyzing** code structure and identifying logical groupings
+- **Generating** complete code with @group comments inserted
+- **Suggesting** group names and descriptions for code snippets
 
 ## Installation
 
@@ -28,22 +64,55 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.1.0.vsix` file included with this extension
+1. Download the `groupcode-1.2.0.vsix` file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
+
+### Requirements for AI Features
+
+To use the AI-powered features, you need:
+
+- **VS Code**: Version 1.90.0 or higher
+- **GitHub Copilot**: Installed and active
+- **GitHub Copilot Subscription**: Active subscription required
 
 ## Getting Started
 
 After installing the extension, you'll see a new Group Code icon in your Activity Bar. The extension will automatically scan your workspace for code groups when you open a folder.
 
+### Quick Start with AI
+
+1. Open a code file or workspace
+2. Open GitHub Copilot Chat
+3. Type: `@groupcode generate`
+4. The AI will analyze your code and add @group comments
+5. Groups automatically appear in the Group Code tree view
+
 ## Usage
 
 ### Creating Code Groups
+
+#### Manual Method
 
 Add special comments to your code using the @group tag:
 ```
 @group GroupName: Description of functionality
 ```
+
+Note: Use a **colon (:)** after the group name, not a dash (-).
+
+#### AI-Assisted Method
+
+Use the chat participant to automatically generate groups:
+
+```
+@groupcode generate              # Generate for current file
+@groupcode generate workspace    # Generate for entire workspace
+```
+
+The AI will analyze your code and add appropriate @group comments in the correct format.
+
+### Code Group Format
 
 The extension automatically recognizes different comment formats based on the file type:
 
@@ -89,11 +158,11 @@ user_role = get_user_role(user_id) # @group Authorization: User permission check
 
 ### Smart Code Completion
 
-The extension now provides even smarter code completion for group tags:
+The extension provides intelligent code completion for group tags:
 
 1. Type `@` in a comment to trigger the group completion
 2. Get suggestions for the `@group` tag format
-3. After typing `@group`, see intelligent suggestions of existing group names
+3. After typing `@group`, see suggestions of existing group names
 4. Get inline documentation showing where each group is used
 5. Maintain consistent naming with smart filtering and sorting
 6. Works in both line comments and block comments
@@ -103,16 +172,9 @@ The completion provider is language-aware and only activates inside valid commen
 
 ### Inline Comment Detection
 
-The extension detects code group patterns in inline comments, which allows you to:
+The extension detects code group patterns in inline comments:
 
-1. **Add code groups to existing code**: Tag important lines without restructuring your code
-2. **Create more targeted groups**: Mark specific lines rather than entire blocks
-3. **Document as you code**: Add functionality markers without breaking your flow
-4. **Stay consistent**: Smart completion helps maintain naming consistency
-
-Example of inline comment detection:
 ```javascript
-// These will all be detected properly:
 const apiKey = process.env.API_KEY; // @group Security: API authentication
 fetchUserData(userId); // @group UserData: Fetch user information
 updateUI(userData); // @group UserInterface: Update display with user data
@@ -122,10 +184,10 @@ updateUI(userData); // @group UserInterface: Update display with user data
 
 #### Using the Explorer
 
-1. Open the Group Code Explorer in one of these ways:
+1. Open the Group Code Explorer:
    - Click on the Group Code icon in the Activity Bar
    - Find "Group Code" in the Explorer view
-   - Open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P) and run "View: Show Group Code"
+   - Command Palette: "View: Show Group Code"
 
 2. Expand a functionality group to see all related code sections
 3. Click on any code section to navigate directly to that file and line
@@ -136,6 +198,16 @@ updateUI(userData); // @group UserInterface: Update display with user data
 2. Select a functionality from the dropdown
 3. Choose which specific code section to navigate to
 
+#### Using Chat Participant
+
+Open GitHub Copilot Chat and use:
+
+```
+@groupcode list                    # Show all groups
+@groupcode find authentication     # Search for groups
+@groupcode navigate to auth        # Jump to a group
+```
+
 ### Available Commands
 
 Access these commands through the Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
@@ -145,6 +217,58 @@ Access these commands through the Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
 - **Scan External Project Folder**: Scan code in a folder outside your workspace
 - **Show Code Groups**: Display the quick picker to navigate between groups
 - **Refresh Code Groups**: Perform a complete rescan of all files
+- **Suggest Code Group with AI**: Get AI-powered suggestions for selected code
+
+## AI Features Deep Dive
+
+### Automatic Code Group Generation
+
+The extension can analyze your code and automatically add @group comments:
+
+**For a single file:**
+```
+@groupcode generate
+```
+
+**For entire workspace:**
+```
+@groupcode generate workspace
+```
+
+The AI will:
+1. Analyze your code structure
+2. Identify logical functional groups
+3. Generate appropriate group names and descriptions
+4. Add @group comments in the correct format
+5. Automatically scan and update the tree view
+
+### Smart Format Detection
+
+If you have existing @group comments with incorrect format (using dash instead of colon), the AI generation will automatically detect and fix them:
+
+```javascript
+// Old format (dash) - will be detected
+// @group Authentication - User login
+
+// Correct format (colon) - what AI generates
+// @group Authentication: User login
+```
+
+Simply run `@groupcode generate workspace` and it will update all files with incorrect formats.
+
+### Language Model Tool
+
+The `groupcode_generate` tool is available for GitHub Copilot to invoke when you ask questions like:
+
+- "Can you organize this code with group comments?"
+- "Add @group comments to help organize this file"
+- "Analyze this code and suggest functional groups"
+
+The tool supports three actions:
+
+- **analyze**: Identify groups without modifying code
+- **generate**: Create code with @group comments inserted
+- **suggest**: Get quick suggestions for selected code
 
 ## Supported Languages
 
@@ -156,22 +280,108 @@ Each language uses its native comment syntax to define code groups.
 
 ## Tips & Best Practices
 
+### General
+
 - **Consistent Naming**: Use the same group name across different files
 - **Descriptive Groups**: Choose meaningful group names that reflect functionality
-- **Hierarchical Organization**: Consider using prefixes like "Auth:" for related groups
-- **Regular Refreshing**: Use the "Refresh Code Groups" command after significant changes
+- **Correct Format**: Always use colon (:) not dash (-) after group name
+- **Regular Refreshing**: The extension auto-refreshes, but you can manually refresh after major changes
 - **External Code**: For monorepos or multi-project setups, use "Scan External Project Folder"
-- **Inline Comments**: Use inline code group comments for pinpointing specific functionality without affecting surrounding code
-- **Mixed Approaches**: Combine standalone comments for major blocks with inline comments for important individual lines
+
+### With AI Features
+
+- **Review Before Applying**: Always review AI-generated groups before accepting
+- **Start Small**: Try AI generation on a single file first to see how it works
+- **Iterative Approach**: Generate, review, adjust, and regenerate if needed
+- **Use Explicit Commands**: Use `@groupcode generate workspace` for clarity
+- **Trust the Format**: AI now generates correct format (colon) automatically
+
+### Code Organization
+
+- **Inline Comments**: Use inline code group comments for pinpointing specific functionality
+- **Mixed Approaches**: Combine standalone comments for major blocks with inline comments for important lines
+- **Hierarchical Organization**: Consider using prefixes like "Auth:" for related groups
 
 ## Troubleshooting
 
+### General Issues
+
 - If groups aren't appearing, try the "Refresh Code Groups" command
-- Ensure comments follow the exact pattern: `@group GroupName: Description`
-- For inline comments, make sure there's a space after the comment marker (e.g., `// @group Group` not `//@group Group`)
+- Ensure comments follow the exact pattern: `@group GroupName: Description` (with colon)
+- For inline comments, make sure there's a space after the comment marker
 - Check the Output panel (View → Output → Group Code) for detailed logs
 - For large workspaces, the initial scan may take a moment to complete
+
+### AI Feature Issues
+
+- **No AI suggestions**: Ensure GitHub Copilot is installed, enabled, and you have an active subscription
+- **Wrong format generated**: Update to latest version (1.2.0+) which uses correct colon format
+- **Tree view not updating**: The extension now auto-refreshes; if issues persist, try manual refresh
+- **Chat participant not showing**: Make sure VS Code is version 1.90.0 or higher
+
+### Format Issues
+
+If you have old groups with dash format (`@group Name - Description`):
+
+1. Run `@groupcode generate workspace`
+2. The AI will detect and regenerate with correct format
+3. Tree view will update automatically
+
+## Data Storage
+
+Code group metadata is stored in the `.groupcode` folder in your workspace root. This folder contains JSON files with:
+
+- Group definitions and descriptions
+- File locations and line numbers
+- Functionality mappings
+
+You can add `.groupcode/` to your `.gitignore` if you don't want to commit this metadata.
+
+## Privacy & Security
+
+- AI features require GitHub Copilot and use its language models
+- Code is processed according to GitHub Copilot's privacy policy
+- No code is stored or transmitted except through GitHub Copilot's standard API
+- The extension respects your .gitignore and doesn't scan ignored files
+
+## Contributing
+
+Found a bug or have a feature request? Please open an issue on the [GitHub repository](https://github.com/thechandanbhagat/group-code).
 
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Changelog
+
+### Version 1.2.0
+
+- Added GitHub Copilot Chat integration with @groupcode participant
+- Added AI-powered automatic code group generation
+- Added language model tool for Copilot integration
+- Added workspace-wide generation support
+- Added smart format detection and auto-correction
+- Added automatic tree view refresh after generation
+- Fixed format to use colon (:) instead of dash (-)
+- Improved scanning performance
+- Enhanced error handling and user feedback
+
+### Version 1.1.0
+
+- Improved language support with 40+ programming languages
+- Enhanced code completion with inline documentation
+- Added support for inline code group comments
+- Better block comment detection
+- Performance optimizations for large workspaces
+- Git-aware file scanning
+
+## Support
+
+For questions, issues, or feature requests:
+
+- GitHub Issues: [group-code/issues](https://github.com/thechandanbhagat/group-code/issues)
+- Documentation: See this README and included guide files
+
+---
+
+**Enjoy organizing your code with AI-powered intelligence!**

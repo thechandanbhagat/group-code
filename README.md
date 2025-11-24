@@ -62,6 +62,12 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 3. Search for "Group Code"
 4. Click Install
 
+### From Open VSX Registry
+
+1. Visit [Open VSX Registry](https://open-vsx.org/extension/thechandanbhagat/groupcode)
+2. Click "Install" or download the extension
+3. Compatible with VS Code, VSCodium, and other Open VSX-based editors
+
 ### Manual Installation
 
 1. Download the `groupcode-1.2.0.vsix` file
@@ -380,6 +386,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 For questions, issues, or feature requests:
 
 - GitHub Issues: [group-code/issues](https://github.com/thechandanbhagat/group-code/issues)
+- Open VSX: [groupcode extension](https://open-vsx.org/extension/thechandanbhagat/groupcode)
 - Documentation: See this README and included guide files
 
 ---

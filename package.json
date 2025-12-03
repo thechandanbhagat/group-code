@@ -150,7 +150,7 @@
         "commands": [
           {
             "name": "generate",
-            "description": "AI-powered: Automatically generate @group comments for the current file"
+            "description": "AI-powered: Add @group comments where missing. Use 'update' to replace existing, 'workspace' for all files"
           },
           {
             "name": "scan",

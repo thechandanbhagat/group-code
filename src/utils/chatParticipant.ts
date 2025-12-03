@@ -362,6 +362,10 @@ export class GroupCodeChatParticipant {
 
     /**
      * Handle generate command - AI-powered group generation
+     * - @groupcode /generate - Add groups only where missing (non-destructive)
+     * - @groupcode /generate update - Replace all groups with fresh AI suggestions (with warning)
+     * - @groupcode /generate workspace - Add groups to all workspace files where missing
+     * - @groupcode /generate workspace update - Replace all groups in workspace (with warning)
      */
     private async handleGenerateCommand(
         request: vscode.ChatRequest,
@@ -370,6 +374,7 @@ export class GroupCodeChatParticipant {
     ): Promise<vscode.ChatResult> {
         const prompt = request.prompt.toLowerCase();
         const isWorkspaceMode = prompt.includes('workspace') || prompt.includes('all files') || prompt.includes('entire project');
+        const isUpdateMode = prompt.includes('update') || prompt.includes('replace') || prompt.includes('refresh');
         const editor = vscode.window.activeTextEditor;
         
         // If no active file and not workspace mode, offer workspace generation
@@ -380,28 +385,30 @@ export class GroupCodeChatParticipant {
             );
             
             if (choice !== 'Yes') {
-                stream.markdown('⚠️ Please open a file first, or use `@groupcode generate workspace` to process all files.\n');
+                stream.markdown('⚠️ Please open a file first, or use `@groupcode /generate workspace` to process all files.\n');
                 return {};
             }
             
-            return await this.handleWorkspaceGeneration(stream, token);
+            return await this.handleWorkspaceGeneration(stream, token, isUpdateMode);
         }
         
         // Workspace mode
         if (isWorkspaceMode) {
-            return await this.handleWorkspaceGeneration(stream, token);
+            return await this.handleWorkspaceGeneration(stream, token, isUpdateMode);
         }
         
         // Single file mode
-        return await this.handleSingleFileGeneration(editor!, stream, token);
+        return await this.handleSingleFileGeneration(editor!, stream, token, isUpdateMode);
     }
 
     /**
      * Generate code groups for entire workspace
+     * @param isUpdateMode If true, replaces existing groups. If false, only adds where missing.
      */
     private async handleWorkspaceGeneration(
         stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
+        token: vscode.CancellationToken,
+        isUpdateMode: boolean = false
     ): Promise<vscode.ChatResult> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         
@@ -438,11 +445,34 @@ export class GroupCodeChatParticipant {
                 return {};
             }
 
-            stream.markdown(`### 🤖 Generating Code Groups for Workspace\n\n`);
+            // Show warning for update mode
+            if (isUpdateMode) {
+                stream.markdown('### ⚠️ Update Mode\n\n');
+                stream.markdown('This will **replace all existing @group comments** with fresh AI-generated ones.\n\n');
+                
+                const proceed = await vscode.window.showWarningMessage(
+                    'Update mode will replace all existing @group comments in the workspace. This cannot be undone. Continue?',
+                    { modal: true },
+                    'Yes, Replace All', 'Cancel'
+                );
+                
+                if (proceed !== 'Yes, Replace All') {
+                    stream.markdown('❌ Operation cancelled.\n');
+                    return {};
+                }
+                
+                stream.markdown('Proceeding with update...\n\n');
+            } else {
+                stream.markdown('### 🤖 Generating Code Groups for Workspace\n\n');
+                stream.markdown('ℹ️ **Add mode:** Only files without @group comments will be processed.\n');
+                stream.markdown('💡 Use `@groupcode /generate workspace update` to replace existing groups.\n\n');
+            }
+
             stream.markdown(`Found **${files.length}** code file(s). Processing...\n\n`);
 
             let processed = 0;
             let modified = 0;
+            let skipped = 0;
             let failed = 0;
 
             for (const file of files) {
@@ -463,18 +493,19 @@ export class GroupCodeChatParticipant {
                         continue;
                     }
 
-                    // Check if file has groups with correct format (colon)
-                    const hasCorrectFormat = /@group\s+[^:]+:\s*.+/i.test(code);
-                    const hasOldFormat = /@group\s+[^-]+-\s*.+/i.test(code);
+                    // Check if file already has @group comments
+                    const hasExistingGroups = /@group\s+.+/i.test(code);
                     
-                    if (hasCorrectFormat && !hasOldFormat) {
-                        // File already has correctly formatted groups
+                    // In add mode (not update), skip files that already have groups
+                    if (hasExistingGroups && !isUpdateMode) {
                         stream.markdown(`- ⏭️ \`${file.fsPath.split(/[\\/]/).pop()}\` - Already has groups, skipping\n`);
+                        skipped++;
                         processed++;
                         continue;
-                    } else if (hasOldFormat) {
-                        // File has old format (dash instead of colon) - regenerate
-                        stream.markdown(`- 🔄 \`${file.fsPath.split(/[\\/]/).pop()}\` - Updating ...\n`);
+                    }
+                    
+                    if (hasExistingGroups && isUpdateMode) {
+                        stream.markdown(`- 🔄 \`${file.fsPath.split(/[\\/]/).pop()}\` - Replacing existing groups...\n`);
                     }
 
                     const language = document.languageId;
@@ -529,7 +560,8 @@ export class GroupCodeChatParticipant {
             stream.markdown(`\n### 📊 Summary\n\n`);
             stream.markdown(`- **Total files:** ${files.length}\n`);
             stream.markdown(`- **Modified:** ${modified}\n`);
-            stream.markdown(`- **Skipped:** ${processed - modified - failed}\n`);
+            stream.markdown(`- **Skipped (already has groups):** ${skipped}\n`);
+            stream.markdown(`- **No groups needed:** ${processed - modified - skipped - failed}\n`);
             stream.markdown(`- **Failed:** ${failed}\n\n`);
             
             if (modified > 0) {
@@ -565,11 +597,13 @@ export class GroupCodeChatParticipant {
 
     /**
      * Generate code groups for a single file
+     * @param isUpdateMode If true, replaces existing groups. If false, only adds if missing.
      */
     private async handleSingleFileGeneration(
         editor: vscode.TextEditor,
         stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
+        token: vscode.CancellationToken,
+        isUpdateMode: boolean = false
     ): Promise<vscode.ChatResult> {
         stream.progress('🤖 Analyzing your code...');
 
@@ -578,10 +612,39 @@ export class GroupCodeChatParticipant {
             const code = editor.document.getText();
             const language = editor.document.languageId;
             const filePath = editor.document.fileName;
+            const fileName = filePath.split(/[\\/]/).pop() || 'file';
 
             if (!code.trim()) {
                 stream.markdown('⚠️ The current file is empty.\n');
                 return {};
+            }
+
+            // Check if file already has @group comments
+            const hasExistingGroups = /@group\s+.+/i.test(code);
+            
+            if (hasExistingGroups && !isUpdateMode) {
+                stream.markdown(`### ⚠️ File Already Has Groups\n\n`);
+                stream.markdown(`\`${fileName}\` already contains @group comments.\n\n`);
+                stream.markdown('**Options:**\n');
+                stream.markdown('- Use `@groupcode /generate update` to replace existing groups\n');
+                stream.markdown('- Use `@groupcode /scan` to refresh the tree view with current groups\n\n');
+                
+                const proceed = await vscode.window.showInformationMessage(
+                    `${fileName} already has @group comments. Replace them?`,
+                    'Yes, Replace', 'Cancel'
+                );
+                
+                if (proceed !== 'Yes, Replace') {
+                    stream.markdown('✅ Keeping existing groups.\n');
+                    return {};
+                }
+                
+                stream.markdown('Proceeding with replacement...\n\n');
+            }
+            
+            if (hasExistingGroups && isUpdateMode) {
+                stream.markdown('### 🔄 Update Mode\n\n');
+                stream.markdown(`Replacing existing @group comments in \`${fileName}\`...\n\n`);
             }
 
             // Use the AI tool to generate grouped code

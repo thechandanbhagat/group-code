@@ -3,12 +3,13 @@ import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroup } from './groupDefinition';
 import { getFileName } from './utils/fileUtils';
 import logger from './utils/logger';
+import { buildHierarchyTree, HierarchyNode, enrichWithHierarchy } from './utils/hierarchyUtils';
 
 /**
  * Represents the different types of tree items in the code group explorer
  */
 enum CodeGroupTreeItemType {
-    Functionality = 'functionality',
+    HierarchyNode = 'hierarchyNode',  // New: Hierarchy level (e.g., "Auth", "Auth > Login")
     FileType = 'fileType',
     CodeGroup = 'codeGroup'
 }
@@ -21,6 +22,7 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly type: CodeGroupTreeItemType,
+        public readonly hierarchyNode?: HierarchyNode,
         public readonly functionality?: string,
         public readonly fileType?: string,
         public readonly codeGroup?: CodeGroup
@@ -32,11 +34,26 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
         
         // Set type-specific properties
         switch (type) {
-            case CodeGroupTreeItemType.Functionality:
-                // Top-level functionality item
-                this.contextValue = 'functionality';
-                this.tooltip = `${functionality} functionality group`;
-                this.iconPath = vscode.ThemeIcon.Folder;
+            case CodeGroupTreeItemType.HierarchyNode:
+                // Hierarchy node (e.g., "Auth", "Login", "Validation")
+                this.contextValue = 'hierarchyNode';
+                if (hierarchyNode) {
+                    const groupCount = this.countGroupsInNode(hierarchyNode);
+                    const childCount = hierarchyNode.children.size;
+                    
+                    this.tooltip = `${hierarchyNode.fullPath}`;
+                    this.description = groupCount > 0 ? `${groupCount} group(s)` : '';
+                    
+                    // Use folder icon for nodes with children, file icon for leaf nodes
+                    if (childCount > 0 || groupCount > 0) {
+                        this.iconPath = new vscode.ThemeIcon(
+                            childCount > 0 ? 'folder' : 'symbol-namespace',
+                            new vscode.ThemeColor('symbolIcon.namespaceForeground')
+                        );
+                    } else {
+                        this.iconPath = vscode.ThemeIcon.Folder;
+                    }
+                }
                 break;
 
             case CodeGroupTreeItemType.FileType:
@@ -46,7 +63,6 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
                     this.tooltip = `${fileType} files for ${functionality}`;
                     
                     // Use the language file icon based on file type
-                    // This tells VS Code to use its built-in file type icons
                     this.resourceUri = vscode.Uri.parse(`file:///dummy/file.${fileType}`);
                     this.iconPath = vscode.ThemeIcon.File;
                 }
@@ -78,6 +94,14 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
                 }
                 break;
         }
+    }
+
+    private countGroupsInNode(node: HierarchyNode): number {
+        let count = node.groups.length;
+        node.children.forEach(child => {
+            count += this.countGroupsInNode(child);
+        });
+        return count;
     }
 }
 
@@ -138,53 +162,94 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     async getChildren(element?: CodeGroupTreeItem): Promise<CodeGroupTreeItem[]> {
         try {
             if (!element) {
-                // Root level - get all functionalities
+                // Root level - build hierarchy tree from all groups
                 const groups = await this.codeGroupProvider.getAllGroups();
                 const filteredGroups = groups.filter(g => this.matchesSearch(g));
-                const functionalities = [...new Set(filteredGroups.map(g => g.functionality))];
                 
-                return functionalities.map(func => new CodeGroupTreeItem(
-                    func,
-                    vscode.TreeItemCollapsibleState.Expanded,
-                    CodeGroupTreeItemType.Functionality,
-                    func
-                ));
+                // Enrich groups with hierarchy information
+                const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
+                
+                // Build hierarchy tree
+                const hierarchyTree = buildHierarchyTree(enrichedGroups);
+                
+                // Convert root nodes to tree items
+                const items: CodeGroupTreeItem[] = [];
+                hierarchyTree.forEach((node, name) => {
+                    items.push(new CodeGroupTreeItem(
+                        name,
+                        vscode.TreeItemCollapsibleState.Expanded,
+                        CodeGroupTreeItemType.HierarchyNode,
+                        node
+                    ));
+                });
+                
+                return items.sort((a, b) => a.label.localeCompare(b.label));
             }
 
             const allGroups = await this.codeGroupProvider.getAllGroups();
             const filteredGroups = allGroups.filter(g => this.matchesSearch(g));
+            const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
 
             switch (element.type) {
-                case CodeGroupTreeItemType.Functionality: {
-                    // Show file types under functionality
-                    const functionalityGroups = filteredGroups.filter(g => g.functionality === element.functionality);
-                    const fileTypes = [...new Set(functionalityGroups.map(g => {
-                        const ext = g.filePath.split('.').pop() || 'other';
-                        return ext.toLowerCase();
-                    }))];
+                case CodeGroupTreeItemType.HierarchyNode: {
+                    if (!element.hierarchyNode) return [];
                     
-                    return fileTypes.map(fileType => new CodeGroupTreeItem(
-                        fileType,
-                        vscode.TreeItemCollapsibleState.Expanded,
-                        CodeGroupTreeItemType.FileType,
-                        element.functionality,
-                        fileType
-                    ));
+                    const items: CodeGroupTreeItem[] = [];
+                    
+                    // Add child hierarchy nodes
+                    element.hierarchyNode.children.forEach((childNode, name) => {
+                        items.push(new CodeGroupTreeItem(
+                            name,
+                            vscode.TreeItemCollapsibleState.Expanded,
+                            CodeGroupTreeItemType.HierarchyNode,
+                            childNode
+                        ));
+                    });
+                    
+                    // If this node has groups (leaf node), show file types
+                    if (element.hierarchyNode.groups.length > 0) {
+                        const fileTypes = [...new Set(element.hierarchyNode.groups.map(g => {
+                            const ext = g.filePath.split('.').pop() || 'other';
+                            return ext.toLowerCase();
+                        }))];
+                        
+                        fileTypes.forEach(fileType => {
+                            items.push(new CodeGroupTreeItem(
+                                fileType,
+                                vscode.TreeItemCollapsibleState.Expanded,
+                                CodeGroupTreeItemType.FileType,
+                                undefined,
+                                element.hierarchyNode!.fullPath,
+                                fileType
+                            ));
+                        });
+                    }
+                    
+                    return items.sort((a, b) => {
+                        // Hierarchy nodes first, then file types
+                        if (a.type === b.type) {
+                            return a.label.localeCompare(b.label);
+                        }
+                        return a.type === CodeGroupTreeItemType.HierarchyNode ? -1 : 1;
+                    });
                 }
 
                 case CodeGroupTreeItemType.FileType: {
                     // Show groups for this file type
-                    return filteredGroups
-                        .filter(g => g.functionality === element.functionality &&
-                                   (g.filePath.split('.').pop() || 'other').toLowerCase() === element.fileType)
-                        .map(group => new CodeGroupTreeItem(
-                            getFileName(group.filePath),
-                            vscode.TreeItemCollapsibleState.None,
-                            CodeGroupTreeItemType.CodeGroup,
-                            element.functionality,
-                            element.fileType,
-                            group
-                        ));
+                    const nodeGroups = enrichedGroups.filter(g => 
+                        g.functionality === element.functionality &&
+                        (g.filePath.split('.').pop() || 'other').toLowerCase() === element.fileType
+                    );
+                    
+                    return nodeGroups.map(group => new CodeGroupTreeItem(
+                        getFileName(group.filePath),
+                        vscode.TreeItemCollapsibleState.None,
+                        CodeGroupTreeItemType.CodeGroup,
+                        undefined,
+                        element.functionality,
+                        element.fileType,
+                        group
+                    ));
                 }
 
                 default:

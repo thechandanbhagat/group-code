@@ -11,6 +11,11 @@ export interface CodeGroup {
     description?: string;
     lineNumbers: number[];
     filePath: string;
+    // Hierarchical fields (computed, not stored in JSON)
+    hierarchyPath?: string[];  // e.g., ["Auth", "Login", "Validation"]
+    level?: number;            // e.g., 3
+    parent?: string;           // e.g., "Auth > Login"
+    leaf?: string;             // e.g., "Validation"
 }
 
 export class GroupManager {

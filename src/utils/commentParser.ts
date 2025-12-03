@@ -4,6 +4,7 @@ import logger from './logger';
 import * as path from 'path';
 import { CodeGroup } from '../groupDefinition';
 import { getFileType } from './fileUtils';
+import { enrichWithHierarchy, isValidHierarchy } from './hierarchyUtils';
 
 // Language configuration interface
 interface LanguageConfig {
@@ -246,18 +247,29 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
             
             if (match) {
                 // Extract functionality name and description
-                const functionality = match[1].trim().toLowerCase();
+                let functionality = match[1].trim().toLowerCase();
                 const description = match[2] ? match[2].trim() : '';
+                
+                // Validate hierarchy if it contains '>'
+                if (functionality.includes('>') && !isValidHierarchy(functionality)) {
+                    logger.warn(`Invalid hierarchy format: "${functionality}". Skipping.`);
+                    continue;
+                }
                 
                 logger.debug(`Found code group: ${functionality} - ${description}`);
                 
-                // Create new code group
-                const codeGroup: CodeGroup = {
+                // Create new code group with hierarchy information
+                let codeGroup: CodeGroup = {
                     functionality,
                     description,
                     lineNumbers: [i + 1], // Start with the comment line
                     filePath
                 };
+                
+                // Enrich with hierarchy information if it contains '>'
+                if (functionality.includes('>')) {
+                    codeGroup = enrichWithHierarchy(codeGroup);
+                }
                 
                 // Capture associated code block - only if the comment is on its own line
                 // For inline comments, we only want to include the line with the comment

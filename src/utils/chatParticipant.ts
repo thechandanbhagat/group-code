@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { CodeGroupProvider } from '../codeGroupProvider';
 import { CodeGroupTreeProvider } from '../codeGroupTreeProvider';
 import logger from './logger';
+import { enrichWithHierarchy, parseHierarchy, isDescendantOf } from './hierarchyUtils';
 
 /**
  * GitHub Copilot Chat Participant for Code Grouping Extension
@@ -44,6 +45,12 @@ export class GroupCodeChatParticipant {
             // Parse the command and handle it
             if (prompt.includes('generate') || prompt.includes('auto group') || prompt.includes('add groups')) {
                 return await this.handleGenerateCommand(request, stream, token);
+            } else if (prompt.includes('refactor') || prompt.includes('analyze refactoring') || prompt.includes('improve')) {
+                return await this.handleRefactoringCommand(request, stream, token);
+            } else if (prompt.includes('duplicate') || prompt.includes('similar')) {
+                return await this.handleDuplicatesCommand(stream, token);
+            } else if (prompt.includes('orphaned') || prompt.includes('unused') || prompt.includes('old groups')) {
+                return await this.handleOrphanedCommand(stream, token);
             } else if (prompt.includes('scan') || prompt.includes('analyze')) {
                 return await this.handleScanCommand(request, stream, token);
             } else if (prompt.includes('suggest') || prompt.includes('recommendation')) {
@@ -199,7 +206,7 @@ export class GroupCodeChatParticipant {
     }
 
     /**
-     * Handle find group command
+     * Handle find group command with hierarchy support
      */
     private async handleFindGroupCommand(
         request: vscode.ChatRequest,
@@ -210,15 +217,32 @@ export class GroupCodeChatParticipant {
         const searchMatch = prompt.match(/(?:find|search)\s+(?:group\s+)?["']?([^"']+)["']?/i);
         
         if (!searchMatch) {
-            stream.markdown('⚠️ Please specify a group name to search for. Example: `@groupcode find authentication`\n');
+            stream.markdown('⚠️ Please specify a group name to search for. Example: `@groupcode find authentication` or `@groupcode find Auth > Login`\n');
             return {};
         }
 
         const searchTerm = searchMatch[1].trim();
         const allGroups = this.codeGroupProvider.getAllGroups();
-        const matchingGroups = allGroups.filter((g: any) => 
-            g.functionality.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        
+        // Check if search term contains hierarchy separator
+        const isHierarchicalSearch = searchTerm.includes('>');
+        
+        let matchingGroups;
+        if (isHierarchicalSearch) {
+            // Exact hierarchy match or descendant match
+            const searchHierarchy = parseHierarchy(searchTerm);
+            matchingGroups = allGroups.filter((g: any) => {
+                const enriched = enrichWithHierarchy(g);
+                // Match exact or descendants
+                return g.functionality.toLowerCase() === searchTerm.toLowerCase() ||
+                       isDescendantOf(g.functionality, searchTerm);
+            });
+        } else {
+            // Simple text search across all levels
+            matchingGroups = allGroups.filter((g: any) => 
+                g.functionality.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
 
         if (matchingGroups.length === 0) {
             stream.markdown(`❌ No groups found matching "${searchTerm}".\n`);
@@ -226,13 +250,38 @@ export class GroupCodeChatParticipant {
         }
 
         stream.markdown(`### 🔍 Found ${matchingGroups.length} group(s) matching "${searchTerm}"\n\n`);
-        matchingGroups.forEach((group: any) => {
+        
+        // Group by hierarchy level for better display
+        const enrichedMatches = matchingGroups.map((g: any) => enrichWithHierarchy(g));
+        enrichedMatches.sort((a: any, b: any) => {
+            // Sort by hierarchy path, then by file name
+            if (a.functionality !== b.functionality) {
+                return a.functionality.localeCompare(b.functionality);
+            }
+            return a.filePath.localeCompare(b.filePath);
+        });
+        
+        let currentFunc = '';
+        enrichedMatches.forEach((group: any) => {
+            if (group.functionality !== currentFunc) {
+                if (currentFunc) stream.markdown('\n');
+                currentFunc = group.functionality;
+                
+                // Display hierarchy breadcrumb
+                if (group.hierarchyPath && group.hierarchyPath.length > 1) {
+                    stream.markdown(`#### 📂 ${group.hierarchyPath.join(' → ')}\n`);
+                } else {
+                    stream.markdown(`#### 📁 ${group.functionality}\n`);
+                }
+            }
+            
             const fileName = group.filePath.split(/[\\/]/).pop();
             const startLine = group.lineNumbers && group.lineNumbers.length > 0 ? group.lineNumbers[0] : 0;
-            stream.markdown(`- 📁 **${group.functionality}** in \`${fileName}\` (line ${startLine})\n`);
+            stream.markdown(`  - 📄 \`${fileName}\` (line ${startLine})`);
             if (group.description) {
-                stream.markdown(`  *${group.description}*\n`);
+                stream.markdown(` - *${group.description}*`);
             }
+            stream.markdown('\n');
         });
 
         return {};
@@ -385,7 +434,7 @@ export class GroupCodeChatParticipant {
                         continue;
                     } else if (hasOldFormat) {
                         // File has old format (dash instead of colon) - regenerate
-                        stream.markdown(`- 🔄 \`${file.fsPath.split(/[\\/]/).pop()}\` - Updating to correct format...\n`);
+                        stream.markdown(`- 🔄 \`${file.fsPath.split(/[\\/]/).pop()}\` - Updating ...\n`);
                     }
 
                     const language = document.languageId;
@@ -626,6 +675,201 @@ export class GroupCodeChatParticipant {
     }
 
     /**
+     * Handle refactoring analysis command
+     */
+    private async handleRefactoringCommand(
+        request: vscode.ChatRequest,
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<vscode.ChatResult> {
+        stream.progress('Analyzing code groups for refactoring opportunities...');
+        
+        try {
+            const { GroupRefactoringAnalyzer } = await import('./groupRefactoring');
+            const analyzer = new GroupRefactoringAnalyzer();
+            const groups = this.codeGroupProvider.getGroupsByFunctionality();
+            const issues = await analyzer.analyzeGroups(groups);
+            
+            if (issues.length === 0) {
+                stream.markdown('✅ No refactoring issues found! Your code groups are well organized.\n\n');
+                stream.markdown('💡 All group names are consistent, no duplicates detected, and all groups are actively used.\n');
+                return {};
+            }
+            
+            stream.markdown(`# 🔧 Code Group Refactoring Analysis\n\n`);
+            stream.markdown(`Found **${issues.length}** potential improvements:\n\n`);
+            
+            // Group issues by type
+            const issuesByType = new Map<string, typeof issues>();
+            issues.forEach(issue => {
+                if (!issuesByType.has(issue.type)) {
+                    issuesByType.set(issue.type, []);
+                }
+                issuesByType.get(issue.type)!.push(issue);
+            });
+            
+            // Display each type
+            issuesByType.forEach((typeIssues, type) => {
+                stream.markdown(`### ${this.getIssueTypeEmoji(type)} ${this.getIssueTypeLabel(type)} (${typeIssues.length})\n\n`);
+                
+                typeIssues.slice(0, 5).forEach(issue => { // Show max 5 per type
+                    stream.markdown(`**${issue.groupName}**\n`);
+                    stream.markdown(`- ${issue.message}\n`);
+                    stream.markdown(`- 💡 *${issue.suggestion}*\n\n`);
+                });
+                
+                if (typeIssues.length > 5) {
+                    stream.markdown(`*...and ${typeIssues.length - 5} more*\n\n`);
+                }
+            });
+            
+            stream.markdown('\n---\n');
+            stream.markdown('💡 **Next Steps:**\n');
+            stream.markdown('- Run `Group Code: Analyze Code Group Refactoring` command for detailed report\n');
+            stream.markdown('- Use `@groupcode find duplicates` to focus on duplicates\n');
+            stream.markdown('- Use `@groupcode find orphaned` to find unused groups\n');
+            
+            return {};
+        } catch (error) {
+            stream.markdown(`❌ Error analyzing refactoring: ${error}\n`);
+            return { errorDetails: { message: String(error) } };
+        }
+    }
+
+    /**
+     * Handle duplicates finding command
+     */
+    private async handleDuplicatesCommand(
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<vscode.ChatResult> {
+        stream.progress('Finding duplicate and similar groups...');
+        
+        try {
+            const { GroupRefactoringAnalyzer, RefactoringIssueType } = await import('./groupRefactoring');
+            const analyzer = new GroupRefactoringAnalyzer({
+                enabledChecks: [RefactoringIssueType.DUPLICATE, RefactoringIssueType.SIMILAR]
+            });
+            
+            const groups = this.codeGroupProvider.getGroupsByFunctionality();
+            const issues = await analyzer.analyzeGroups(groups);
+            
+            if (issues.length === 0) {
+                stream.markdown('✅ No duplicate or similar groups found!\n\n');
+                stream.markdown('All your group names are unique and distinct.\n');
+                return {};
+            }
+            
+            stream.markdown(`# 📋 Duplicate & Similar Groups Analysis\n\n`);
+            stream.markdown(`Found **${issues.length}** potential duplicates or similar groups:\n\n`);
+            
+            issues.forEach((issue, index) => {
+                if (index < 10) { // Show max 10
+                    stream.markdown(`### ${index + 1}. ${issue.groupName}\n`);
+                    stream.markdown(`**Issue:** ${issue.message}\n\n`);
+                    stream.markdown(`**Suggestion:** ${issue.suggestion}\n\n`);
+                    
+                    if (issue.affectedGroups && issue.affectedGroups.length > 1) {
+                        stream.markdown(`**Related groups:** ${issue.affectedGroups.join(', ')}\n\n`);
+                    }
+                    
+                    if (issue.metrics?.similarity) {
+                        stream.markdown(`**Similarity:** ${Math.round(issue.metrics.similarity * 100)}%\n\n`);
+                    }
+                    
+                    stream.markdown('---\n\n');
+                }
+            });
+            
+            if (issues.length > 10) {
+                stream.markdown(`*...and ${issues.length - 10} more issues*\n\n`);
+            }
+            
+            return {};
+        } catch (error) {
+            stream.markdown(`❌ Error finding duplicates: ${error}\n`);
+            return { errorDetails: { message: String(error) } };
+        }
+    }
+
+    /**
+     * Handle orphaned groups finding command
+     */
+    private async handleOrphanedCommand(
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<vscode.ChatResult> {
+        stream.progress('Finding orphaned groups...');
+        
+        try {
+            const { GroupRefactoringAnalyzer, RefactoringIssueType } = await import('./groupRefactoring');
+            const analyzer = new GroupRefactoringAnalyzer({
+                enabledChecks: [RefactoringIssueType.ORPHANED],
+                orphanedThreshold: 90 // 90 days
+            });
+            
+            const groups = this.codeGroupProvider.getGroupsByFunctionality();
+            const issues = await analyzer.analyzeGroups(groups);
+            
+            if (issues.length === 0) {
+                stream.markdown('✅ No orphaned groups found!\n\n');
+                stream.markdown('All groups have been recently modified.\n');
+                return {};
+            }
+            
+            stream.markdown(`# 📦 Orphaned Groups Analysis\n\n`);
+            stream.markdown(`Found **${issues.length}** groups that haven't been modified recently:\n\n`);
+            
+            issues.forEach((issue, index) => {
+                if (index < 10) { // Show max 10
+                    stream.markdown(`### ${index + 1}. ${issue.groupName}\n`);
+                    stream.markdown(`**Status:** ${issue.message}\n\n`);
+                    stream.markdown(`**Files:** ${issue.metrics?.fileCount || 0} file(s)\n\n`);
+                    stream.markdown(`**Suggestion:** ${issue.suggestion}\n\n`);
+                    stream.markdown('---\n\n');
+                }
+            });
+            
+            if (issues.length > 10) {
+                stream.markdown(`*...and ${issues.length - 10} more groups*\n\n`);
+            }
+            
+            stream.markdown('💡 **Tip:** Consider reviewing these groups to see if they\'re still relevant or need updates.\n');
+            
+            return {};
+        } catch (error) {
+            stream.markdown(`❌ Error finding orphaned groups: ${error}\n`);
+            return { errorDetails: { message: String(error) } };
+        }
+    }
+
+    private getIssueTypeEmoji(type: string): string {
+        const emojis: Record<string, string> = {
+            'duplicate': '📋',
+            'similar': '🔄',
+            'orphaned': '📦',
+            'inconsistent_naming': '📝',
+            'single_use': '🔢',
+            'too_large': '📈',
+            'too_small': '📉'
+        };
+        return emojis[type] || '❓';
+    }
+
+    private getIssueTypeLabel(type: string): string {
+        const labels: Record<string, string> = {
+            'duplicate': 'Duplicate Groups',
+            'similar': 'Similar Groups',
+            'orphaned': 'Orphaned Groups',
+            'inconsistent_naming': 'Inconsistent Naming',
+            'single_use': 'Single-Use Groups',
+            'too_large': 'Too Large Groups',
+            'too_small': 'Too Small Groups'
+        };
+        return labels[type] || type;
+    }
+
+    /**
      * Handle help command
      */
     private async handleHelpCommand(stream: vscode.ChatResponseStream): Promise<vscode.ChatResult> {
@@ -661,6 +905,13 @@ export class GroupCodeChatParticipant {
         stream.markdown('### 🔄 Maintenance\n');
         stream.markdown('- `@groupcode refresh` - Rescan all files\n');
         stream.markdown('- `@groupcode rescan` - Refresh code groups\n\n');
+        
+        stream.markdown('### 🔧 Refactoring & Quality\n');
+        stream.markdown('- `@groupcode refactor` - Analyze refactoring opportunities\n');
+        stream.markdown('- `@groupcode analyze refactoring` - Get improvement suggestions\n');
+        stream.markdown('- `@groupcode find duplicates` - Find duplicate/similar groups\n');
+        stream.markdown('- `@groupcode find orphaned` - Find unused or old groups\n');
+        stream.markdown('- `@groupcode improve` - Suggestions for better organization\n\n');
         
         stream.markdown('### ❓ Help\n');
         stream.markdown('- `@groupcode help` - Show this help message\n\n');

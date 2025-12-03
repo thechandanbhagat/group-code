@@ -2,6 +2,82 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { CodeGroup } from '../groupDefinition';
 import logger from './logger';
+import { enrichWithHierarchy } from './hierarchyUtils';
+
+/**
+ * Converts an array of line numbers to a compact range string
+ * Example: [8,9,10,11,15,16,17,18] -> "8-11,15-18"
+ */
+function lineNumbersToRanges(lineNumbers: number[]): string {
+    if (!lineNumbers || lineNumbers.length === 0) {
+        return '';
+    }
+
+    // Sort the numbers first
+    const sorted = [...lineNumbers].sort((a, b) => a - b);
+    const ranges: string[] = [];
+    
+    let start = sorted[0];
+    let end = sorted[0];
+    
+    for (let i = 1; i <= sorted.length; i++) {
+        if (i < sorted.length && sorted[i] === end + 1) {
+            // Continue the current range
+            end = sorted[i];
+        } else {
+            // End the current range and start a new one
+            if (start === end) {
+                ranges.push(String(start));
+            } else {
+                ranges.push(`${start}-${end}`);
+            }
+            
+            if (i < sorted.length) {
+                start = sorted[i];
+                end = sorted[i];
+            }
+        }
+    }
+    
+    return ranges.join(',');
+}
+
+/**
+ * Converts a compact range string back to an array of line numbers
+ * Example: "8-11,15-18" -> [8,9,10,11,15,16,17,18]
+ */
+function rangesToLineNumbers(rangeString: string): number[] {
+    if (!rangeString || typeof rangeString !== 'string') {
+        return [];
+    }
+
+    const lineNumbers: number[] = [];
+    const ranges = rangeString.split(',');
+    
+    for (const range of ranges) {
+        const trimmed = range.trim();
+        if (trimmed.includes('-')) {
+            // It's a range like "8-11"
+            const [startStr, endStr] = trimmed.split('-');
+            const start = parseInt(startStr, 10);
+            const end = parseInt(endStr, 10);
+            
+            if (!isNaN(start) && !isNaN(end)) {
+                for (let i = start; i <= end; i++) {
+                    lineNumbers.push(i);
+                }
+            }
+        } else {
+            // It's a single number
+            const num = parseInt(trimmed, 10);
+            if (!isNaN(num)) {
+                lineNumbers.push(num);
+            }
+        }
+    }
+    
+    return lineNumbers;
+}
 
 export function readFile(filePath: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -213,35 +289,125 @@ export async function saveCodeGroups(
     try {
         const groupCodeDir = await ensureGroupCodeDir(workspacePath);
         const groupsFilePath = `${groupCodeDir}/codegroups.json`;
+        const path = require('path');
         
-        // Convert Map to serializable object
-        const serializableGroups: { [key: string]: CodeGroup[] } = {};
+        // Convert Map to serializable object with relative paths and compact line ranges
+        const serializableGroups: { [key: string]: any[] } = {};
         fileTypeGroups.forEach((groups, fileType) => {
             if (fileType && Array.isArray(groups)) {
-                serializableGroups[fileType] = groups.filter(group => 
+                const filteredGroups = groups.filter(group => 
                     group && group.functionality && group.filePath
                 );
+                
+                // Convert absolute paths to relative paths and line numbers to compact ranges
+                // Exclude computed hierarchy fields (they'll be regenerated on load)
+                const groupsWithRelativePaths = filteredGroups.map(group => ({
+                    functionality: group.functionality,
+                    description: group.description,
+                    filePath: path.relative(workspacePath, group.filePath).replace(/\\/g, '/'),
+                    lineNumbers: lineNumbersToRanges(group.lineNumbers)
+                    // Note: hierarchyPath, level, parent, leaf are NOT saved - they're computed on load
+                }));
+                
+                serializableGroups[fileType] = groupsWithRelativePaths;
             }
         });
         
         await writeFile(groupsFilePath, JSON.stringify(serializableGroups, null, 2));
         
-        // Save functionalities index
-        const functionalitiesSet = new Set<string>();
-        fileTypeGroups.forEach(groups => {
+        // Save functionalities index with hierarchical structure
+        const functionalitiesMap = new Map<string, {
+            fullPath: string;
+            level: number;
+            parent: string | null;
+            children: string[];
+            groupCount: number;
+            fileTypes: Set<string>;
+            lastModified: string;
+        }>();
+        
+        // Build functionality metadata
+        fileTypeGroups.forEach((groups, fileType) => {
             if (Array.isArray(groups)) {
                 groups.forEach(group => {
                     if (group?.functionality) {
-                        functionalitiesSet.add(group.functionality);
+                        const enriched = enrichWithHierarchy(group);
+                        const funcLower = group.functionality.toLowerCase();
+                        
+                        if (!functionalitiesMap.has(funcLower)) {
+                            functionalitiesMap.set(funcLower, {
+                                fullPath: group.functionality,
+                                level: enriched.level || 1,
+                                parent: enriched.parent || null,
+                                children: [],
+                                groupCount: 0,
+                                fileTypes: new Set<string>(),
+                                lastModified: new Date().toISOString()
+                            });
+                        }
+                        
+                        const metadata = functionalitiesMap.get(funcLower)!;
+                        metadata.groupCount++;
+                        metadata.fileTypes.add(fileType);
+                        
+                        // Add parent paths if hierarchical
+                        if (enriched.hierarchyPath && enriched.hierarchyPath.length > 1) {
+                            for (let i = 0; i < enriched.hierarchyPath.length - 1; i++) {
+                                const parentPath = enriched.hierarchyPath.slice(0, i + 1).join(' > ').toLowerCase();
+                                const parentFullPath = enriched.hierarchyPath.slice(0, i + 1).join(' > ');
+                                
+                                if (!functionalitiesMap.has(parentPath)) {
+                                    functionalitiesMap.set(parentPath, {
+                                        fullPath: parentFullPath,
+                                        level: i + 1,
+                                        parent: i > 0 ? enriched.hierarchyPath.slice(0, i).join(' > ') : null,
+                                        children: [],
+                                        groupCount: 0,
+                                        fileTypes: new Set<string>(),
+                                        lastModified: new Date().toISOString()
+                                    });
+                                }
+                            }
+                        }
                     }
                 });
             }
         });
         
+        // Build parent-child relationships
+        functionalitiesMap.forEach((metadata, key) => {
+            if (metadata.parent) {
+                const parentKey = metadata.parent.toLowerCase();
+                const parentMetadata = functionalitiesMap.get(parentKey);
+                if (parentMetadata && !parentMetadata.children.includes(metadata.fullPath)) {
+                    parentMetadata.children.push(metadata.fullPath);
+                }
+            }
+        });
+        
+        // Convert to serializable format
+        const functionalitiesData: any = {
+            version: "1.3.0",
+            lastUpdated: new Date().toISOString(),
+            totalFunctionalities: functionalitiesMap.size,
+            functionalities: {}
+        };
+        
+        functionalitiesMap.forEach((metadata, key) => {
+            functionalitiesData.functionalities[metadata.fullPath] = {
+                level: metadata.level,
+                parent: metadata.parent,
+                children: metadata.children.sort(),
+                groupCount: metadata.groupCount,
+                fileTypes: Array.from(metadata.fileTypes).sort(),
+                lastModified: metadata.lastModified
+            };
+        });
+        
         const functionalitiesFilePath = `${groupCodeDir}/functionalities.json`;
         await writeFile(
             functionalitiesFilePath, 
-            JSON.stringify(Array.from(functionalitiesSet), null, 2)
+            JSON.stringify(functionalitiesData, null, 2)
         );
         
     } catch (error) {
@@ -261,6 +427,7 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
     try {
         const groupCodeDir = await ensureGroupCodeDir(workspacePath);
         const groupsFilePath = `${groupCodeDir}/codegroups.json`;
+        const path = require('path');
         
         try {
             await fs.promises.access(groupsFilePath);
@@ -277,8 +444,38 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
                 const validGroups = serializableGroups[fileType].filter((group: any) => 
                     group && typeof group === 'object' && group.functionality && group.filePath
                 );
-                if (validGroups.length > 0) {
-                    fileTypeGroups.set(fileType, validGroups);
+                
+                // Convert relative paths back to absolute paths and range strings to arrays
+                const groupsWithAbsolutePaths = validGroups.map((group: any) => {
+                    // Handle lineNumbers - could be array (old format) or string (new format)
+                    let lineNumbers: number[];
+                    if (typeof group.lineNumbers === 'string') {
+                        lineNumbers = rangesToLineNumbers(group.lineNumbers);
+                    } else if (Array.isArray(group.lineNumbers)) {
+                        lineNumbers = group.lineNumbers; // Backwards compatibility
+                    } else {
+                        lineNumbers = [];
+                    }
+                    
+                    const codeGroup: CodeGroup = {
+                        functionality: group.functionality,
+                        description: group.description,
+                        filePath: path.isAbsolute(group.filePath) 
+                            ? group.filePath  // Already absolute (backwards compatibility)
+                            : path.resolve(workspacePath, group.filePath),  // Convert relative to absolute
+                        lineNumbers: lineNumbers
+                    };
+                    
+                    // Enrich with hierarchy information if functionality contains '>'
+                    if (codeGroup.functionality.includes('>')) {
+                        return enrichWithHierarchy(codeGroup);
+                    }
+                    
+                    return codeGroup;
+                });
+                
+                if (groupsWithAbsolutePaths.length > 0) {
+                    fileTypeGroups.set(fileType, groupsWithAbsolutePaths);
                 }
             }
         }
@@ -288,6 +485,118 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
         logger.error(`Error loading code groups: ${error}`);
         return null;
     }
+}
+
+/**
+ * Load functionalities metadata for intelligent suggestions
+ */
+export async function loadFunctionalities(workspacePath: string): Promise<any | null> {
+    if (!workspacePath || typeof workspacePath !== 'string') {
+        return null;
+    }
+    
+    try {
+        const groupCodeDir = await ensureGroupCodeDir(workspacePath);
+        const functionalitiesFilePath = `${groupCodeDir}/functionalities.json`;
+        
+        try {
+            await fs.promises.access(functionalitiesFilePath);
+        } catch {
+            return null;
+        }
+        
+        const data = await readFile(functionalitiesFilePath);
+        return JSON.parse(data);
+    } catch (error) {
+        logger.error(`Error loading functionalities: ${error}`);
+        return null;
+    }
+}
+
+/**
+ * Get suggested child functionalities for a parent path
+ */
+export function getSuggestedChildren(functionalitiesData: any, parentPath: string): string[] {
+    if (!functionalitiesData || !functionalitiesData.functionalities) {
+        return [];
+    }
+    
+    const functionality = functionalitiesData.functionalities[parentPath];
+    return functionality?.children || [];
+}
+
+/**
+ * Get all functionalities at a specific level
+ */
+export function getFunctionalitiesByLevel(functionalitiesData: any, level: number): string[] {
+    if (!functionalitiesData || !functionalitiesData.functionalities) {
+        return [];
+    }
+    
+    return Object.entries(functionalitiesData.functionalities)
+        .filter(([_, data]: [string, any]) => data.level === level)
+        .map(([path, _]) => path)
+        .sort();
+}
+
+/**
+ * Get top-level functionalities (root nodes)
+ */
+export function getRootFunctionalities(functionalitiesData: any): string[] {
+    return getFunctionalitiesByLevel(functionalitiesData, 1);
+}
+
+/**
+ * Get similar functionalities based on text similarity
+ */
+export function getSimilarFunctionalities(functionalitiesData: any, partial: string): string[] {
+    if (!functionalitiesData || !functionalitiesData.functionalities) {
+        return [];
+    }
+    
+    const partialLower = partial.toLowerCase();
+    const matches: Array<{ path: string; score: number }> = [];
+    
+    Object.keys(functionalitiesData.functionalities).forEach(path => {
+        const pathLower = path.toLowerCase();
+        let score = 0;
+        
+        // Exact match
+        if (pathLower === partialLower) {
+            score = 1000;
+        }
+        // Starts with
+        else if (pathLower.startsWith(partialLower)) {
+            score = 500;
+        }
+        // Contains
+        else if (pathLower.includes(partialLower)) {
+            score = 100;
+        }
+        // Word boundary match
+        else if (pathLower.split(/[\s>]/).some(part => part.startsWith(partialLower))) {
+            score = 200;
+        }
+        
+        if (score > 0) {
+            matches.push({ path, score });
+        }
+    });
+    
+    return matches
+        .sort((a, b) => b.score - a.score)
+        .map(m => m.path);
+}
+
+/**
+ * Get functionality statistics
+ */
+export function getFunctionalityStats(functionalitiesData: any, path: string): any | null {
+    if (!functionalitiesData || !functionalitiesData.functionalities) {
+        return null;
+    }
+    
+    return functionalitiesData.functionalities[path] || null;
 }
 
 /**

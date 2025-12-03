@@ -199,8 +199,12 @@ export class CodeGroupProvider implements vscode.Disposable {
                 return;
             }
 
+            // Get workspace folder for this file
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+            const folderPath = workspaceFolder?.uri.fsPath;
+
             // Check if file should be ignored
-            const ignorePatterns = await this.getIgnorePatterns();
+            const ignorePatterns = await this.getIgnorePatterns(folderPath);
             if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
                 logger.info(`Skipping ignored file: ${filePath}`);
                 // Remove any existing groups for this file since it's now ignored
@@ -404,6 +408,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         const defaultPatterns = [
             '**/node_modules/**',
             '**/.git/**',
+            '**/.groupcode/**',  // Don't scan our own metadata folder
             '**/dist/**',
             '**/build/**',
             '**/.next/**',
@@ -417,10 +422,14 @@ export class CodeGroupProvider implements vscode.Disposable {
             '**/obj/**',
             '**/.vs/**',
             '**/.idea/**',
+            '**/.vscode/**',  // Don't scan VS Code settings
             '**/tmp/**',
             '**/temp/**',
             '**/.cache/**',
-            '.DS_Store'
+            '.DS_Store',
+            '*.min.js',  // Don't scan minified files
+            '*.min.css',
+            '*.map'  // Don't scan source maps
         ];
         
         ignorePatterns.push(...defaultPatterns);
@@ -435,12 +444,27 @@ export class CodeGroupProvider implements vscode.Disposable {
         }
 
         try {
-            const files = await vscode.workspace.findFiles('**/*.*', '**/node_modules/**');
+            // Get ignore patterns from .gitignore and defaults
+            const rootFolder = workspaceFolders[0].uri.fsPath;
+            const ignorePatterns = await this.getIgnorePatterns(rootFolder);
+            
+            // Create exclude pattern for findFiles
+            const excludePattern = `{${ignorePatterns.join(',')}}`;
+            
+            logger.info(`Scanning workspace with ${ignorePatterns.length} ignore patterns`);
+            
+            const files = await vscode.workspace.findFiles('**/*.*', excludePattern);
             let processedCount = 0;
 
             for (const file of files) {
                 if (isSupportedFileType(file.fsPath)) {
                     try {
+                        // Double-check with shouldIgnoreFile for extra safety
+                        if (this.shouldIgnoreFile(file.fsPath, ignorePatterns)) {
+                            logger.debug(`Skipping ignored file: ${file.fsPath}`);
+                            continue;
+                        }
+                        
                         const document = await vscode.workspace.openTextDocument(file);
                         const fileType = getFileType(file.fsPath);
                         if (!fileType) continue;
@@ -473,6 +497,8 @@ export class CodeGroupProvider implements vscode.Disposable {
                     `Found ${this.functionalities.size} code groups in ${processedCount} files`
                 );
             }
+            
+            logger.info(`Workspace scan complete. Processed ${processedCount} files, found ${this.functionalities.size} groups`);
         } catch (err) {
             logger.error('Error scanning workspace', err);
             throw err;
@@ -789,6 +815,27 @@ export class CodeGroupProvider implements vscode.Disposable {
             allGroups.push(...groups);
         });
         return allGroups;
+    }
+
+    /**
+     * Get groups organized by functionality name for refactoring analysis
+     */
+    public getGroupsByFunctionality(): Map<string, CodeGroup[]> {
+        const groupsByFunc = new Map<string, CodeGroup[]>();
+        
+        // Reorganize from fileType -> groups to functionality -> groups
+        this.groups.forEach((groups) => {
+            groups.forEach(group => {
+                if (group.functionality) {
+                    if (!groupsByFunc.has(group.functionality)) {
+                        groupsByFunc.set(group.functionality, []);
+                    }
+                    groupsByFunc.get(group.functionality)!.push(group);
+                }
+            });
+        });
+        
+        return groupsByFunc;
     }
     
     // Navigate to a specific group

@@ -40,37 +40,149 @@ function loadLanguageConfig(): LanguageConfig {
 
     try {
         // Get the extension directory path
+        // __dirname is out/utils when running, so we need to go up two levels to reach extension root
         const extensionPath = path.dirname(path.dirname(__dirname));
-        const configPath = path.join(extensionPath, 'src', 'config', 'languageConfig.json');
         
-        // Read and parse the JSON configuration
-        const configContent = fs.readFileSync(configPath, 'utf8');
-        languageConfigCache = JSON.parse(configContent) as LanguageConfig;
+        // Try multiple possible locations for the config file
+        const possiblePaths = [
+            path.join(extensionPath, 'src', 'config', 'languageConfig.json'),
+            path.join(extensionPath, 'out', 'config', 'languageConfig.json'),
+            path.join(extensionPath, 'config', 'languageConfig.json'),
+        ];
         
+        let configContent: string | null = null;
+        let loadedPath: string | null = null;
+        
+        for (const configPath of possiblePaths) {
+            try {
+                if (fs.existsSync(configPath)) {
+                    configContent = fs.readFileSync(configPath, 'utf8');
+                    loadedPath = configPath;
+                    break;
+                }
+            } catch {
+                // Try next path
+            }
+        }
+        
+        if (configContent) {
+            logger.debug(`Loaded language config from: ${loadedPath}`);
+            languageConfigCache = JSON.parse(configContent) as LanguageConfig;
+            return languageConfigCache;
+        }
+        
+        // If no file found, use embedded default configuration
+        logger.warn('Language config file not found, using embedded defaults');
+        languageConfigCache = getDefaultLanguageConfig();
         return languageConfigCache;
     } catch (error) {
         logger.error('Failed to load language configuration:', error);
         
         // Return default configuration in case of error
-        return {
-            languages: [
-                {
-                    name: "Default",
-                    fileTypes: ["*"],
-                    commentMarkers: {
-                        line: "//",
-                        blockStart: "/*",
-                        blockEnd: "*/"
-                    }
-                }
-            ],
-            commentPattern: {
-                description: "Default pattern",
-                pattern: "\\s*\\*\\s*([^:]+?)\\s*:\\s*(.*?)\\s*$",
-                flags: "i"
-            }
-        };
+        languageConfigCache = getDefaultLanguageConfig();
+        return languageConfigCache;
     }
+}
+
+/**
+ * Returns the default language configuration embedded in code
+ */
+function getDefaultLanguageConfig(): LanguageConfig {
+    return {
+        languages: [
+            {
+                name: "JavaScript/TypeScript",
+                fileTypes: ["js", "jsx", "ts", "tsx", "javascript", "typescript", "typescriptreact", "javascriptreact"],
+                commentMarkers: {
+                    line: "//",
+                    blockStart: "/*",
+                    blockEnd: "*/"
+                },
+                extraPatterns: ["@group\\s+([^:]+):\\s*(.*?)\\s*$"]
+            },
+            {
+                name: "Python",
+                fileTypes: ["py", "python"],
+                commentMarkers: {
+                    line: "#"
+                },
+                extraPatterns: ["@group\\s+([^:]+):\\s*(.*?)\\s*$"]
+            },
+            {
+                name: "C#",
+                fileTypes: ["cs", "csharp"],
+                commentMarkers: {
+                    line: "//",
+                    blockStart: "/*",
+                    blockEnd: "*/"
+                }
+            },
+            {
+                name: "Java",
+                fileTypes: ["java"],
+                commentMarkers: {
+                    line: "//",
+                    blockStart: "/*",
+                    blockEnd: "*/"
+                }
+            },
+            {
+                name: "Go",
+                fileTypes: ["go"],
+                commentMarkers: {
+                    line: "//",
+                    blockStart: "/*",
+                    blockEnd: "*/"
+                }
+            },
+            {
+                name: "Ruby",
+                fileTypes: ["rb", "ruby"],
+                commentMarkers: {
+                    line: "#"
+                }
+            },
+            {
+                name: "PHP",
+                fileTypes: ["php"],
+                commentMarkers: {
+                    line: "//",
+                    blockStart: "/*",
+                    blockEnd: "*/"
+                }
+            },
+            {
+                name: "HTML",
+                fileTypes: ["html", "htm"],
+                commentMarkers: {
+                    blockStart: "<!--",
+                    blockEnd: "-->"
+                }
+            },
+            {
+                name: "CSS",
+                fileTypes: ["css", "scss", "less"],
+                commentMarkers: {
+                    blockStart: "/*",
+                    blockEnd: "*/"
+                }
+            },
+            {
+                name: "Default",
+                fileTypes: ["*"],
+                commentMarkers: {
+                    line: "//",
+                    blockStart: "/*",
+                    blockEnd: "*/"
+                }
+            }
+        ],
+        commentPattern: {
+            description: "Pattern to match @group comments",
+            pattern: "@group\\s+([^:]+):\\s*(.*?)\\s*$",
+            flags: "i"
+        }
+    };
 }
 
 /**

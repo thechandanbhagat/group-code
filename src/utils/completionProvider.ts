@@ -3,11 +3,17 @@ import { CodeGroupProvider } from '../codeGroupProvider';
 import * as path from 'path';
 import * as fs from 'fs';
 import logger from './logger';
+import { parseHierarchy, getAncestorPaths, enrichWithHierarchy } from './hierarchyUtils';
+import { loadFunctionalities, getSuggestedChildren, getSimilarFunctionalities, getFunctionalityStats } from './fileUtils';
+import { patternAnalyzer } from './patternAnalyzer';
 
 export class GroupCompletionProvider implements vscode.CompletionItemProvider {
-    private readonly triggerCharacters = ['@', ' '];
+    private readonly triggerCharacters = ['@', ' ', '>'];
     private codeGroupProvider: CodeGroupProvider;
     private languageConfig: any;
+    private functionalitiesCache: any = null;
+    private lastCacheUpdate: number = 0;
+    private readonly cacheExpiryMs = 5000; // 5 seconds
 
     constructor(codeGroupProvider: CodeGroupProvider) {
         this.codeGroupProvider = codeGroupProvider;
@@ -24,18 +30,39 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
         }
     }
 
-    provideCompletionItems(
+    private async getFunctionalitiesData(): Promise<any | null> {
+        const now = Date.now();
+        
+        // Return cached data if still fresh
+        if (this.functionalitiesCache && (now - this.lastCacheUpdate) < this.cacheExpiryMs) {
+            return this.functionalitiesCache;
+        }
+        
+        // Load fresh data
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            return null;
+        }
+        
+        const workspacePath = workspaceFolders[0].uri.fsPath;
+        this.functionalitiesCache = await loadFunctionalities(workspacePath);
+        this.lastCacheUpdate = now;
+        
+        return this.functionalitiesCache;
+    }
+
+    async provideCompletionItems(
         document: vscode.TextDocument,
         position: vscode.Position,
         token: vscode.CancellationToken,
         context: vscode.CompletionContext
-    ): vscode.ProviderResult<vscode.CompletionItem[]> {
+    ): Promise<vscode.CompletionItem[]> {
         const linePrefix = document.lineAt(position).text.substring(0, position.character);
         
         // Check if we're in a comment
         const isComment = this.isInComment(document, position);
         if (!isComment) {
-            return undefined;
+            return [];
         }
 
         // Provide @group completion
@@ -47,43 +74,207 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
             return [groupCompletion];
         }
 
-        // After @group, show existing group names with filtering
+        // After @group, show existing group names with filtering and hierarchy support
         if (linePrefix.match(/@group\s+/)) {
+            const functionalitiesData = await this.getFunctionalitiesData();
             const groups = this.codeGroupProvider.getAllGroups();
 
             // Get the partial input after @group
             const match = linePrefix.match(/@group\s+([^:]*)/);
-            const partial = match ? match[1].toLowerCase() : '';
+            const partial = match ? match[1].toLowerCase().trim() : '';
 
-            // Filter and sort groups based on input
-            return groups
-                .filter(group => group.functionality.toLowerCase().includes(partial))
-                .sort((a, b) => {
-                    // Exact matches first
-                    const aExact = a.functionality.toLowerCase() === partial;
-                    const bExact = b.functionality.toLowerCase() === partial;
-                    if (aExact !== bExact) return aExact ? -1 : 1;
+            const suggestions: vscode.CompletionItem[] = [];
+            
+            // Run pattern analysis to find ALL hierarchy suggestions
+            const analysis = patternAnalyzer.analyzePatterns(groups);
+
+            // Add AI-powered similar group suggestions (TOP PRIORITY)
+            // This catches semantic similarities like "datetime normalize" vs "datetime normalization"
+            if (partial && partial.length >= 3 && !partial.includes('>')) {
+                // Check for similar groups first with a quick local check
+                analysis.similar.forEach(suggestion => {
+                    const originalLower = suggestion.originalName.toLowerCase();
+                    const suggestedLower = suggestion.suggestedName.toLowerCase();
                     
-                    // Starts with partial next
-                    const aStarts = a.functionality.toLowerCase().startsWith(partial);
-                    const bStarts = b.functionality.toLowerCase().startsWith(partial);
-                    if (aStarts !== bStarts) return aStarts ? -1 : 1;
-                    
-                    // Finally alphabetical
-                    return a.functionality.localeCompare(b.functionality);
-                })
-                .map(group => {
-                    const completion = new vscode.CompletionItem(group.functionality, vscode.CompletionItemKind.Value);
-                    completion.filterText = group.functionality.toLowerCase(); // Enables case-insensitive filtering
-                    completion.sortText = group.functionality.toLowerCase(); // Ensures consistent sorting
-                    completion.insertText = group.functionality; // Only insert the group name
-                    completion.detail = group.description || ''; // Show description as detail but don't insert it
-                    completion.documentation = new vscode.MarkdownString(`Found in \`${group.filePath}\``);
-                    return completion;
+                    if (originalLower.includes(partial) || suggestedLower.includes(partial) ||
+                        partial.includes(originalLower) || partial.includes(suggestedLower)) {
+                        const completion = new vscode.CompletionItem(
+                            suggestion.suggestedName,
+                            vscode.CompletionItemKind.Issue
+                        );
+                        completion.sortText = `00_similar_${suggestion.suggestedName}`;
+                        completion.insertText = suggestion.suggestedName;
+                        completion.detail = `⚠️ Similar group exists - use this instead`;
+                        completion.documentation = new vscode.MarkdownString(
+                            `**🔄 Similar Group Found**\n\n` +
+                            `Your input: \`${partial}\`\n\n` +
+                            `Existing group: \`${suggestion.suggestedName}\`\n\n` +
+                            `**Similarity:** ${Math.round(suggestion.confidence * 100)}%\n\n` +
+                            `Using the existing group name helps maintain consistency.`
+                        );
+                        suggestions.push(completion);
+                    }
                 });
+            }
+            
+            // Add hierarchy suggestions that match the partial input (TOP PRIORITY)
+            if (!partial.includes('>')) {
+                analysis.hierarchies.forEach(suggestion => {
+                    const suggestionLower = suggestion.suggestedName.toLowerCase();
+                    const originalLower = suggestion.originalName.toLowerCase();
+                    
+                    // Check if partial matches either the original name OR the suggested hierarchy
+                    if (!partial || originalLower.includes(partial) || suggestionLower.includes(partial)) {
+                        const completion = new vscode.CompletionItem(
+                            suggestion.suggestedName,
+                            vscode.CompletionItemKind.Snippet
+                        );
+                        completion.sortText = `0_hierarchy_${(1 - suggestion.confidence).toFixed(3)}_${suggestion.suggestedName}`;
+                        completion.insertText = suggestion.suggestedName;
+                        completion.detail = `💡 ${Math.round(suggestion.confidence * 100)}% confidence - ${suggestion.reason}`;
+                        completion.documentation = new vscode.MarkdownString(
+                            `**✨ Smart Hierarchy Suggestion**\n\n` +
+                            `You typed: \`${suggestion.originalName}\`\n\n` +
+                            `Suggested: \`${suggestion.suggestedName}\`\n\n` +
+                            `**Why?** ${suggestion.reason}\n\n` +
+                            `This maintains consistency with similar groups in your project.`
+                        );
+                        completion.filterText = suggestion.originalName.toLowerCase();
+                        suggestions.push(completion);
+                    }
+                });
+            }
+            
+            // If functionalities data is available, use it for intelligent suggestions
+            if (functionalitiesData && functionalitiesData.functionalities) {
+                // Check if user is typing a hierarchy (contains >)
+                if (partial.includes('>')) {
+                    // User is building a hierarchy - suggest children of the parent path
+                    const parts = partial.split('>').map(p => p.trim());
+                    const parentPath = parts.slice(0, -1).join(' > ');
+                    const lastPart = parts[parts.length - 1];
+                    
+                    if (parentPath) {
+                        // Find the parent in functionalities
+                        const parentStats = getFunctionalityStats(functionalitiesData, parentPath);
+                        if (parentStats && parentStats.children && parentStats.children.length > 0) {
+                            // Suggest children of this parent
+                            parentStats.children.forEach((childPath: string) => {
+                                if (!lastPart || childPath.toLowerCase().includes(partial.toLowerCase())) {
+                                    const completion = this.createCompletionItem(childPath, functionalitiesData);
+                                    completion.sortText = `0_${childPath}`; // Prioritize children
+                                    suggestions.push(completion);
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                // Get similar functionalities based on text matching
+                const similarPaths = getSimilarFunctionalities(functionalitiesData, partial);
+                similarPaths.slice(0, 20).forEach(funcPath => {
+                    if (!suggestions.some(s => s.label === funcPath)) {
+                        suggestions.push(this.createCompletionItem(funcPath, functionalitiesData));
+                    }
+                });
+            }
+            
+            // Also include current groups from memory (for newly created groups not yet in functionalities.json)
+            const uniqueFunctionalities = new Map<string, { functionality: string; description?: string; filePath: string; level: number }>();
+            
+            groups.forEach(group => {
+                const enriched = enrichWithHierarchy(group);
+                const funcLower = enriched.functionality.toLowerCase();
+                
+                if (!uniqueFunctionalities.has(funcLower) && funcLower.includes(partial)) {
+                    uniqueFunctionalities.set(funcLower, {
+                        functionality: enriched.functionality,
+                        description: enriched.description,
+                        filePath: enriched.filePath,
+                        level: enriched.level || 1
+                    });
+                }
+            });
+
+            uniqueFunctionalities.forEach(item => {
+                if (!suggestions.some(s => s.label === item.functionality)) {
+                    const hierarchy = parseHierarchy(item.functionality);
+                    const completion = new vscode.CompletionItem(
+                        item.functionality, 
+                        hierarchy.level > 1 ? vscode.CompletionItemKind.Module : vscode.CompletionItemKind.Value
+                    );
+                    
+                    completion.filterText = item.functionality.toLowerCase();
+                    completion.sortText = `1_${item.functionality.toLowerCase()}`; // Lower priority than functionalities.json
+                    completion.insertText = item.functionality;
+                    completion.detail = item.description || '';
+                    completion.documentation = new vscode.MarkdownString(`In-memory group from \`${path.basename(item.filePath)}\``);
+                    
+                    suggestions.push(completion);
+                }
+            });
+
+            return suggestions;
         }
 
-        return undefined;
+        return [];
+    }
+
+    private createCompletionItem(funcPath: string, functionalitiesData: any): vscode.CompletionItem {
+        const stats = getFunctionalityStats(functionalitiesData, funcPath);
+        const hierarchy = parseHierarchy(funcPath);
+        
+        const completion = new vscode.CompletionItem(
+            funcPath,
+            hierarchy.level > 1 ? vscode.CompletionItemKind.Module : vscode.CompletionItemKind.Value
+        );
+        
+        completion.filterText = funcPath.toLowerCase();
+        completion.sortText = funcPath.toLowerCase();
+        completion.insertText = funcPath;
+        
+        // Build detail string with stats
+        const details: string[] = [];
+        if (stats) {
+            if (stats.groupCount > 0) {
+                details.push(`${stats.groupCount} group(s)`);
+            }
+            if (stats.children && stats.children.length > 0) {
+                details.push(`${stats.children.length} child(ren)`);
+            }
+            if (hierarchy.level > 1) {
+                details.push(`Level ${hierarchy.level}`);
+            }
+        }
+        completion.detail = details.join(' • ');
+        
+        // Enhanced documentation
+        const docs = new vscode.MarkdownString();
+        
+        if (hierarchy.level > 1) {
+            docs.appendMarkdown(`**Hierarchy:** ${hierarchy.hierarchyPath.join(' → ')}\n\n`);
+        }
+        
+        if (stats) {
+            docs.appendMarkdown(`**Statistics:**\n`);
+            docs.appendMarkdown(`- Groups: ${stats.groupCount}\n`);
+            docs.appendMarkdown(`- Children: ${stats.children?.length || 0}\n`);
+            docs.appendMarkdown(`- File Types: ${stats.fileTypes?.join(', ') || 'N/A'}\n`);
+            
+            if (stats.children && stats.children.length > 0) {
+                docs.appendMarkdown(`\n**Child Groups:**\n`);
+                stats.children.slice(0, 5).forEach((child: string) => {
+                    const childLeaf = child.split('>').pop()?.trim() || child;
+                    docs.appendMarkdown(`- ${childLeaf}\n`);
+                });
+                if (stats.children.length > 5) {
+                    docs.appendMarkdown(`- ... and ${stats.children.length - 5} more\n`);
+                }
+            }
+        }
+        
+        completion.documentation = docs;
+        return completion;
     }
 
     private isInComment(document: vscode.TextDocument, position: vscode.Position): boolean {

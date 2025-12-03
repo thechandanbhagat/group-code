@@ -212,6 +212,115 @@ JSON Response:`;
     }
 
     /**
+     * Check if a new group name is semantically similar to existing group names using AI
+     * Returns the most similar existing group name if found, or null if the name is unique
+     */
+    public async checkSemanticSimilarity(
+        newGroupName: string,
+        existingGroupNames: string[]
+    ): Promise<{ similarTo: string; confidence: number; suggestion: string } | null> {
+        try {
+            if (!await this.isIntegrationAvailable()) {
+                return null;
+            }
+
+            if (existingGroupNames.length === 0) {
+                return null;
+            }
+
+            const models = await vscode.lm.selectChatModels();
+            if (models.length === 0) {
+                return null;
+            }
+
+            const model = models[0];
+            logger.info(`Checking semantic similarity for: ${newGroupName}`);
+            
+            const prompt = this.buildSemanticSimilarityPrompt(newGroupName, existingGroupNames);
+            
+            const messages = [
+                vscode.LanguageModelChatMessage.User(prompt)
+            ];
+
+            const chatResponse = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+            
+            let response = '';
+            for await (const fragment of chatResponse.text) {
+                response += fragment;
+            }
+
+            // Parse the JSON response
+            try {
+                // Extract JSON from response (handle markdown code blocks)
+                const jsonMatch = response.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const result = JSON.parse(jsonMatch[0]);
+                    if (result.isSimilar && result.similarTo) {
+                        return {
+                            similarTo: result.similarTo,
+                            confidence: result.confidence || 0.8,
+                            suggestion: result.suggestion || result.similarTo
+                        };
+                    }
+                }
+                return null;
+            } catch {
+                logger.warn('Could not parse semantic similarity response');
+                return null;
+            }
+        } catch (error) {
+            logger.error('Error checking semantic similarity', error);
+            return null;
+        }
+    }
+
+    /**
+     * Build prompt for semantic similarity check
+     */
+    private buildSemanticSimilarityPrompt(newName: string, existingNames: string[]): string {
+        return `You are helping to maintain consistent code group naming in a project.
+
+A developer wants to create a new code group named: "${newName}"
+
+Existing group names in the project:
+${existingNames.map(n => `- ${n}`).join('\n')}
+
+Analyze if the NEW group name is semantically identical or very similar to any EXISTING group name.
+Consider these as semantically identical:
+- Different word forms (normalize/normalization, validate/validation)
+- Singular/plural variations (handler/handlers)
+- Word order variations ("date time" vs "time date" when meaning the same thing)
+- Abbreviations vs full words (config/configuration, auth/authentication)
+- Minor wording differences that mean the same concept
+
+Respond with ONLY valid JSON:
+{
+  "isSimilar": true/false,
+  "similarTo": "the existing group name that is similar (or null if not similar)",
+  "confidence": 0.0-1.0,
+  "suggestion": "the recommended group name to use (pick the better/more descriptive one)",
+  "reason": "brief explanation"
+}
+
+JSON Response:`;
+    }
+
+    /**
+     * Normalize a group name by finding and suggesting the canonical form
+     * Uses AI to find the best standardized name from a set of similar names
+     */
+    public async normalizeGroupName(
+        groupName: string,
+        existingGroupNames: string[]
+    ): Promise<string> {
+        const similarity = await this.checkSemanticSimilarity(groupName, existingGroupNames);
+        if (similarity) {
+            return similarity.suggestion;
+        }
+        return groupName;
+    }
+
+    /**
      * Get AI-powered code explanation
      */
     public async explainCodeGroup(codeSnippet: string, groupName: string): Promise<string | undefined> {

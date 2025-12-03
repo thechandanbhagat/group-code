@@ -97,6 +97,48 @@
         "command": "groupCode.suggestGroupWithAI",
         "title": "Suggest Code Group with AI",
         "icon": "$(sparkle)"
+      },
+      {
+        "command": "groupCode.removeAllGroups",
+        "title": "Remove All Code Group Comments",
+        "category": "Group Code",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "groupCode.convertToHierarchy",
+        "title": "Convert Flat Groups to Hierarchies",
+        "category": "Group Code",
+        "icon": "$(arrow-both)"
+      },
+      {
+        "command": "groupCode.rescanWorkspace",
+        "title": "Rescan Entire Workspace",
+        "category": "Group Code",
+        "icon": "$(database)"
+      },
+      {
+        "command": "groupCode.analyzePatterns",
+        "title": "Analyze Group Naming Patterns",
+        "category": "Group Code",
+        "icon": "$(light-bulb)"
+      },
+      {
+        "command": "groupCode.analyzeRefactoring",
+        "title": "Analyze Code Group Refactoring",
+        "category": "Group Code",
+        "icon": "$(wrench)"
+      },
+      {
+        "command": "groupCode.findDuplicates",
+        "title": "Find Duplicate/Similar Groups",
+        "category": "Group Code",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "groupCode.findOrphaned",
+        "title": "Find Orphaned Groups",
+        "category": "Group Code",
+        "icon": "$(archive)"
       }
     ],
     "chatParticipants": [
@@ -133,6 +175,18 @@
           {
             "name": "refresh",
             "description": "Rescan all files for code groups"
+          },
+          {
+            "name": "refactor",
+            "description": "Analyze code groups for refactoring opportunities"
+          },
+          {
+            "name": "duplicates",
+            "description": "Find duplicate or similar group names"
+          },
+          {
+            "name": "orphaned",
+            "description": "Find orphaned or unused groups"
           }
         ]
       }

@@ -28,7 +28,18 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **GitHub Copilot Chat Integration**: Interact with your code groups using natural language through @groupcode chat participant
 - **Workspace-Wide Generation**: Process entire workspaces or individual files with a single command
 - **Smart Format Detection**: Automatically detects and fixes incorrect group comment formats
-- **Real-time Tree View Updates**: Tree view refreshes automatically after generating groups
+- **Real-time Tree View Updates**: Tree view refreshes automatically when you add or edit @group comments
+- **Semantic Duplicate Detection**: AI-powered detection of semantically similar group names to maintain naming consistency
+
+### Smart Group Name Deduplication
+
+The extension now intelligently detects semantically similar group names to prevent duplicates:
+
+- Detects word form variations: `normalize` ↔ `normalization`, `validate` ↔ `validation`
+- Catches abbreviations: `config` ↔ `configuration`, `auth` ↔ `authentication`
+- Identifies word order changes: `date time` ↔ `time date`
+- Suggests using existing group names when you create similar ones
+- Uses AI for deeper semantic analysis when available
 
 ### Chat Participant Commands
 
@@ -367,7 +378,10 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - Added language model tool for Copilot integration
 - Added workspace-wide generation support
 - Added smart format detection and auto-correction
-- Added automatic tree view refresh after generation
+- Added real-time tree view updates when editing @group comments
+- Added semantic duplicate detection for group names
+- Added AI-powered semantic similarity checking
+- Added comprehensive word form normalization (150+ variations)
 - Fixed format to use colon (:) instead of dash (-)
 - Improved scanning performance
 - Enhanced error handling and user feedback

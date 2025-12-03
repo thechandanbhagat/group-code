@@ -46,6 +46,14 @@ export function activate(context: vscode.ExtensionContext) {
     // Create the tree data provider with explicit logging for debugging
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider);
     logger.info('Tree data provider created');
+
+    // Subscribe to code group updates to auto-refresh the tree view
+    context.subscriptions.push(
+        codeGroupProvider.onDidUpdateGroups(() => {
+            logger.info('Code groups updated, refreshing tree view...');
+            codeGroupTreeProvider.refresh();
+        })
+    );
     
     // Create the tree views    // Create both tree views
     const viewOptions = {
@@ -143,6 +151,36 @@ export function activate(context: vscode.ExtensionContext) {
         const document = await vscode.workspace.openTextDocument(uri);
         await codeGroupProvider.processFileOnSave(document);
     });
+
+    // Add real-time document change listener with debouncing for live tree updates
+    let documentChangeTimeout: NodeJS.Timeout | undefined;
+    const DOCUMENT_CHANGE_DEBOUNCE_MS = 500; // Wait 500ms after last change before updating
+
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument((e) => {
+            // Only process if the change contains @group pattern
+            const hasGroupComment = e.contentChanges.some(change => 
+                change.text.includes('@group') || change.text.includes('group')
+            );
+            
+            // Also check if the document already has @group comments (user might be editing them)
+            const documentText = e.document.getText();
+            const hasExistingGroups = documentText.includes('@group');
+            
+            if (hasGroupComment || hasExistingGroups) {
+                // Clear previous timeout
+                if (documentChangeTimeout) {
+                    clearTimeout(documentChangeTimeout);
+                }
+                
+                // Set new debounced update
+                documentChangeTimeout = setTimeout(async () => {
+                    logger.debug(`Document changed with @group content: ${e.document.uri.fsPath}`);
+                    await codeGroupProvider.processFileOnSave(e.document);
+                }, DOCUMENT_CHANGE_DEBOUNCE_MS);
+            }
+        })
+    );
     
     // Save data when workspace is about to close
     context.subscriptions.push(
@@ -199,7 +237,15 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         
         vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {
-            logger.info('Executing command: refreshTreeView - performing complete rescan');
+            logger.info('Executing command: refreshTreeView - simple refresh without rescan');
+            
+            // Just refresh the tree view, don't rescan everything
+            codeGroupTreeProvider.refresh();
+            vscode.window.showInformationMessage('Tree view refreshed');
+        }),
+
+        vscode.commands.registerCommand('groupCode.rescanWorkspace', async () => {
+            logger.info('Executing command: rescanWorkspace - performing complete rescan');
             
             // Show confirmation dialog for full rescan
             const proceed = await vscode.window.showInformationMessage(
@@ -216,7 +262,7 @@ export function activate(context: vscode.ExtensionContext) {
             // Show progress indicator for the refresh operation
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: 'Refreshing Code Groups',
+                title: 'Rescanning Workspace',
                 cancellable: false
             }, async (progress) => {
                 progress.report({ message: 'Clearing cached data...' });
@@ -587,6 +633,366 @@ export function activate(context: vscode.ExtensionContext) {
                 codeGroupTreeProvider.refresh();
                 
                 vscode.window.showInformationMessage(`Added AI-suggested code group: ${groupName}`);
+            });
+        }),
+
+        // Remove All Group Comments
+        vscode.commands.registerCommand('groupCode.removeAllGroups', async () => {
+            logger.info('Executing command: removeAllGroups');
+            
+            const groups = codeGroupProvider.getAllGroups();
+            
+            if (groups.length === 0) {
+                vscode.window.showInformationMessage('No code groups found to remove.');
+                return;
+            }
+            
+            const proceed = await vscode.window.showWarningMessage(
+                `This will remove all ${groups.length} @group comments from your files. This action cannot be undone. Continue?`,
+                { modal: true },
+                'Yes, Remove All', 'No'
+            );
+            
+            if (proceed !== 'Yes, Remove All') {
+                return;
+            }
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Removing Code Groups',
+                cancellable: false
+            }, async (progress) => {
+                // Group by file
+                const fileGroups = new Map<string, typeof groups>();
+                groups.forEach(group => {
+                    if (!fileGroups.has(group.filePath)) {
+                        fileGroups.set(group.filePath, []);
+                    }
+                    fileGroups.get(group.filePath)!.push(group);
+                });
+                
+                let updatedFiles = 0;
+                let removedComments = 0;
+                
+                for (const [filePath, fileGroupList] of fileGroups) {
+                    try {
+                        progress.report({ message: `Processing ${filePath}...` });
+                        
+                        const uri = vscode.Uri.file(filePath);
+                        const document = await vscode.workspace.openTextDocument(uri);
+                        const edit = new vscode.WorkspaceEdit();
+                        
+                        let text = document.getText();
+                        
+                        // Remove @group comments with various patterns
+                        const patterns = [
+                            /\/\/\s*@group\s+[^:\n]+:[^\n]*\n?/gi,  // JS/TS: // @group name: description
+                            /\/\/\s*@group\s+[^:\n]+\n?/gi,         // JS/TS: // @group name
+                            /#\s*@group\s+[^:\n]+:[^\n]*\n?/gi,     // Python: # @group name: description
+                            /#\s*@group\s+[^:\n]+\n?/gi,            // Python: # @group name
+                            /\/\*\s*@group\s+[^:]+:[^*]*\*\/\n?/gi, // Block: /* @group name: description */
+                            /\/\*\s*@group\s+[^*]+\*\/\n?/gi        // Block: /* @group name */
+                        ];
+                        
+                        patterns.forEach(pattern => {
+                            const matches = text.match(pattern);
+                            if (matches) {
+                                removedComments += matches.length;
+                                text = text.replace(pattern, '');
+                            }
+                        });
+                        
+                        const fullRange = new vscode.Range(
+                            document.positionAt(0),
+                            document.positionAt(document.getText().length)
+                        );
+                        edit.replace(uri, fullRange, text);
+                        await vscode.workspace.applyEdit(edit);
+                        updatedFiles++;
+                    } catch (error) {
+                        logger.error(`Error removing groups from file ${filePath}:`, error);
+                    }
+                }
+                
+                // Clear the provider and refresh
+                codeGroupProvider.clearGroups();
+                codeGroupTreeProvider.refresh();
+                
+                // Delete .groupcode directory
+                try {
+                    const workspaceFolders = vscode.workspace.workspaceFolders;
+                    if (workspaceFolders && workspaceFolders.length > 0) {
+                        const fs = require('fs');
+                        const path = require('path');
+                        const rootPath = workspaceFolders[0].uri.fsPath;
+                        const groupCodeDir = path.join(rootPath, '.groupcode');
+                        
+                        if (fs.existsSync(groupCodeDir)) {
+                            fs.rmdirSync(groupCodeDir, { recursive: true, force: true });
+                        }
+                    }
+                } catch (error) {
+                    logger.error('Error deleting .groupcode directory:', error);
+                }
+                
+                vscode.window.showInformationMessage(
+                    `✅ Removed ${removedComments} @group comments from ${updatedFiles} files!`
+                );
+            });
+        }),
+
+        // Bulk Convert Flat Groups to Hierarchies
+        vscode.commands.registerCommand('groupCode.convertToHierarchy', async () => {
+            logger.info('Executing command: convertToHierarchy');
+            
+            const { patternAnalyzer } = await import('./utils/patternAnalyzer');
+            
+            const groups = codeGroupProvider.getAllGroups();
+            const analysis = patternAnalyzer.analyzePatterns(groups);
+            
+            if (analysis.hierarchies.length === 0) {
+                vscode.window.showInformationMessage('No hierarchy suggestions found. Your groups are already well organized!');
+                return;
+            }
+            
+            // Show preview
+            const message = `Found ${analysis.hierarchies.length} groups that can be converted to hierarchies. This will update the @group comments in your files. Continue?`;
+            const proceed = await vscode.window.showWarningMessage(message, { modal: true }, 'Yes', 'Preview First', 'No');
+            
+            if (proceed === 'Preview First') {
+                const report = patternAnalyzer.generateReport(groups);
+                const doc = await vscode.workspace.openTextDocument({
+                    content: report,
+                    language: 'markdown'
+                });
+                await vscode.window.showTextDocument(doc);
+                return;
+            }
+            
+            if (proceed !== 'Yes') {
+                return;
+            }
+            
+            // Group suggestions by file
+            const fileUpdates = new Map<string, Array<{ old: string, new: string }>>();
+            analysis.hierarchies.forEach(suggestion => {
+                const matchingGroups = groups.filter(g => g.functionality === suggestion.originalName);
+                matchingGroups.forEach(group => {
+                    if (!fileUpdates.has(group.filePath)) {
+                        fileUpdates.set(group.filePath, []);
+                    }
+                    fileUpdates.get(group.filePath)!.push({
+                        old: suggestion.originalName,
+                        new: suggestion.suggestedName
+                    });
+                });
+            });
+            
+            // Apply updates
+            let updatedFiles = 0;
+            let updatedGroups = 0;
+            
+            for (const [filePath, updates] of fileUpdates) {
+                try {
+                    const uri = vscode.Uri.file(filePath);
+                    const document = await vscode.workspace.openTextDocument(uri);
+                    const edit = new vscode.WorkspaceEdit();
+                    
+                    let text = document.getText();
+                    updates.forEach(update => {
+                        // Replace @group oldname with @group newname (case insensitive)
+                        const regex = new RegExp(`(@group\\s+)${update.old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*:)`, 'gi');
+                        text = text.replace(regex, `$1${update.new}$2`);
+                        updatedGroups++;
+                    });
+                    
+                    const fullRange = new vscode.Range(
+                        document.positionAt(0),
+                        document.positionAt(document.getText().length)
+                    );
+                    edit.replace(uri, fullRange, text);
+                    await vscode.workspace.applyEdit(edit);
+                    updatedFiles++;
+                } catch (error) {
+                    logger.error(`Error updating file ${filePath}:`, error);
+                }
+            }
+            
+            // Rescan to pick up changes
+            await codeGroupProvider.processWorkspace();
+            codeGroupTreeProvider.refresh();
+            
+            vscode.window.showInformationMessage(
+                `✅ Converted ${updatedGroups} groups to hierarchies across ${updatedFiles} files!`
+            );
+        }),
+
+        // Pattern Analysis Command
+        vscode.commands.registerCommand('groupCode.analyzePatterns', async () => {
+            logger.info('Executing command: analyzePatterns');
+            
+            const { patternAnalyzer } = await import('./utils/patternAnalyzer');
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Analyzing Group Patterns',
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ message: 'Looking for naming patterns...' });
+                
+                const groups = codeGroupProvider.getAllGroups();
+                const analysis = patternAnalyzer.analyzePatterns(groups);
+                
+                if (analysis.all.length === 0) {
+                    vscode.window.showInformationMessage('✅ No pattern issues found. Your group naming is consistent!');
+                    return;
+                }
+                
+                // Show results in markdown
+                const report = patternAnalyzer.generateReport(groups);
+                const doc = await vscode.workspace.openTextDocument({
+                    content: report,
+                    language: 'markdown'
+                });
+                await vscode.window.showTextDocument(doc);
+                
+                const totalIssues = analysis.all.length;
+                const similar = analysis.similar.length;
+                const hierarchies = analysis.hierarchies.length;
+                
+                vscode.window.showInformationMessage(
+                    `Found ${totalIssues} suggestions: ${similar} similar names, ${hierarchies} hierarchy opportunities`
+                );
+            });
+        }),
+
+        // Smart Group Refactoring Commands
+        vscode.commands.registerCommand('groupCode.analyzeRefactoring', async () => {
+            logger.info('Executing command: analyzeRefactoring');
+            
+            const { GroupRefactoringAnalyzer } = await import('./utils/groupRefactoring');
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Analyzing Code Groups',
+                cancellable: false
+            }, async (progress) => {
+                progress.report({ message: 'Scanning for refactoring opportunities...' });
+                
+                const analyzer = new GroupRefactoringAnalyzer();
+                const groups = codeGroupProvider.getGroupsByFunctionality();
+                const issues = await analyzer.analyzeGroups(groups);
+                
+                if (issues.length === 0) {
+                    vscode.window.showInformationMessage('No refactoring issues found. Your code groups are well organized!');
+                    return;
+                }
+                
+                // Show results in a new document
+                const report = analyzer.generateReport(issues);
+                const doc = await vscode.workspace.openTextDocument({
+                    content: report,
+                    language: 'markdown'
+                });
+                await vscode.window.showTextDocument(doc);
+                
+                vscode.window.showInformationMessage(`Found ${issues.length} potential refactoring opportunities. See report for details.`);
+            });
+        }),
+
+        vscode.commands.registerCommand('groupCode.findDuplicates', async () => {
+            logger.info('Executing command: findDuplicates');
+            
+            const { GroupRefactoringAnalyzer, RefactoringIssueType } = await import('./utils/groupRefactoring');
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Finding Duplicate Groups',
+                cancellable: false
+            }, async (progress) => {
+                const analyzer = new GroupRefactoringAnalyzer({
+                    enabledChecks: [RefactoringIssueType.DUPLICATE, RefactoringIssueType.SIMILAR]
+                });
+                
+                const groups = codeGroupProvider.getGroupsByFunctionality();
+                const issues = await analyzer.analyzeGroups(groups);
+                
+                if (issues.length === 0) {
+                    vscode.window.showInformationMessage('No duplicate or similar groups found!');
+                    return;
+                }
+                
+                // Show quick pick with issues
+                const items = issues.map(issue => ({
+                    label: issue.groupName,
+                    description: issue.message,
+                    detail: issue.suggestion,
+                    issue
+                }));
+                
+                const selected = await vscode.window.showQuickPick(items, {
+                    placeHolder: `Found ${issues.length} duplicate/similar groups`,
+                    matchOnDescription: true,
+                    matchOnDetail: true
+                });
+                
+                if (selected && selected.issue.locations && selected.issue.locations.length > 0) {
+                    // Navigate to first location
+                    const location = selected.issue.locations[0];
+                    const doc = await vscode.workspace.openTextDocument(location.file);
+                    const editor = await vscode.window.showTextDocument(doc);
+                    const position = new vscode.Position(location.line - 1, 0);
+                    editor.selection = new vscode.Selection(position, position);
+                    editor.revealRange(new vscode.Range(position, position));
+                }
+            });
+        }),
+
+        vscode.commands.registerCommand('groupCode.findOrphaned', async () => {
+            logger.info('Executing command: findOrphaned');
+            
+            const { GroupRefactoringAnalyzer, RefactoringIssueType } = await import('./utils/groupRefactoring');
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Finding Orphaned Groups',
+                cancellable: false
+            }, async (progress) => {
+                const analyzer = new GroupRefactoringAnalyzer({
+                    enabledChecks: [RefactoringIssueType.ORPHANED],
+                    orphanedThreshold: 90 // 90 days
+                });
+                
+                const groups = codeGroupProvider.getGroupsByFunctionality();
+                const issues = await analyzer.analyzeGroups(groups);
+                
+                if (issues.length === 0) {
+                    vscode.window.showInformationMessage('No orphaned groups found!');
+                    return;
+                }
+                
+                // Show quick pick with issues
+                const items = issues.map(issue => ({
+                    label: issue.groupName,
+                    description: issue.message,
+                    detail: `Used in ${issue.metrics?.fileCount} file(s)`,
+                    issue
+                }));
+                
+                const selected = await vscode.window.showQuickPick(items, {
+                    placeHolder: `Found ${issues.length} potentially orphaned groups`,
+                    matchOnDescription: true
+                });
+                
+                if (selected && selected.issue.locations && selected.issue.locations.length > 0) {
+                    // Navigate to first location
+                    const location = selected.issue.locations[0];
+                    const doc = await vscode.workspace.openTextDocument(location.file);
+                    const editor = await vscode.window.showTextDocument(doc);
+                    const position = new vscode.Position(location.line - 1, 0);
+                    editor.selection = new vscode.Selection(position, position);
+                    editor.revealRange(new vscode.Range(position, position));
+                }
             });
         })
     );

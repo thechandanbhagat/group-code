@@ -40,28 +40,29 @@ export class GroupCodeChatParticipant {
     ): Promise<vscode.ChatResult> {
         try {
             const prompt = request.prompt.trim().toLowerCase();
-            logger.info(`Chat request received: ${prompt}`);
+            const command = request.command; // VS Code passes slash commands here
+            logger.info(`Chat request received - command: ${command}, prompt: ${prompt}`);
 
-            // Parse the command and handle it
-            if (prompt.includes('generate') || prompt.includes('auto group') || prompt.includes('add groups')) {
+            // First check if there's a slash command, then fall back to prompt parsing
+            if (command === 'generate' || prompt.includes('generate') || prompt.includes('auto group') || prompt.includes('add groups')) {
                 return await this.handleGenerateCommand(request, stream, token);
-            } else if (prompt.includes('refactor') || prompt.includes('analyze refactoring') || prompt.includes('improve')) {
+            } else if (command === 'refactor' || prompt.includes('refactor') || prompt.includes('analyze refactoring') || prompt.includes('improve')) {
                 return await this.handleRefactoringCommand(request, stream, token);
-            } else if (prompt.includes('duplicate') || prompt.includes('similar')) {
+            } else if (command === 'duplicates' || prompt.includes('duplicate') || prompt.includes('similar')) {
                 return await this.handleDuplicatesCommand(stream, token);
-            } else if (prompt.includes('orphaned') || prompt.includes('unused') || prompt.includes('old groups')) {
+            } else if (command === 'orphaned' || prompt.includes('orphaned') || prompt.includes('unused') || prompt.includes('old groups')) {
                 return await this.handleOrphanedCommand(stream, token);
-            } else if (prompt.includes('scan') || prompt.includes('analyze')) {
+            } else if (command === 'scan' || prompt.includes('scan') || prompt.includes('analyze')) {
                 return await this.handleScanCommand(request, stream, token);
-            } else if (prompt.includes('suggest') || prompt.includes('recommendation')) {
+            } else if (command === 'suggest' || prompt.includes('suggest') || prompt.includes('recommendation')) {
                 return await this.handleSuggestCommand(request, stream, token);
-            } else if (prompt.includes('show') || prompt.includes('list') || prompt.includes('all groups')) {
+            } else if (command === 'list' || prompt.includes('show') || prompt.includes('list') || prompt.includes('all groups')) {
                 return await this.handleShowGroupsCommand(stream);
-            } else if (prompt.includes('find') || prompt.includes('search')) {
+            } else if (command === 'find' || prompt.includes('find') || prompt.includes('search')) {
                 return await this.handleFindGroupCommand(request, stream);
-            } else if (prompt.includes('navigate') || prompt.includes('go to')) {
+            } else if (command === 'navigate' || prompt.includes('navigate') || prompt.includes('go to')) {
                 return await this.handleNavigateCommand(request, stream);
-            } else if (prompt.includes('refresh') || prompt.includes('rescan')) {
+            } else if (command === 'refresh' || prompt.includes('refresh') || prompt.includes('rescan')) {
                 return await this.handleRefreshCommand(stream, token);
             } else if (prompt.includes('help')) {
                 return await this.handleHelpCommand(stream);

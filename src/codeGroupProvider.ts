@@ -133,7 +133,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         const fileName = document.fileName;
         const fileType = getFileType(fileName);
         
-        if (!fileType || !isSupportedFileType(fileName)) {
+        if (!fileType || !isSupportedFileType(fileType)) {
             return;
         }        // Parse comments and extract functionalities
         const comments = await parseLanguageSpecificComments(document);
@@ -457,33 +457,34 @@ export class CodeGroupProvider implements vscode.Disposable {
             let processedCount = 0;
 
             for (const file of files) {
-                if (isSupportedFileType(file.fsPath)) {
-                    try {
-                        // Double-check with shouldIgnoreFile for extra safety
-                        if (this.shouldIgnoreFile(file.fsPath, ignorePatterns)) {
-                            logger.debug(`Skipping ignored file: ${file.fsPath}`);
-                            continue;
-                        }
-                        
-                        const document = await vscode.workspace.openTextDocument(file);
-                        const fileType = getFileType(file.fsPath);
-                        if (!fileType) continue;
-
-                        const groups = parseLanguageSpecificComments(document);
-                        if (groups.length > 0) {
-                            this.addGroups(fileType, groups);
-                            processedCount++;
-
-                            // Update functionalities set
-                            groups.forEach(group => {
-                                if (group && group.functionality) {
-                                    this.functionalities.add(group.functionality);
-                                }
-                            });
-                        }
-                    } catch (err) {
-                        logger.error('Error processing file', err);
+                const fileType = getFileType(file.fsPath);
+                if (!fileType || !isSupportedFileType(fileType)) {
+                    continue;
+                }
+                
+                try {
+                    // Double-check with shouldIgnoreFile for extra safety
+                    if (this.shouldIgnoreFile(file.fsPath, ignorePatterns)) {
+                        logger.debug(`Skipping ignored file: ${file.fsPath}`);
+                        continue;
                     }
+                    
+                    const document = await vscode.workspace.openTextDocument(file);
+
+                    const groups = parseLanguageSpecificComments(document);
+                    if (groups.length > 0) {
+                        this.addGroups(fileType, groups);
+                        processedCount++;
+
+                        // Update functionalities set
+                        groups.forEach(group => {
+                            if (group && group.functionality) {
+                                this.functionalities.add(group.functionality);
+                            }
+                        });
+                    }
+                } catch (err) {
+                    logger.error('Error processing file', err);
                 }
             }
 

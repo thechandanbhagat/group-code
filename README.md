@@ -147,7 +147,7 @@ const userData = getUserData(); // @group UserData: Access user information
 #### HTML/XML/SVG
 ```html
 <!-- @group Authentication: Login form layout -->
-<form class="login-form">
+<form class="login-form">Ks
     <!-- Your HTML here -->
 </form>
 

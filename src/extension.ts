@@ -237,11 +237,20 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         
         vscode.commands.registerCommand('groupCode.refreshTreeView', async () => {
-            logger.info('Executing command: refreshTreeView - simple refresh without rescan');
+            logger.info('Executing command: refreshTreeView - scanning workspace and refreshing');
             
-            // Just refresh the tree view, don't rescan everything
-            codeGroupTreeProvider.refresh();
-            vscode.window.showInformationMessage('Tree view refreshed');
+            // Scan entire workspace for code groups
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Scanning workspace for code groups...',
+                cancellable: false
+            }, async () => {
+                await codeGroupProvider.processWorkspace();
+                codeGroupTreeProvider.refresh();
+            });
+            
+            const allGroups = codeGroupProvider.getAllGroups();
+            vscode.window.showInformationMessage(`Found ${allGroups.length} code group(s) in workspace`);
         }),
 
         vscode.commands.registerCommand('groupCode.rescanWorkspace', async () => {

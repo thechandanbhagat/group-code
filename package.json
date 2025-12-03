@@ -154,7 +154,7 @@
           },
           {
             "name": "scan",
-            "description": "Scan workspace or current file for code groups"
+            "description": "Scan active file for code groups. Use '/scan workspace' to scan all files"
           },
           {
             "name": "suggest",

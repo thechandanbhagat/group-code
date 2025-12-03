@@ -77,43 +77,83 @@ export class GroupCodeChatParticipant {
 
     /**
      * Handle scan/analyze command
+     * - @groupcode /scan → scan active file only
+     * - @groupcode /scan workspace → scan entire workspace
      */
     private async handleScanCommand(
         request: vscode.ChatRequest,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
-        stream.progress('Scanning workspace for code groups...');
-
         const editor = vscode.window.activeTextEditor;
         const prompt = request.prompt.toLowerCase();
 
-        if (prompt.includes('this file') || prompt.includes('current file')) {
+        // Check if user wants to scan the entire workspace
+        const scanWorkspace = prompt.includes('workspace') || prompt.includes('all files') || prompt.includes('all');
+
+        if (scanWorkspace) {
+            // Scan entire workspace
+            stream.progress('Scanning entire workspace for code groups...');
+            
+            await this.codeGroupProvider.processWorkspace();
+            this.treeProvider.refresh();
+            
+            const allGroups = this.codeGroupProvider.getAllGroups();
+            const fileCount = new Set(allGroups.map(g => g.filePath)).size;
+            
+            stream.markdown(`✅ **Workspace scan complete!**\n\n`);
+            stream.markdown(`Found **${allGroups.length}** code group(s) across **${fileCount}** file(s).\n\n`);
+            
+            if (allGroups.length > 0) {
+                // Group by functionality for a summary
+                const byFunctionality = new Map<string, number>();
+                allGroups.forEach(g => {
+                    const count = byFunctionality.get(g.functionality) || 0;
+                    byFunctionality.set(g.functionality, count + 1);
+                });
+                
+                stream.markdown('**Top groups found:**\n');
+                const sortedGroups = [...byFunctionality.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+                sortedGroups.forEach(([name, count]) => {
+                    stream.markdown(`- 📁 **${name}** (${count} occurrence${count > 1 ? 's' : ''})\n`);
+                });
+                
+                if (byFunctionality.size > 10) {
+                    stream.markdown(`\n*...and ${byFunctionality.size - 10} more groups*\n`);
+                }
+            }
+        } else {
+            // Scan active file only (default behavior for @groupcode /scan)
+            stream.progress('Scanning active file for code groups...');
+            
             if (!editor) {
-                stream.markdown('⚠️ No active file found. Please open a file first.\n');
+                stream.markdown('⚠️ No active file found. Please open a file first.\n\n');
+                stream.markdown('💡 **Tip:** Use `@groupcode /scan workspace` to scan the entire workspace.\n');
                 return {};
             }
+            
+            const fileName = editor.document.fileName.split(/[\\/]/).pop() || 'file';
             
             await this.codeGroupProvider.processActiveDocument();
             this.treeProvider.refresh();
             
             const allGroups = this.codeGroupProvider.getAllGroups();
             const groups = allGroups.filter(g => g.filePath === editor.document.uri.fsPath);
-            stream.markdown(`✅ Scanned current file. Found **${groups.length}** code group(s).\n\n`);
+            
+            stream.markdown(`✅ **Scanned \`${fileName}\`**\n\n`);
+            stream.markdown(`Found **${groups.length}** code group(s).\n\n`);
             
             if (groups.length > 0) {
                 stream.markdown('**Groups found:**\n');
                 groups.forEach((group: any) => {
                     stream.markdown(`- 📁 **${group.functionality}**${group.description ? ` - ${group.description}` : ''}\n`);
                 });
+            } else {
+                stream.markdown('No `@group` comments found in this file.\n\n');
+                stream.markdown('💡 **Tip:** Use `@groupcode /generate` to automatically add group comments using AI.\n');
             }
-        } else {
-            // Scan entire workspace
-            await this.codeGroupProvider.processWorkspace();
-            this.treeProvider.refresh();
             
-            const allGroups = this.codeGroupProvider.getAllGroups();
-            stream.markdown(`✅ Scanned workspace. Found **${allGroups.length}** code group(s) across all files.\n`);
+            stream.markdown(`\n---\n💡 Use \`@groupcode /scan workspace\` to scan all files in the workspace.\n`);
         }
 
         return {};

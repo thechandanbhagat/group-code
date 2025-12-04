@@ -1003,6 +1003,62 @@ export function activate(context: vscode.ExtensionContext) {
                     editor.revealRange(new vscode.Range(position, position));
                 }
             });
+        }),
+
+        // Set preferred AI model command
+        vscode.commands.registerCommand('groupCode.setPreferredModel', async () => {
+            logger.info('Executing command: setPreferredModel');
+            
+            const { getWorkspaceFolders, loadGroupCodeSettings, saveGroupCodeSettings } = await import('./utils/fileUtils');
+            
+            const workspaceFolders = getWorkspaceFolders();
+            if (workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open. Please open a folder first.');
+                return;
+            }
+            
+            // Get available models
+            const models = await vscode.lm.selectChatModels();
+            if (models.length === 0) {
+                vscode.window.showErrorMessage('No language models available. Please ensure GitHub Copilot is installed.');
+                return;
+            }
+            
+            // Load current settings
+            const currentSettings = await loadGroupCodeSettings(workspaceFolders[0]);
+            
+            // Create quick pick items
+            const items: vscode.QuickPickItem[] = [
+                {
+                    label: '$(symbol-default) Use Chat Selection',
+                    description: 'Use whatever model is selected in the chat dropdown',
+                    detail: 'Recommended - follows your chat preferences'
+                },
+                ...models.map(m => ({
+                    label: m.name || m.id,
+                    description: m.id,
+                    detail: currentSettings.preferredModel === m.id ? '✓ Currently selected' : undefined
+                }))
+            ];
+            
+            const selected = await vscode.window.showQuickPick(items, {
+                placeHolder: 'Select preferred AI model for code group generation',
+                title: 'Set Preferred AI Model'
+            });
+            
+            if (selected) {
+                if (selected.label === '$(symbol-default) Use Chat Selection') {
+                    currentSettings.preferredModel = undefined;
+                } else {
+                    currentSettings.preferredModel = selected.description;
+                }
+                
+                await saveGroupCodeSettings(workspaceFolders[0], currentSettings);
+                
+                const modelName = currentSettings.preferredModel || 'Chat Selection';
+                vscode.window.showInformationMessage(`Preferred model set to: ${modelName}`);
+                logger.info(`Preferred model set to: ${modelName}`);
+            }
         })
     );
     

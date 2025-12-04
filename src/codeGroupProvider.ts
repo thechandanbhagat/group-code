@@ -389,12 +389,44 @@ export class CodeGroupProvider implements vscode.Disposable {
                     for (const line of gitignoreLines) {
                         // Skip negation patterns for now (patterns starting with !)
                         if (!line.startsWith('!')) {
-                            const pattern = line.endsWith('/') ? line + '**' : line;
+                            let pattern = line;
+                            
+                            // Check if this is a directory pattern (ends with /)
+                            const isDirectoryPattern = pattern.endsWith('/');
+                            
+                            // Remove leading slash if present
+                            if (pattern.startsWith('/')) {
+                                pattern = pattern.substring(1);
+                            }
+                            
+                            // Remove trailing slash
+                            if (pattern.endsWith('/')) {
+                                pattern = pattern.slice(0, -1);
+                            }
+                            
+                            // Check if this looks like a file pattern (contains * with extension or has file extension)
+                            const isFilePattern = /\*\.[a-zA-Z0-9]+$/.test(pattern) || 
+                                                  /\.[a-zA-Z0-9]+$/.test(pattern) && !pattern.startsWith('.');
+                            
+                            // Add ** prefix if the pattern doesn't already have it
+                            if (!pattern.startsWith('**/') && !pattern.startsWith('**\\')) {
+                                pattern = '**/' + pattern;
+                            }
+                            
+                            // Add /** suffix only for directory patterns, not file patterns
+                            if (isDirectoryPattern || (!isFilePattern && !pattern.endsWith('/**'))) {
+                                // This is a directory - add /** to match contents
+                                if (!pattern.endsWith('/**')) {
+                                    pattern = pattern + '/**';
+                                }
+                            }
+                            
                             ignorePatterns.push(pattern);
+                            logger.debug(`Converted gitignore pattern: "${line}" -> "${pattern}"`);
                         }
                     }
                     
-                    logger.info(`Loaded ${gitignoreLines.length} patterns from .gitignore in ${folderPath}`);
+                    logger.info(`Loaded ${ignorePatterns.length} patterns from .gitignore in ${folderPath}`);
                 } catch (error) {
                     // No .gitignore file, use default patterns
                     logger.info(`No .gitignore file found in ${folderPath}, using default ignore patterns`);

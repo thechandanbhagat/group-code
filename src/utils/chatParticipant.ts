@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { CodeGroupProvider } from '../codeGroupProvider';
 import { CodeGroupTreeProvider } from '../codeGroupTreeProvider';
 import logger from './logger';
 import { enrichWithHierarchy, parseHierarchy, isDescendantOf } from './hierarchyUtils';
+import { getSupportedFilesGlobPattern } from './fileUtils';
 
 /**
  * GitHub Copilot Chat Participant for Code Grouping Extension
@@ -435,10 +437,17 @@ export class GroupCodeChatParticipant {
         stream.progress('🔍 Finding code files in workspace...');
 
         try {
-            // Find all supported code files
+            // Get ignore patterns from .gitignore and defaults
+            const ignorePatterns = await this.getIgnorePatterns(workspaceFolders[0].uri.fsPath);
+            const excludePattern = `{${ignorePatterns.join(',')}}`;
+            
+            logger.info(`Workspace generation using ${ignorePatterns.length} ignore patterns`);
+            
+            // Find all supported code files, respecting gitignore
+            // Uses centralized supported extensions from fileUtils
             const files = await vscode.workspace.findFiles(
-                '**/*.{ts,js,tsx,jsx,py,java,cpp,c,cs,go,rb,php,swift,kt}',
-                '**/node_modules/**'
+                getSupportedFilesGlobPattern(),
+                excludePattern
             );
 
             if (files.length === 0) {
@@ -464,7 +473,7 @@ export class GroupCodeChatParticipant {
                 
                 stream.markdown('Proceeding with update...\n\n');
             } else {
-                stream.markdown('### 🤖 Generating Code Groups for Workspace\n\n');
+                stream.markdown('###  Generating Code Groups for Workspace\n\n');
                 stream.markdown('ℹ️ **Add mode:** Only files without @group comments will be processed.\n');
                 stream.markdown('💡 Use `@groupcode /generate workspace update` to replace existing groups.\n\n');
             }
@@ -541,7 +550,33 @@ export class GroupCodeChatParticipant {
                             await vscode.workspace.applyEdit(edit);
                             await document.save();
                             
-                            stream.markdown(`- ✅ \`${file.fsPath.split(/[\\/]/).pop()}\` - Groups added\n`);
+                            // Extract the groups that were added
+                            const groupMatches = generatedCode.matchAll(/@group\s+([^\n\r]+)/gi);
+                            const addedGroups: Array<{name: string, line: number}> = [];
+                            const lines = generatedCode.split('\n');
+                            
+                            for (const match of groupMatches) {
+                                const groupName = match[1].trim();
+                                // Find the line number of this group
+                                const lineIndex = lines.findIndex((line: string) => line.includes(match[0]));
+                                if (lineIndex !== -1) {
+                                    addedGroups.push({ name: groupName, line: lineIndex + 1 });
+                                }
+                            }
+                            
+                            // Show file with clickable anchor
+                            stream.markdown(`- ✅ `);
+                            stream.anchor(file, `${file.fsPath.split(/[\\/]/).pop()}`);
+                            stream.markdown(` - **${addedGroups.length}** group(s) added:\n`);
+                            
+                            // Show each group with clickable location
+                            for (const group of addedGroups) {
+                                const location = new vscode.Location(file, new vscode.Position(group.line - 1, 0));
+                                stream.markdown(`  - `);
+                                stream.anchor(location, `📁 ${group.name}`);
+                                stream.markdown(`\n`);
+                            }
+                            
                             modified++;
                         } else {
                             stream.markdown(`- ➖ \`${file.fsPath.split(/[\\/]/).pop()}\` - No groups suggested\n`);
@@ -606,7 +641,7 @@ export class GroupCodeChatParticipant {
         token: vscode.CancellationToken,
         isUpdateMode: boolean = false
     ): Promise<vscode.ChatResult> {
-        stream.progress('🤖 Analyzing your code...');
+        stream.progress(' Analyzing your code...');
 
         try {
             // Get the code to process
@@ -652,7 +687,7 @@ export class GroupCodeChatParticipant {
             const { AICodeGroupTool } = await import('./aiCodeGroupTool');
             const tool = new AICodeGroupTool();
             
-            stream.progress('🤖 Generating @group comments...');
+            stream.progress(' Generating @group comments...');
             
             const result = await tool.invoke({
                 input: {
@@ -708,7 +743,32 @@ export class GroupCodeChatParticipant {
                 await vscode.workspace.applyEdit(edit);
                 await editor.document.save();
                 
-                stream.markdown('✅ **Applied!** Code groups have been added to your file.\n\n');
+                // Extract the groups that were added
+                const groupMatches = generatedCode.matchAll(/@group\s+([^\n\r]+)/gi);
+                const addedGroups: Array<{name: string, line: number}> = [];
+                const lines = generatedCode.split('\n');
+                
+                for (const match of groupMatches) {
+                    const groupName = match[1].trim();
+                    const lineIndex = lines.findIndex((line: string) => line.includes(match[0]));
+                    if (lineIndex !== -1) {
+                        addedGroups.push({ name: groupName, line: lineIndex + 1 });
+                    }
+                }
+                
+                stream.markdown('### ✅ Code Groups Applied!\n\n');
+                stream.markdown(`Added **${addedGroups.length}** group(s) to `);
+                stream.anchor(editor.document.uri, fileName);
+                stream.markdown(`:\n\n`);
+                
+                // Show each group with clickable location
+                for (const group of addedGroups) {
+                    const location = new vscode.Location(editor.document.uri, new vscode.Position(group.line - 1, 0));
+                    stream.markdown(`- `);
+                    stream.anchor(location, `📁 ${group.name}`);
+                    stream.markdown(`\n`);
+                }
+                stream.markdown(`\n`);
                 
                 // Automatically process the file to update tree view
                 stream.progress('Scanning file for groups...');
@@ -723,7 +783,7 @@ export class GroupCodeChatParticipant {
                 // Give a moment for the refresh to propagate
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                stream.markdown('✨ **Scan complete!** Check the Group Code tree view. 🎉\n');
+                stream.markdown('✨ **Done!** Check the Group Code tree view to navigate your groups. 🎉\n');
             } else if (choice === 'Show Diff') {
                 // Create a temporary document for diff
                 const tempUri = editor.document.uri.with({ 
@@ -980,7 +1040,7 @@ export class GroupCodeChatParticipant {
         stream.markdown('# 📚 GroupCode Chat Commands\n\n');
         stream.markdown('I can help you manage code groups in your workspace. Here are the available commands:\n\n');
         
-        stream.markdown('### 🤖 AI-Powered Generation\n');
+        stream.markdown('###  AI-Powered Generation\n');
         stream.markdown('- `@groupcode generate` - Auto-generate @group comments for current file\n');
         stream.markdown('- `@groupcode auto group` - AI analyzes and adds group comments\n');
         stream.markdown('- `@groupcode add groups` - Automatically organize code with groups\n\n');
@@ -1025,6 +1085,110 @@ export class GroupCodeChatParticipant {
         stream.markdown('Format: `@group <name> - <description>`\n');
 
         return {};
+    }
+
+    /**
+     * Get glob patterns to ignore based on .gitignore and common folders to exclude
+     */
+    private async getIgnorePatterns(folderPath?: string): Promise<string[]> {
+        const ignorePatterns: string[] = [];
+        
+        // Try to read .gitignore patterns from the specified folder
+        if (folderPath) {
+            try {
+                const normalizedPath = folderPath.replace(/\\/g, '/');
+                const gitignorePath = normalizedPath.endsWith('/') ? 
+                    `${normalizedPath}.gitignore` : 
+                    `${normalizedPath}/.gitignore`;
+                
+                try {
+                    await fs.promises.access(gitignorePath);
+                    const gitignoreContent = await fs.promises.readFile(gitignorePath, 'utf8');
+                    const gitignoreLines = gitignoreContent.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line && !line.startsWith('#'));
+
+                    // Add all non-empty, non-comment lines
+                    for (const line of gitignoreLines) {
+                        // Skip negation patterns for now (patterns starting with !)
+                        if (!line.startsWith('!')) {
+                            let pattern = line;
+                            
+                            // Check if this is a directory pattern (ends with /)
+                            const isDirectoryPattern = pattern.endsWith('/');
+                            
+                            // Remove leading slash if present
+                            if (pattern.startsWith('/')) {
+                                pattern = pattern.substring(1);
+                            }
+                            
+                            // Remove trailing slash
+                            if (pattern.endsWith('/')) {
+                                pattern = pattern.slice(0, -1);
+                            }
+                            
+                            // Check if this looks like a file pattern (contains * with extension or has file extension)
+                            const isFilePattern = /\*\.[a-zA-Z0-9]+$/.test(pattern) || 
+                                                  /\.[a-zA-Z0-9]+$/.test(pattern) && !pattern.startsWith('.');
+                            
+                            // Add ** prefix if the pattern doesn't already have it
+                            if (!pattern.startsWith('**/') && !pattern.startsWith('**\\')) {
+                                pattern = '**/' + pattern;
+                            }
+                            
+                            // Add /** suffix only for directory patterns, not file patterns
+                            if (isDirectoryPattern || (!isFilePattern && !pattern.endsWith('/**'))) {
+                                // This is a directory - add /** to match contents
+                                if (!pattern.endsWith('/**')) {
+                                    pattern = pattern + '/**';
+                                }
+                            }
+                            
+                            ignorePatterns.push(pattern);
+                        }
+                    }
+                    
+                    logger.info(`Chat participant loaded ${ignorePatterns.length} patterns from .gitignore`);
+                } catch {
+                    logger.info(`No .gitignore file found in ${folderPath}, using default ignore patterns`);
+                }
+            } catch (error) {
+                logger.error('Error reading .gitignore file', error);
+            }
+        }
+        
+        // Add default patterns that should always be ignored
+        const defaultPatterns = [
+            '**/node_modules/**',
+            '**/.git/**',
+            '**/.groupcode/**',
+            '**/dist/**',
+            '**/build/**',
+            '**/.next/**',
+            '**/out/**',
+            '**/coverage/**',
+            '**/venv/**',
+            '**/.venv/**',
+            '**/env/**',
+            '**/.env/**',
+            '**/bin/**',
+            '**/obj/**',
+            '**/.vs/**',
+            '**/.idea/**',
+            '**/.vscode/**',
+            '**/tmp/**',
+            '**/temp/**',
+            '**/.cache/**',
+            '**/target/**',
+            '**/vendor/**',
+            '**/__pycache__/**',
+            '**/*.min.js',
+            '**/*.min.css',
+            '**/*.map'
+        ];
+        
+        ignorePatterns.push(...defaultPatterns);
+        return ignorePatterns;
     }
 
     /**

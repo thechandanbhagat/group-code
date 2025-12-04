@@ -152,87 +152,102 @@ export function getFileName(filePath: string | undefined | null): string {
     }
 }
 
+// Centralized list of supported file extensions
+const supportedTypes = [
+    // JavaScript/TypeScript
+    'js', 'jsx', 'ts', 'tsx', 'd.ts',
+    // HTML/XML
+    'html', 'htm', 'xml', 'svg', 'vue',
+    // CSS
+    'css', 'scss', 'less',
+    // Python
+    'py', 'python', 'ipynb',
+    // C-family
+    'cs', 'csharp', 'c', 'cpp', 'h', 'hpp', 'm', 'mm',
+    // Go
+    'go',
+    // Ruby
+    'rb', 'ruby',
+    // PHP
+    'php',
+    // Java and JVM languages
+    'java', 'kt', 'kts', 'scala', 'groovy', 'gvy', 'gy', 'gsh',
+    // Shell scripts
+    'sh', 'bash', 'ps1', 'psm1', 'psd1',
+    // Markdown
+    'md', 'markdown',
+    // SQL
+    'sql',
+    // Rust
+    'rs',
+    // Swift
+    'swift',
+    // Dart
+    'dart',
+    // Haskell
+    'hs', 'lhs',
+    // Lua
+    'lua',
+    // R
+    'r',
+    // VB
+    'vbs', 'vb',
+    // F#
+    'fs', 'fsx', 'fsi',
+    // Perl
+    'pl', 'pm', 't', 'pod',
+    // Clojure
+    'clj', 'cljs', 'cljc', 'edn',
+    // Erlang
+    'erl', 'hrl',
+    // Julia
+    'jl',
+    // D
+    'd',
+    // Crystal
+    'cr',
+    // COBOL
+    'cob', 'cbl', 'cpy',
+    // Fortran
+    'f', 'for', 'f90', 'f95', 'f03', 'f08',
+    // Assembly
+    'asm', 's',
+    // YAML
+    'yml', 'yaml',
+    // JSON with comments
+    'jsonc',
+    // Elm
+    'elm',
+    // Docker
+    'dockerfile',
+    // Elixir
+    'ex', 'exs',
+    // CoffeeScript
+    'coffee', 'litcoffee',
+    // Protocol Buffers
+    'proto',
+    // TCL
+    'tcl'
+];
+
+/**
+ * Get all supported file extensions as an array
+ */
+export function getSupportedExtensions(): string[] {
+    return [...supportedTypes];
+}
+
+/**
+ * Get a glob pattern for all supported file types
+ */
+export function getSupportedFilesGlobPattern(): string {
+    return `**/*.{${supportedTypes.join(',')}}`;
+}
+
 export function isSupportedFileType(fileType: string): boolean {
     if (!fileType) {
         return false;
     }
-    
-    const supportedTypes = [
-        // JavaScript/TypeScript
-        'js', 'jsx', 'ts', 'tsx', 'd.ts',
-        // HTML/XML
-        'html', 'htm', 'xml', 'svg', 'vue',
-        // CSS
-        'css', 'scss', 'less',
-        // Python
-        'py', 'python', 'ipynb',
-        // C-family
-        'cs', 'csharp', 'c', 'cpp', 'h', 'hpp', 'm', 'mm',
-        // Go
-        'go',
-        // Ruby
-        'rb', 'ruby',
-        // PHP
-        'php',
-        // Java and JVM languages
-        'java', 'kt', 'kts', 'scala', 'groovy', 'gvy', 'gy', 'gsh',
-        // Shell scripts
-        'sh', 'bash', 'ps1', 'psm1', 'psd1',
-        // Markdown
-        'md', 'markdown',
-        // SQL
-        'sql',
-        // Rust
-        'rs',
-        // Swift
-        'swift',
-        // Dart
-        'dart',
-        // Haskell
-        'hs', 'lhs',
-        // Lua
-        'lua',
-        // R
-        'r',
-        // VB
-        'vbs', 'vb',
-        // F#
-        'fs', 'fsx', 'fsi',
-        // Perl
-        'pl', 'pm', 't', 'pod',
-        // Clojure
-        'clj', 'cljs', 'cljc', 'edn',
-        // Erlang
-        'erl', 'hrl',
-        // Julia
-        'jl',
-        // D
-        'd',
-        // Crystal
-        'cr',
-        // COBOL
-        'cob', 'cbl', 'cpy',
-        // Fortran
-        'f', 'for', 'f90', 'f95', 'f03', 'f08',
-        // Assembly
-        'asm', 's',
-        // YAML
-        'yml', 'yaml',
-        // JSON with comments
-        'jsonc',
-        // Elm
-        'elm',
-        // Docker
-        'dockerfile',
-        // Elixir
-        'ex', 'exs',
-        // CoffeeScript
-        'coffee', 'litcoffee',
-        // Protocol Buffers
-        'proto',
-        // TCL
-        'tcl'
-    ];
     
     return supportedTypes.includes(fileType.toLowerCase());
 }
@@ -642,4 +657,94 @@ export function getWorkspaceFolders(): string[] {
         logger.error('Error in getWorkspaceFolders:', error);
         return [];
     }
+}
+
+/**
+ * GroupCode settings interface
+ */
+export interface GroupCodeSettings {
+    /** Preferred AI model ID (e.g., "claude-3.5-sonnet", "gpt-4", "gpt-4o") */
+    preferredModel?: string;
+    /** Whether to auto-scan on file save */
+    autoScanOnSave?: boolean;
+    /** Maximum file size to process (in KB) */
+    maxFileSizeKB?: number;
+    /** Custom ignore patterns (in addition to .gitignore) */
+    additionalIgnorePatterns?: string[];
+}
+
+/**
+ * Default settings
+ */
+const defaultSettings: GroupCodeSettings = {
+    preferredModel: undefined, // Use chat's selected model by default
+    autoScanOnSave: true,
+    maxFileSizeKB: 500,
+    additionalIgnorePatterns: []
+};
+
+/**
+ * Load settings from .groupcode/settings.json
+ */
+export async function loadGroupCodeSettings(workspacePath: string): Promise<GroupCodeSettings> {
+    if (!workspacePath || typeof workspacePath !== 'string') {
+        return { ...defaultSettings };
+    }
+
+    try {
+        const groupCodeDir = await ensureGroupCodeDir(workspacePath);
+        const settingsPath = `${groupCodeDir}/settings.json`;
+        
+        try {
+            await fs.promises.access(settingsPath);
+            const content = await fs.promises.readFile(settingsPath, 'utf8');
+            const settings = JSON.parse(content);
+            logger.info(`Loaded GroupCode settings from ${settingsPath}`);
+            return { ...defaultSettings, ...settings };
+        } catch {
+            // Settings file doesn't exist, return defaults
+            return { ...defaultSettings };
+        }
+    } catch (error) {
+        logger.error('Error loading GroupCode settings:', error);
+        return { ...defaultSettings };
+    }
+}
+
+/**
+ * Save settings to .groupcode/settings.json
+ */
+export async function saveGroupCodeSettings(workspacePath: string, settings: GroupCodeSettings): Promise<void> {
+    if (!workspacePath || typeof workspacePath !== 'string') {
+        throw new Error("Invalid workspace path");
+    }
+
+    try {
+        const groupCodeDir = await ensureGroupCodeDir(workspacePath);
+        const settingsPath = `${groupCodeDir}/settings.json`;
+        
+        const content = JSON.stringify(settings, null, 2);
+        await fs.promises.writeFile(settingsPath, content, 'utf8');
+        logger.info(`Saved GroupCode settings to ${settingsPath}`);
+    } catch (error) {
+        logger.error('Error saving GroupCode settings:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get the preferred model from settings
+ */
+export async function getPreferredModel(workspacePath: string): Promise<string | undefined> {
+    const settings = await loadGroupCodeSettings(workspacePath);
+    return settings.preferredModel;
+}
+
+/**
+ * Set the preferred model in settings
+ */
+export async function setPreferredModel(workspacePath: string, modelId: string | undefined): Promise<void> {
+    const settings = await loadGroupCodeSettings(workspacePath);
+    settings.preferredModel = modelId;
+    await saveGroupCodeSettings(workspacePath, settings);
 }

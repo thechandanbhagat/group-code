@@ -20,7 +20,67 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
-## What's New in Version 1.2.0
+## What's New in Version 1.4.0
+
+### 🎯 Improved .gitignore Support
+- **Full .gitignore Parsing**: Properly converts .gitignore patterns to VS Code glob patterns
+- **Directory Pattern Handling**: Correctly excludes directories like `.venv`, `node_modules`, `__pycache__`
+- **File Pattern Handling**: Properly handles file patterns like `*.pyc`, `*.log`
+- **No More False Scans**: Ignored folders are now truly excluded from workspace scanning
+
+### 🤖 Model Selection
+- **Use Your Preferred Model**: AI generation now uses the model you've selected in Copilot Chat
+- **Respects User Choice**: When using Claude, GPT-4, or any other model in chat, the extension uses that same model
+- **Configurable Model Settings**: Set preferred model in `.groupcode/settings.json`
+- **New Command**: `Group Code: Set Preferred AI Model` to configure your default model
+
+### 📍 Clickable Group References
+- **Interactive Output**: When groups are added, each group shows as a clickable link in chat
+- **Jump to Location**: Click on any group name to navigate directly to that line in the file
+- **File Anchors**: File names are clickable to open the file
+- **Copilot-Style UX**: Similar experience to how Copilot shows file references
+
+### 📁 Centralized File Extension Support
+- **Single Source of Truth**: All supported file extensions defined in one place
+- **Easy to Extend**: Add new file types by editing one list in `fileUtils.ts`
+- **Consistent Behavior**: Same extensions used across all scanning operations
+
+### 🔧 Configuration via .groupcode/settings.json
+```json
+{
+  "preferredModel": "claude-sonnet-4",
+  "autoScan": true,
+  "showNotifications": true
+}
+```
+
+## What's New in Version 1.3.0
+
+### Hierarchical Grouping
+
+- **Multi-level Organization**: Create nested group hierarchies using `>` separator (e.g., `@group Auth > Login > Validation`)
+- **Flexible Depth**: Support for unlimited nesting levels
+- **Smart Tree View**: Hierarchies displayed with folder icons, collapsible nodes, and group counts
+- **Breadcrumb Navigation**: Chat responses show hierarchy breadcrumbs for easy navigation
+- **Hierarchy Autocomplete**: Intelligent suggestions for existing hierarchy paths when typing
+
+### Live Updates & Enhanced Scanning
+
+- **Real-time Sidebar Refresh**: Tree view updates automatically when you add or edit @group comments - no manual refresh needed
+- **Scan Current File**: Use `@groupcode /scan` to scan only the current file
+- **Scan Workspace**: Use `@groupcode /scan workspace` to scan the entire project
+
+### Two-Mode Generation
+
+- **Safe Mode**: Only adds missing @group comments, preserving existing ones
+- **Update Mode**: Regenerates all groups with confirmation prompt
+- **Smart Confirmation**: Prompts before overwriting to prevent accidental changes
+
+### Improved Duplicate Detection
+
+- **Enhanced Similarity Detection**: Catches similar group names like "user validation" vs "validate user"
+- **Word Order Variations**: Detects reordered words in group names
+- **Consolidation Suggestions**: Recommends merging similar groups for consistency
 
 ### AI-Powered Features
 
@@ -28,18 +88,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **GitHub Copilot Chat Integration**: Interact with your code groups using natural language through @groupcode chat participant
 - **Workspace-Wide Generation**: Process entire workspaces or individual files with a single command
 - **Smart Format Detection**: Automatically detects and fixes incorrect group comment formats
-- **Real-time Tree View Updates**: Tree view refreshes automatically when you add or edit @group comments
 - **Semantic Duplicate Detection**: AI-powered detection of semantically similar group names to maintain naming consistency
-
-### Smart Group Name Deduplication
-
-The extension now intelligently detects semantically similar group names to prevent duplicates:
-
-- Detects word form variations: `normalize` ↔ `normalization`, `validate` ↔ `validation`
-- Catches abbreviations: `config` ↔ `configuration`, `auth` ↔ `authentication`
-- Identifies word order changes: `date time` ↔ `time date`
-- Suggests using existing group names when you create similar ones
-- Uses AI for deeper semantic analysis when available
 
 ### Chat Participant Commands
 
@@ -47,11 +96,11 @@ Use `@groupcode` in GitHub Copilot Chat with these commands:
 
 - `@groupcode generate` - Auto-generate group comments for current file
 - `@groupcode generate workspace` - Generate groups for entire workspace
-- `@groupcode scan` - Scan workspace for existing code groups
-- `@groupcode scan this file` - Scan only the current file
+- `@groupcode /scan` - Scan current file for existing code groups
+- `@groupcode /scan workspace` - Scan entire workspace for code groups
 - `@groupcode suggest` - Get AI suggestions for selected code
 - `@groupcode list` - Show all code groups in workspace
-- `@groupcode find <name>` - Search for specific code groups
+- `@groupcode find <name>` - Search for specific code groups (supports hierarchical queries)
 - `@groupcode navigate to <name>` - Jump to a specific group
 - `@groupcode refresh` - Rescan all files for updates
 - `@groupcode help` - Show all available commands
@@ -81,7 +130,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.2.0.vsix` file
+1. Download the `groupcode-1.4.0.vsix` file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
@@ -114,6 +163,18 @@ After installing the extension, you'll see a new Group Code icon in your Activit
 Add special comments to your code using the @group tag:
 ```
 @group GroupName: Description of functionality
+```
+
+For hierarchical organization, use the `>` separator:
+```
+@group Parent > Child > Grandchild: Description
+```
+
+**Examples:**
+```javascript
+// @group Authentication: User login process
+// @group Auth > Login > Validation: Email validation
+// @group Features > Dashboard > Charts: Sales chart component
 ```
 
 Note: Use a **colon (:)** after the group name, not a dash (-).
@@ -317,7 +378,8 @@ Each language uses its native comment syntax to define code groups.
 
 - **Inline Comments**: Use inline code group comments for pinpointing specific functionality
 - **Mixed Approaches**: Combine standalone comments for major blocks with inline comments for important lines
-- **Hierarchical Organization**: Consider using prefixes like "Auth:" for related groups
+- **Hierarchical Groups**: Use `>` separator for nested organization (e.g., `@group Auth > OAuth > Google`)
+- **Consistent Hierarchy**: Keep hierarchy naming consistent across files for better organization
 
 ## Troubleshooting
 
@@ -332,9 +394,10 @@ Each language uses its native comment syntax to define code groups.
 ### AI Feature Issues
 
 - **No AI suggestions**: Ensure GitHub Copilot is installed, enabled, and you have an active subscription
-- **Wrong format generated**: Update to latest version (1.2.0+) which uses correct colon format
+- **Wrong format generated**: Update to latest version (1.3.0+) which uses correct colon format
 - **Tree view not updating**: The extension now auto-refreshes; if issues persist, try manual refresh
 - **Chat participant not showing**: Make sure VS Code is version 1.90.0 or higher
+- **Hierarchical groups not showing**: Ensure you're using the correct `>` separator with spaces
 
 ### Format Issues
 
@@ -370,6 +433,33 @@ Found a bug or have a feature request? Please open an issue on the [GitHub repos
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Changelog
+
+### Version 1.4.0
+
+- **Improved .gitignore Support**: Properly converts .gitignore patterns to VS Code glob patterns
+- **Model Selection**: AI generation now uses the model selected in Copilot Chat
+- **Configurable Model Settings**: Set preferred model in `.groupcode/settings.json`
+- **New Command**: `Group Code: Set Preferred AI Model` to configure default model
+- **Clickable Group References**: Groups show as clickable links in chat output
+- **Jump to Location**: Click on any group name to navigate directly to that line
+- **File Anchors**: File names are clickable to open the file
+- **Centralized Extensions**: All supported file extensions defined in one place
+- **Fixed Directory Exclusion**: `.venv`, `node_modules`, `__pycache__` properly excluded
+- **Fixed File Pattern Handling**: `*.pyc`, `*.log` patterns handled correctly
+
+### Version 1.3.0
+
+- Added multi-level hierarchical grouping with `>` separator
+- Added live tree view updates - automatic refresh when editing @group comments
+- Added `/scan` command for current file scanning
+- Added `/scan workspace` command for full workspace scanning
+- Added two-mode generation (safe mode and update mode)
+- Improved duplicate detection for word order variations
+- Enhanced hierarchy autocomplete with existing path suggestions
+- Added breadcrumb navigation in chat responses
+- Added hierarchy search support in `@groupcode find`
+- Improved tree view with folder icons and group counts
+- Updated VS Code engine requirement to 1.99.1
 
 ### Version 1.2.0
 

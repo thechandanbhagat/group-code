@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { copilotIntegration } from './copilotIntegration';
 import logger from './logger';
+import { getPreferredModel, getWorkspaceFolders } from './fileUtils';
 
 /**
  * AI-powered tool for generating code group comments
@@ -13,6 +14,54 @@ export class AICodeGroupTool implements vscode.LanguageModelTool<{
     filePath?: string;
     language?: string;
 }> {
+    private preferredModel?: vscode.LanguageModelChat;
+
+    /**
+     * Set the preferred model to use (e.g., from chat participant context)
+     */
+    setModel(model: vscode.LanguageModelChat): void {
+        this.preferredModel = model;
+    }
+
+    /**
+     * Get the model to use - checks settings, then prefers the set model, falls back to first available
+     */
+    private async getModel(): Promise<vscode.LanguageModelChat | undefined> {
+        // First, check if there's a model set from the chat context
+        if (this.preferredModel) {
+            logger.info(`Using chat context model: ${this.preferredModel.id}`);
+            return this.preferredModel;
+        }
+        
+        // Second, check settings for preferred model
+        const workspaceFolders = getWorkspaceFolders();
+        if (workspaceFolders.length > 0) {
+            const preferredModelId = await getPreferredModel(workspaceFolders[0]);
+            if (preferredModelId) {
+                // Try to find this specific model
+                const models = await vscode.lm.selectChatModels();
+                const matchedModel = models.find(m => 
+                    m.id.toLowerCase().includes(preferredModelId.toLowerCase()) ||
+                    m.name?.toLowerCase().includes(preferredModelId.toLowerCase())
+                );
+                if (matchedModel) {
+                    logger.info(`Using preferred model from settings: ${matchedModel.id}`);
+                    return matchedModel;
+                } else {
+                    logger.warn(`Preferred model "${preferredModelId}" not found, using default`);
+                }
+            }
+        }
+        
+        // Fall back to first available model
+        const models = await vscode.lm.selectChatModels();
+        if (models.length > 0) {
+            logger.info(`Using fallback model: ${models[0].id}`);
+            return models[0];
+        }
+        return undefined;
+    }
+
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<{
             action: 'analyze' | 'generate' | 'suggest';
@@ -166,25 +215,15 @@ export class AICodeGroupTool implements vscode.LanguageModelTool<{
      * Perform AI analysis of code structure
      */
     private async performAIAnalysis(code: string, language: string, filePath: string): Promise<any> {
-        if (!await copilotIntegration.isIntegrationAvailable()) {
-            return {
-                error: 'Language model not available. Please ensure GitHub Copilot is installed and active.',
-                groups: []
-            };
-        }
-
-        // Try to get any available language model
-        const models = await vscode.lm.selectChatModels();
+        const model = await this.getModel();
         
-        if (models.length === 0) {
+        if (!model) {
             return {
                 error: 'No language model found. Please ensure GitHub Copilot is installed, enabled, and you have an active subscription.',
                 groups: []
             };
         }
         
-        const model = models[0];
-        logger.info(`Using language model: ${model.id}`);
         const prompt = this.buildAnalysisPrompt(code, language, filePath);
         
         const messages = [
@@ -214,19 +253,12 @@ export class AICodeGroupTool implements vscode.LanguageModelTool<{
      * Generate code with group comments inserted
      */
     private async generateGroupedCode(code: string, language: string, filePath: string): Promise<string> {
-        if (!await copilotIntegration.isIntegrationAvailable()) {
-            throw new Error('Language model not available. Please ensure GitHub Copilot is installed and active.');
-        }
-
-        // Try to get any available language model
-        const models = await vscode.lm.selectChatModels();
+        const model = await this.getModel();
         
-        if (models.length === 0) {
+        if (!model) {
             throw new Error('No language model found. Please ensure GitHub Copilot is installed, enabled, and you have an active subscription.');
         }
         
-        const model = models[0];
-        logger.info(`Using language model: ${model.id}`);
         const prompt = this.buildGenerationPrompt(code, language, filePath);
         
         const messages = [

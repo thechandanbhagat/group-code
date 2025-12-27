@@ -174,8 +174,6 @@ const supportedTypes = [
     'java', 'kt', 'kts', 'scala', 'groovy', 'gvy', 'gy', 'gsh',
     // Shell scripts
     'sh', 'bash', 'ps1', 'psm1', 'psd1',
-    // Markdown
-    'md', 'markdown',
     // SQL
     'sql',
     // Rust

@@ -401,7 +401,6 @@ export async function saveCodeGroups(
         // Convert to serializable format
         const functionalitiesData: any = {
             version: "1.3.0",
-            lastUpdated: new Date().toISOString(),
             totalFunctionalities: functionalitiesMap.size,
             functionalities: {}
         };

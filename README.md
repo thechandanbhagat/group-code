@@ -130,7 +130,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.4.0.vsix` file
+1. Download the `groupcode-1.4.1.vsix` file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
@@ -433,6 +433,12 @@ Found a bug or have a feature request? Please open an issue on the [GitHub repos
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Changelog
+
+### Version 1.4.1
+
+- **Removed Markdown Support**: Excluded markdown files from code grouping to focus on programming languages only
+- **Data Structure Simplification**: Removed global `lastUpdated` timestamp from functionalities.json
+- **Improved File Type Filtering**: Cleaner separation between documentation and code files
 
 ### Version 1.4.0
 

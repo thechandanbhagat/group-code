@@ -279,6 +279,45 @@ export class SettingsViewProvider {
             border-radius: 2px;
             box-sizing: border-box;
         }
+        .models-list {
+            background: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .model-group {
+            margin-bottom: 12px;
+        }
+        .model-group:last-child {
+            margin-bottom: 0;
+        }
+        .vendor-name {
+            font-weight: 600;
+            color: var(--vscode-textLink-foreground);
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .model-item {
+            padding: 4px 8px;
+            margin-left: 12px;
+            font-family: var(--vscode-editor-font-family);
+            font-size: 12px;
+        }
+        .model-name {
+            color: var(--vscode-foreground);
+        }
+        .model-id {
+            color: var(--vscode-descriptionForeground);
+            margin-left: 8px;
+            font-style: italic;
+        }
+        .loading {
+            color: var(--vscode-descriptionForeground);
+            padding: 8px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -286,11 +325,17 @@ export class SettingsViewProvider {
     
     <div class="setting-group">
         <div class="setting-item">
-            <label for="preferredModel">Preferred AI Model</label>
-            <select id="preferredModel">
-                <option value="auto">Auto (Use Active Chat Model)</option>
-            </select>
-            <div class="description">Default AI model for code group generation</div>
+            <label>Available AI Models</label>
+            <div id="modelsList" class="models-list">
+                <div class="loading">Loading available models...</div>
+            </div>
+            <div class="description">Models available through GitHub Copilot</div>
+        </div>
+
+        <div class="setting-item">
+            <label for="preferredModel">Preferred Model ID (optional)</label>
+            <input type="text" id="preferredModel" placeholder="auto">
+            <div class="description">Leave empty or use 'auto' to use active chat model</div>
         </div>
 
         <div class="setting-item">
@@ -403,7 +448,7 @@ export class SettingsViewProvider {
             document.getElementById('preferredModel').value = settings.preferredModel || 'auto
 
         function loadSettingsIntoForm(settings) {
-            document.getElementById('preferredModel').value = settings.preferredModel || 'claude-sonnet-4';
+            document.getElementById('preferredModel').value = settings.preferredModel || '';
             document.getElementById('autoScan').checked = settings.autoScan !== false;
             document.getElementById('showNotifications').checked = settings.showNotifications !== false;
             document.getElementById('autoRefreshOnSave').checked = settings.autoRefreshOnSave !== false;

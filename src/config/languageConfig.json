@@ -96,14 +96,6 @@
       }
     },
     {
-      "name": "Markdown",
-      "fileTypes": ["md", "markdown"],
-      "commentMarkers": {
-        "blockStart": "<!--",
-        "blockEnd": "-->"
-      }
-    },
-    {
       "name": "SQL",
       "fileTypes": ["sql"],
       "commentMarkers": {

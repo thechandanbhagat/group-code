@@ -1,42 +1,28 @@
 {
-  "md": [
-    {
-      "functionality": "authentication",
-      "description": "Login form layout",
-      "filePath": "README.md",
-      "lineNumbers": "210-211"
-    },
-    {
-      "functionality": "userpanel",
-      "description": "User interaction area",
-      "filePath": "README.md",
-      "lineNumbers": "215-216"
-    }
-  ],
   "ts": [
-    {
-      "functionality": "name",
-      "description": "description",
-      "filePath": "src/extension.ts",
-      "lineNumbers": "698"
-    },
-    {
-      "functionality": "name",
-      "description": "description",
-      "filePath": "src/extension.ts",
-      "lineNumbers": "700"
-    },
-    {
-      "functionality": "name",
-      "description": "description */",
-      "filePath": "src/extension.ts",
-      "lineNumbers": "702"
-    },
     {
       "functionality": "${groupname}${description ? '",
       "description": "' + description : ''}`",
       "filePath": "src/utils/aiCodeGroupTool.ts",
       "lineNumbers": "206"
+    },
+    {
+      "functionality": "name",
+      "description": "description",
+      "filePath": "src/extension.ts",
+      "lineNumbers": "685"
+    },
+    {
+      "functionality": "name",
+      "description": "description",
+      "filePath": "src/extension.ts",
+      "lineNumbers": "687"
+    },
+    {
+      "functionality": "name",
+      "description": "description */",
+      "filePath": "src/extension.ts",
+      "lineNumbers": "689"
     }
   ]
 }

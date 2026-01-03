@@ -110,7 +110,21 @@ export class SettingsViewProvider {
 
         try {
             logger.info('Fetching available language models...');
-            const models = await vscode.lm.selectChatModels();
+            // Get all available chat models
+            const models = await vscode.lm.selectChatModels({
+                vendor: undefined, // Get all vendors
+                family: undefined  // Get all families
+            });
+            
+            if (!models || models.length === 0) {
+                logger.warn('No models returned from API, using defaults');
+                return [
+                    { id: 'copilot-gpt-4o', name: 'GPT-4o', vendor: 'Copilot' },
+                    { id: 'copilot-gpt-4', name: 'GPT-4', vendor: 'Copilot' },
+                    { id: 'copilot-gpt-3.5-turbo', name: 'GPT-3.5 Turbo', vendor: 'Copilot' }
+                ];
+            }
+            
             logger.info(`Found ${models.length} models`);
             const modelList = models.map(model => ({
                 id: model.id,
@@ -122,10 +136,10 @@ export class SettingsViewProvider {
             SettingsViewProvider._cachedModels = modelList;
             SettingsViewProvider._modelsCacheTime = now;
             
-            logger.info('Models cached');
+            logger.info('Models cached:', modelList);
             return modelList;
         } catch (error) {
-            logger.warn('Could not fetch language models, using defaults', error);
+            logger.error('Error fetching language models', error);
             return [
                 { id: 'copilot-gpt-4o', name: 'GPT-4o', vendor: 'Copilot' },
                 { id: 'copilot-gpt-4', name: 'GPT-4', vendor: 'Copilot' },

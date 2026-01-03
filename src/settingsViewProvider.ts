@@ -53,6 +53,9 @@ export class SettingsViewProvider {
                 case 'openSettingsFile':
                     await provider.openSettingsFile();
                     break;
+                case 'clearAllGroups':
+                    await provider.clearAllGroups();
+                    break;
             }
         });
 
@@ -205,6 +208,43 @@ export class SettingsViewProvider {
         }
     }
 
+    private async clearAllGroups() {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showWarningMessage('No workspace folder found');
+                return;
+            }
+
+            // Show confirmation dialog
+            const confirm = await vscode.window.showWarningMessage(
+                'Are you sure you want to remove ALL @group comments from the entire workspace? This action cannot be undone.',
+                { modal: true },
+                'Remove All Groups',
+                'Cancel'
+            );
+
+            if (confirm !== 'Remove All Groups') {
+                return;
+            }
+
+            // Execute the removeAllGroups command
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Removing all group comments...',
+                cancellable: false
+            }, async () => {
+                await vscode.commands.executeCommand('groupCode.removeAllGroups');
+            });
+
+            vscode.window.showInformationMessage('All group comments have been removed');
+            logger.info('All groups cleared from settings');
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to clear groups: ${error}`);
+            logger.error('Failed to clear all groups', error);
+        }
+    }
+
     private getDefaultSettings() {
         return {
             preferredModel: 'auto',
@@ -287,6 +327,15 @@ export class SettingsViewProvider {
         }
         button.secondary:hover {
             background: var(--vscode-button-secondaryHoverBackground);
+        }
+        button.danger {
+            background: var(--vscode-inputValidation-errorBackground);
+            color: var(--vscode-inputValidation-errorForeground);
+            border: 1px solid var(--vscode-inputValidation-errorBorder);
+        }
+        button.danger:hover {
+            background: var(--vscode-errorForeground);
+            color: var(--vscode-editor-background);
         }
         .button-group {
             margin-top: 20px;
@@ -420,6 +469,10 @@ export class SettingsViewProvider {
         <button class="secondary" id="openFileBtn">Open Settings File</button>
     </div>
 
+    <div class="button-group" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--vscode-input-border);">
+        <button class="danger" id="clearAllBtn">Clear All Group Comments</button>
+    </div>
+
     <script>
         const vscode = acquireVsCodeApi();
 
@@ -446,7 +499,14 @@ export class SettingsViewProvider {
                 autoScan: document.getElementById('autoScan').checked,
                 showNotifications: document.getElementById('showNotifications').checked,
                 autoRefreshOnSave: document.getElementById('autoRefreshOnSave').checked,
-                enableHierarchicalGrouping: document.getElementById('enableHierarchicalGrouping').checked,
+           
+
+        // Clear all groups button click handler
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to remove ALL @group comments from your entire workspace? This action cannot be undone.')) {
+                vscode.postMessage({ type: 'clearAllGroups' });
+            }
+        });     enableHierarchicalGrouping: document.getElementById('enableHierarchicalGrouping').checked,
                 maxSearchResults: parseInt(document.getElementById('maxSearchResults').value)
             };
             vscode.postMessage({ type: 'saveSettings', settings });

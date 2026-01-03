@@ -2,12 +2,12 @@
   "name": "groupcode",
   "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "icon": "resources/compass-icon.png",
   "publisher": "thechandanbhagat",
   "repository": "https://github.com/thechandanbhagat/group-code",
   "engines": {
-    "vscode": "^1.99.1"
+    "vscode": "^1.90.0"
   },
   "activationEvents": [
     "onLanguageModelTool:groupcode_generate",
@@ -253,7 +253,7 @@
   },
   "devDependencies": {
     "@types/node": "^16.11.6",
-    "@types/vscode": "^1.99.1",
+    "@types/vscode": "^1.90.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.4.3",
     "vscode": "^1.1.34"

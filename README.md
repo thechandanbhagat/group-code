@@ -20,7 +20,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
-## What's New in Version 1.4.2
+## What's New in Version 1.4.3
 
 ### Bug Fixes
 - **Fixed Model Loading Issue**: Resolved infinite loading when fetching available AI models in settings panel
@@ -126,7 +126,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.4.1.vsix` file
+1. Download the `groupcode-1.4.3.vsix` file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
@@ -430,7 +430,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Changelog
 
-### Version 1.4.2
+### Version 1.4.3
 
 - **Fixed Model Loading Issue**: Resolved infinite loading when fetching available AI models in settings panel
 - **Improved API Call**: Removed problematic parameters from model selection API that caused hanging

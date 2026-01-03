@@ -2,7 +2,7 @@
   "name": "groupcode",
   "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "icon": "resources/compass-icon.png",
   "publisher": "thechandanbhagat",
   "repository": "https://github.com/thechandanbhagat/group-code",
@@ -10,14 +10,6 @@
     "vscode": "^1.99.1"
   },
   "activationEvents": [
-    "onView:groupCodeExplorer",
-    "onView:groupCodeExplorerView",
-    "onCommand:groupCode.groupCode",
-    "onCommand:groupCode.showGroups",
-    "onCommand:groupCode.scanExternalFolder",
-    "onCommand:groupCode.refreshTreeView",
-    "onCommand:groupCode.navigateToGroup",
-    "onCommand:groupCode.addCodeGroupDialog",
     "onLanguageModelTool:groupcode_generate",
     "onStartupFinished"
   ],
@@ -69,11 +61,6 @@
       {
         "command": "groupCode.groupCode",
         "title": "Group Code in Current File"
-      },
-      {
-        "command": "groupCode.scanExternalFolder",
-        "title": "Scan External Project Folder",
-        "icon": "$(folder-opened)"
       },
       {
         "command": "groupCode.showGroups",
@@ -145,6 +132,12 @@
         "title": "Set Preferred AI Model",
         "category": "Group Code",
         "icon": "$(hubot)"
+      },
+      {
+        "command": "groupCode.openSettings",
+        "title": "Open Settings",
+        "category": "Group Code",
+        "icon": "$(settings-gear)"
       }
     ],
     "chatParticipants": [
@@ -245,9 +238,9 @@
           "group": "navigation@1"
         },
         {
-          "command": "groupCode.scanExternalFolder",
+          "command": "groupCode.openSettings",
           "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
-          "group": "navigation@3"
+          "group": "navigation@2"
         }
       ]
     }

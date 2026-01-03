@@ -6,6 +6,7 @@ import { RatingPromptManager } from './utils/ratingPrompt';
 import { copilotIntegration } from './utils/copilotIntegration';
 import { GroupCodeChatParticipant } from './utils/chatParticipant';
 import { AICodeGroupTool, aiCodeGroupToolMetadata } from './utils/aiCodeGroupTool';
+import { SettingsViewProvider } from './settingsViewProvider';
 import logger from './utils/logger';
 
 let codeGroupProvider: CodeGroupProvider;
@@ -211,23 +212,9 @@ export function activate(context: vscode.ExtensionContext) {
             await ratingPromptManager.incrementUsageAndCheckPrompt();
         }),
         
-        vscode.commands.registerCommand('groupCode.scanExternalFolder', async () => {
-            logger.info('Executing command: scanExternalFolder');
-            // Prompt user to select a folder
-            const folderUris = await vscode.window.showOpenDialog({
-                canSelectFiles: false,
-                canSelectFolders: true,
-                canSelectMany: false,
-                openLabel: 'Scan Folder'
-            });
-            
-            if (folderUris && folderUris.length > 0) {
-                const folderPath = folderUris[0].fsPath;
-                logger.info(`Scanning external folder: ${folderPath}`);
-                await codeGroupProvider.processExternalFolder(folderPath);
-                await ratingPromptManager.incrementUsageAndCheckPrompt();
-                codeGroupTreeProvider.refresh();
-            }
+        vscode.commands.registerCommand('groupCode.openSettings', async () => {
+            logger.info('Executing command: openSettings');
+            SettingsViewProvider.openSettings(context.extensionUri);
         }),
         
         vscode.commands.registerCommand('groupCode.showGroups', async () => {

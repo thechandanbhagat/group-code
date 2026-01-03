@@ -5,6 +5,9 @@ import logger from './utils/logger';
 
 export class SettingsViewProvider {
     private static _panel?: vscode.WebviewPanel;
+    private static _cachedModels?: Array<{id: string, name: string, vendor: string}>;
+    private static _modelsCacheTime?: number;
+    private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -93,6 +96,15 @@ export class SettingsViewProvider {
     }
 
     private async getAvailableModels(): Promise<Array<{id: string, name: string, vendor: string}>> {
+        // Check cache first
+        const now = Date.now();
+        if (SettingsViewProvider._cachedModels && 
+            SettingsViewProvider._modelsCacheTime && 
+            (now - SettingsViewProvider._modelsCacheTime) < SettingsViewProvider.CACHE_DURATION) {
+            logger.info('Using cached models');
+            return SettingsViewProvider._cachedModels;
+        }
+
         try {
             logger.info('Fetching available language models...');
             const models = await vscode.lm.selectChatModels();
@@ -102,7 +114,12 @@ export class SettingsViewProvider {
                 name: model.name,
                 vendor: model.vendor
             }));
-            logger.info('Models:', modelList);
+            
+            // Cache the results
+            SettingsViewProvider._cachedModels = modelList;
+            SettingsViewProvider._modelsCacheTime = now;
+            
+            logger.info('Models cached');
             return modelList;
         } catch (error) {
             logger.warn('Could not fetch language models, using defaults', error);
@@ -311,10 +328,20 @@ export class SettingsViewProvider {
             font-size: 13px;
         }
         .model-item {
-            padding: 4px 8px;
+            padding: 6px 8px;
             margin-left: 12px;
             font-family: var(--vscode-editor-font-family);
             font-size: 12px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background-color 0.1s;
+        }
+        .model-item:hover {
+            background: var(--vscode-list-hoverBackground);
+        }
+        .model-item.selected {
+            background: var(--vscode-list-activeSelectionBackground);
+            color: var(--vscode-list-activeSelectionForeground);
         }
         .model-name {
             color: var(--vscode-foreground);
@@ -453,7 +480,7 @@ export class SettingsViewProvider {
                 html += '<div class="model-group">';
                 html += '<div class="vendor-name">' + vendor + '</div>';
                 grouped[vendor].forEach(model => {
-                    html += '<div class="model-item">';
+                    html += '<div class="model-item" data-model-id="' + model.id + '">';
                     html += '<span class="model-name">' + model.name + '</span>';
                     html += '<span class="model-id">(' + model.id + ')</span>';
                     html += '</div>';
@@ -462,6 +489,36 @@ export class SettingsViewProvider {
             });
 
             listContainer.innerHTML = html;
+
+            // Add click handlers to model items
+            listContainer.querySelectorAll('.model-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const modelId = this.getAttribute('data-model-id');
+                    const preferredModelInput = document.getElementById('preferredModel');
+                    preferredModelInput.value = modelId;
+                    
+                    // Update selected state
+                    listContainer.querySelectorAll('.model-item').forEach(el => el.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            // Highlight selected model if it matches current value
+            updateSelectedModel();
+        }
+
+        function updateSelectedModel() {
+            const preferredModelInput = document.getElementById('preferredModel');
+            const currentValue = preferredModelInput.value;
+            const listContainer = document.getElementById('modelsList');
+            
+            listContainer.querySelectorAll('.model-item').forEach(item => {
+                if (item.getAttribute('data-model-id') === currentValue) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
         }
 
         function loadSettingsIntoForm(settings) {
@@ -471,7 +528,13 @@ export class SettingsViewProvider {
             document.getElementById('autoRefreshOnSave').checked = settings.autoRefreshOnSave !== false;
             document.getElementById('enableHierarchicalGrouping').checked = settings.enableHierarchicalGrouping !== false;
             document.getElementById('maxSearchResults').value = settings.maxSearchResults || 100;
+            
+            // Update selected model in list
+            updateSelectedModel();
         }
+
+        // Add input listener to update selection when manually typing
+        document.getElementById('preferredModel').addEventListener('input', updateSelectedModel);
     </script>
 </body>
 </html>`;

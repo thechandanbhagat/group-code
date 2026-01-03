@@ -6,6 +6,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 - **Cross-File Code Organization**: Group related code blocks from different file types under a common functionality
 - **Unified View**: Access all related code sections through the dedicated Group Code Explorer
+- **Settings UI**: Easy-to-use settings panel for configuring preferences and AI model selection
 - **AI-Powered Code Organization**: Automatically generate code groups using GitHub Copilot integration
 - **Chat Participant Integration**: Interact with code groups directly through GitHub Copilot Chat
 - **Language Model Tool**: AI tool that analyzes and generates group comments for your entire codebase
@@ -13,7 +14,6 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Quick Navigation**: Jump between related code sections with a single click
 - **Automatic Scanning**: Automatically detects code groups in your workspace
 - **Status Bar Integration**: Quick access to code groups from the VS Code status bar
-- **External Folder Support**: Scan code in folders outside your current workspace
 - **Smart Code Completion**: Get intelligent suggestions for @group tags and existing group names
 - **Git-Aware Scanning**: Automatically respects .gitignore patterns and common ignore rules
 - **Inline Documentation**: See where each code group is used while typing
@@ -21,6 +21,12 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
 ## What's New in Version 1.4.0
+
+### ⚙️ Settings UI Panel
+- **Visual Settings Editor**: New dedicated settings panel in the sidebar with intuitive controls
+- **Quick Access**: Settings icon in the Group Code toolbar for easy configuration
+- **Real-time Updates**: Changes take effect immediately without restarting VS Code
+- **Settings File Integration**: Option to directly edit `.groupcode/settings.json` for advanced users
 
 ### 🎯 Improved .gitignore Support
 - **Full .gitignore Parsing**: Properly converts .gitignore patterns to VS Code glob patterns

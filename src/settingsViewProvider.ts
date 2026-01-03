@@ -90,13 +90,34 @@ export class SettingsViewProvider {
         }
     }
 
+    private async getAvailableModels(): Promise<Array<{id: string, name: string, vendor: string}>> {
+        try {
+            const models = await vscode.lm.selectChatModels();
+            return models.map(model => ({
+                id: model.id,
+                name: model.name,
+                vendor: model.vendor
+            }));
+        } catch (error) {
+            logger.warn('Could not fetch language models, using defaults', error);
+            return [
+                { id: 'copilot-gpt-4o', name: 'GPT-4o', vendor: 'Copilot' },
+                { id: 'copilot-gpt-4', name: 'GPT-4', vendor: 'Copilot' },
+                { id: 'copilot-gpt-3.5-turbo', name: 'GPT-3.5 Turbo', vendor: 'Copilot' }
+            ];
+        }
+    }
+
     private async loadSettings(panel: vscode.WebviewPanel) {
         try {
             const workspaceFolders = vscode.workspace.workspaceFolders;
+            const models = await this.getAvailableModels();
+            
             if (!workspaceFolders || workspaceFolders.length === 0) {
                 panel.webview.postMessage({ 
                     type: 'settingsLoaded', 
-                    settings: this.getDefaultSettings() 
+                    settings: this.getDefaultSettings(),
+                    models 
                 });
                 return;
             }
@@ -114,13 +135,16 @@ export class SettingsViewProvider {
 
             panel.webview.postMessage({ 
                 type: 'settingsLoaded', 
-                settings 
+                settings,
+                models 
             });
         } catch (error) {
             logger.error('Failed to load settings', error);
+            const models = await this.getAvailableModels();
             panel.webview.postMessage({ 
                 type: 'settingsLoaded', 
-                settings: this.getDefaultSettings() 
+                settings: this.getDefaultSettings(),
+                models 
             });
         }
     }
@@ -155,7 +179,7 @@ export class SettingsViewProvider {
 
     private getDefaultSettings() {
         return {
-            preferredModel: 'claude-sonnet-4',
+            preferredModel: 'auto',
             autoScan: true,
             showNotifications: true,
             autoRefreshOnSave: true,
@@ -264,11 +288,7 @@ export class SettingsViewProvider {
         <div class="setting-item">
             <label for="preferredModel">Preferred AI Model</label>
             <select id="preferredModel">
-                <option value="claude-sonnet-4">Claude Sonnet 4</option>
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                <option value="auto">Auto (Use Chat Model)</option>
+                <option value="auto">Auto (Use Active Chat Model)</option>
             </select>
             <div class="description">Default AI model for code group generation</div>
         </div>
@@ -329,6 +349,9 @@ export class SettingsViewProvider {
         window.addEventListener('message', event => {
             const message = event.data;
             if (message.type === 'settingsLoaded') {
+                if (message.models) {
+                    populateModelDropdown(message.models);
+                }
                 loadSettingsIntoForm(message.settings);
             }
         });
@@ -348,8 +371,36 @@ export class SettingsViewProvider {
 
         // Open file button click handler
         document.getElementById('openFileBtn').addEventListener('click', () => {
-            vscode.postMessage({ type: 'openSettingsFile' });
-        });
+            vscodpopulateModelDropdown(models) {
+            const select = document.getElementById('preferredModel');
+            // Keep the "Auto" option
+            select.innerHTML = '<option value="auto">Auto (Use Active Chat Model)</option>';
+            
+            // Add fetched models grouped by vendor
+            const grouped = {};
+            models.forEach(model => {
+                if (!grouped[model.vendor]) {
+                    grouped[model.vendor] = [];
+                }
+                grouped[model.vendor].push(model);
+            });
+
+            // Add models with vendor grouping
+            Object.keys(grouped).sort().forEach(vendor => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = vendor;
+                grouped[vendor].forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    optgroup.appendChild(option);
+                });
+                select.appendChild(optgroup);
+            });
+        }
+
+        function loadSettingsIntoForm(settings) {
+            document.getElementById('preferredModel').value = settings.preferredModel || 'auto
 
         function loadSettingsIntoForm(settings) {
             document.getElementById('preferredModel').value = settings.preferredModel || 'claude-sonnet-4';

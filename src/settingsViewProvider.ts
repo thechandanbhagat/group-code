@@ -58,8 +58,10 @@ export class SettingsViewProvider {
             SettingsViewProvider._panel = undefined;
         });
 
-        // Load settings on initial view
-        provider.loadSettings(panel);
+        // Load settings after a short delay to ensure webview is ready
+        setTimeout(() => {
+            provider.loadSettings(panel);
+        }, 100);
     }
 
     private async saveSettings(settings: any) {
@@ -92,12 +94,16 @@ export class SettingsViewProvider {
 
     private async getAvailableModels(): Promise<Array<{id: string, name: string, vendor: string}>> {
         try {
+            logger.info('Fetching available language models...');
             const models = await vscode.lm.selectChatModels();
-            return models.map(model => ({
+            logger.info(`Found ${models.length} models`);
+            const modelList = models.map(model => ({
                 id: model.id,
                 name: model.name,
                 vendor: model.vendor
             }));
+            logger.info('Models:', modelList);
+            return modelList;
         } catch (error) {
             logger.warn('Could not fetch language models, using defaults', error);
             return [
@@ -110,10 +116,12 @@ export class SettingsViewProvider {
 
     private async loadSettings(panel: vscode.WebviewPanel) {
         try {
+            logger.info('Loading settings...');
             const workspaceFolders = vscode.workspace.workspaceFolders;
             const models = await this.getAvailableModels();
             
             if (!workspaceFolders || workspaceFolders.length === 0) {
+                logger.info('No workspace folder, using defaults');
                 panel.webview.postMessage({ 
                     type: 'settingsLoaded', 
                     settings: this.getDefaultSettings(),
@@ -129,10 +137,13 @@ export class SettingsViewProvider {
             if (fs.existsSync(settingsPath)) {
                 const content = fs.readFileSync(settingsPath, 'utf8');
                 settings = JSON.parse(content);
+                logger.info('Loaded settings from file');
             } else {
                 settings = this.getDefaultSettings();
+                logger.info('Using default settings');
             }
 
+            logger.info('Sending message to webview with models:', models);
             panel.webview.postMessage({ 
                 type: 'settingsLoaded', 
                 settings,
@@ -416,12 +427,18 @@ export class SettingsViewProvider {
 
         // Open file button click handler
         document.getElementById('openFileBtn').addEventListener('click', () => {
-            vscodpopulateModelDropdown(models) {
-            const select = document.getElementById('preferredModel');
-            // Keep the "Auto" option
-            select.innerHTML = '<option value="auto">Auto (Use Active Chat Model)</option>';
+            vscode.postMessage({ type: 'openSettingsFile' });
+        });
+
+        function populateModelDropdown(models) {
+            const listContainer = document.getElementById('modelsList');
             
-            // Add fetched models grouped by vendor
+            if (!models || models.length === 0) {
+                listContainer.innerHTML = '<div class="loading">No models available</div>';
+                return;
+            }
+
+            // Group models by vendor
             const grouped = {};
             models.forEach(model => {
                 if (!grouped[model.vendor]) {
@@ -430,22 +447,22 @@ export class SettingsViewProvider {
                 grouped[model.vendor].push(model);
             });
 
-            // Add models with vendor grouping
+            // Build HTML for grouped models
+            let html = '';
             Object.keys(grouped).sort().forEach(vendor => {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = vendor;
+                html += '<div class="model-group">';
+                html += '<div class="vendor-name">' + vendor + '</div>';
                 grouped[vendor].forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.id;
-                    option.textContent = model.name;
-                    optgroup.appendChild(option);
+                    html += '<div class="model-item">';
+                    html += '<span class="model-name">' + model.name + '</span>';
+                    html += '<span class="model-id">(' + model.id + ')</span>';
+                    html += '</div>';
                 });
-                select.appendChild(optgroup);
+                html += '</div>';
             });
-        }
 
-        function loadSettingsIntoForm(settings) {
-            document.getElementById('preferredModel').value = settings.preferredModel || 'auto
+            listContainer.innerHTML = html;
+        }
 
         function loadSettingsIntoForm(settings) {
             document.getElementById('preferredModel').value = settings.preferredModel || '';

@@ -20,45 +20,35 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
-## What's New in Version 1.4.0
+## What's New in Version 1.4.2
 
-### ⚙️ Settings UI Panel
-- **Visual Settings Editor**: New dedicated settings panel in the sidebar with intuitive controls
-- **Quick Access**: Settings icon in the Group Code toolbar for easy configuration
-- **Real-time Updates**: Changes take effect immediately without restarting VS Code
-- **Settings File Integration**: Option to directly edit `.groupcode/settings.json` for advanced users
+### Bug Fixes
+- **Fixed Model Loading Issue**: Resolved infinite loading when fetching available AI models in settings panel
+- **Improved API Stability**: Removed problematic parameters that caused model selection to hang
 
-### 🎯 Improved .gitignore Support
-- **Full .gitignore Parsing**: Properly converts .gitignore patterns to VS Code glob patterns
-- **Directory Pattern Handling**: Correctly excludes directories like `.venv`, `node_modules`, `__pycache__`
-- **File Pattern Handling**: Properly handles file patterns like `*.pyc`, `*.log`
-- **No More False Scans**: Ignored folders are now truly excluded from workspace scanning
+### Previous Updates (Version 1.4.0 - 1.4.1)
 
-### 🤖 Model Selection
-- **Use Your Preferred Model**: AI generation now uses the model you've selected in Copilot Chat
-- **Respects User Choice**: When using Claude, GPT-4, or any other model in chat, the extension uses that same model
-- **Configurable Model Settings**: Set preferred model in `.groupcode/settings.json`
-- **New Command**: `Group Code: Set Preferred AI Model` to configure your default model
+#### Settings UI Panel
+- Visual settings editor with intuitive controls
+- Quick access via toolbar settings icon
+- Real-time configuration updates
+- Direct `.groupcode/settings.json` editing option
 
-### 📍 Clickable Group References
-- **Interactive Output**: When groups are added, each group shows as a clickable link in chat
-- **Jump to Location**: Click on any group name to navigate directly to that line in the file
-- **File Anchors**: File names are clickable to open the file
-- **Copilot-Style UX**: Similar experience to how Copilot shows file references
+#### Improved .gitignore Support
+- Full .gitignore pattern conversion to VS Code globs
+- Proper directory exclusion (`.venv`, `node_modules`, `__pycache__`)
+- Correct file pattern handling (`*.pyc`, `*.log`)
 
-### 📁 Centralized File Extension Support
-- **Single Source of Truth**: All supported file extensions defined in one place
-- **Easy to Extend**: Add new file types by editing one list in `fileUtils.ts`
-- **Consistent Behavior**: Same extensions used across all scanning operations
+#### Model Selection & Configuration
+- Use your preferred AI model from Copilot Chat
+- Configurable model settings in `.groupcode/settings.json`
+- New command: `Group Code: Set Preferred AI Model`
 
-### 🔧 Configuration via .groupcode/settings.json
-```json
-{
-  "preferredModel": "claude-sonnet-4",
-  "autoScan": true,
-  "showNotifications": true
-}
-```
+#### Enhanced User Experience
+- Clickable group references in chat output
+- Jump to location with single click
+- Centralized file extension support
+- Removed markdown file support for cleaner code-only organization
 
 ## What's New in Version 1.3.0
 
@@ -439,6 +429,11 @@ Found a bug or have a feature request? Please open an issue on the [GitHub repos
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Changelog
+
+### Version 1.4.2
+
+- **Fixed Model Loading Issue**: Resolved infinite loading when fetching available AI models in settings panel
+- **Improved API Call**: Removed problematic parameters from model selection API that caused hanging
 
 ### Version 1.4.1
 

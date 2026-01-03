@@ -336,7 +336,6 @@ export async function saveCodeGroups(
             children: string[];
             groupCount: number;
             fileTypes: Set<string>;
-            lastModified: string;
         }>();
         
         // Build functionality metadata
@@ -354,8 +353,7 @@ export async function saveCodeGroups(
                                 parent: enriched.parent || null,
                                 children: [],
                                 groupCount: 0,
-                                fileTypes: new Set<string>(),
-                                lastModified: new Date().toISOString()
+                                fileTypes: new Set<string>()
                             });
                         }
                         
@@ -376,8 +374,7 @@ export async function saveCodeGroups(
                                         parent: i > 0 ? enriched.hierarchyPath.slice(0, i).join(' > ') : null,
                                         children: [],
                                         groupCount: 0,
-                                        fileTypes: new Set<string>(),
-                                        lastModified: new Date().toISOString()
+                                        fileTypes: new Set<string>()
                                     });
                                 }
                             }
@@ -411,8 +408,7 @@ export async function saveCodeGroups(
                 parent: metadata.parent,
                 children: metadata.children.sort(),
                 groupCount: metadata.groupCount,
-                fileTypes: Array.from(metadata.fileTypes).sort(),
-                lastModified: metadata.lastModified
+                fileTypes: Array.from(metadata.fileTypes).sort()
             };
         });
         

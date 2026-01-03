@@ -203,7 +203,7 @@ export class AICodeGroupTool implements vscode.LanguageModelTool<{
         const result = {
             groupName: groupName || 'Unknown',
             description: description || 'No description available',
-            suggestion: `// @group ${groupName}${description ? ': ' + description : ''}`
+            suggestion: `!// @group ${groupName}${description ? ': ' + description : ''}`
         };
 
         return new vscode.LanguageModelToolResult([
@@ -320,32 +320,41 @@ JSON Response:`;
     private buildGenerationPrompt(code: string, language: string, filePath: string): string {
         const commentStyle = this.getCommentStyle(language);
         
-        return `Add @group comments to organize the following ${language} code into logical functional groups.
+        return `Add @group comments to organize the following ${language} code into logical functional groups using HIERARCHICAL structure.
 
 Rules:
-1. Use this EXACT format: ${commentStyle} @group <GroupName>: <description>
-2. IMPORTANT: Use a COLON (:) after the group name, NOT a dash (-)
-3. Place @group comments before function/class/module definitions
-4. Group related functions together
-5. Use clear, descriptive names (2-4 words)
-6. Keep descriptions concise (10-20 words)
-7. Don't modify the existing code, only add comments
-8. Preserve all existing comments and formatting
-9. Return ONLY the code with added @group comments, no explanation
+1. Use this EXACT format: ${commentStyle} @group <Category> > <Subcategory> > <Component>: <description>
+2. IMPORTANT: Use GREATER-THAN symbols (>) to create hierarchies and a COLON (:) before description
+3. Create 2-3 level hierarchies to organize code logically
+4. Top level should be broad categories (e.g., Authentication, Database, UI)
+5. Middle level should be functional areas (e.g., Login, Validation, Components)
+6. Bottom level (optional) should be specific features
+7. Place @group comments before function/class/module definitions
+8. Use clear, descriptive names (1-3 words per level)
+9. Keep descriptions concise (10-20 words)
+10. Don't modify the existing code, only add comments
+11. Preserve all existing comments and formatting
+12. Return ONLY the code with added @group comments, no explanation
 
-Example format (note the colon):
-${commentStyle} @group Authentication: User login and session management
+Example hierarchical format:
+${commentStyle} @group Authentication > Login: User authentication and session initialization
 function login(username, password) { ... }
 
-${commentStyle} @group Validation: Input validation and sanitization
-function validateEmail(email) { ... }
+${commentStyle} @group Authentication > Login > Validation: Validate user credentials before authentication
+function validateCredentials(username, password) { ... }
+
+${commentStyle} @group Database > Queries: Database query execution and result processing
+function executeQuery(sql) { ... }
+
+${commentStyle} @group UI > Components > Forms: Form input components and validation
+function FormInput(props) { ... }
 
 Code to process:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Return the code with @group comments (remember to use COLONS, not dashes):`;
+Return the code with HIERARCHICAL @group comments (use > for hierarchy, : before description):`;
     }
 
     /**

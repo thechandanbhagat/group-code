@@ -159,17 +159,25 @@ export class CopilotIntegration {
      * Build prompt for group name suggestion
      */
     private buildGroupNamePrompt(codeSnippet: string, context?: string): string {
-        return `You are helping to organize code into functional groups. 
-Given the following code snippet, suggest a concise, descriptive name (2-4 words) for a code group.
-The name should describe the functionality or purpose of the code.
-Respond with ONLY the suggested name, nothing else.
+        return `You are helping to organize code into functional groups using a HIERARCHICAL structure.
+Given the following code snippet, suggest a hierarchical group name using the format: Category > Subcategory > Component
+Use 2-3 levels separated by " > " (greater-than with spaces).
+
+Examples:
+- Authentication > Login > Validation
+- Database > Queries > User
+- UI > Components > Forms
+- API > Endpoints > User Management
+
+The name should describe the functionality hierarchy from broad to specific.
+Respond with ONLY the hierarchical name using the > separator, nothing else.
 
 ${context ? `Context: ${context}\n\n` : ''}Code:
 \`\`\`
 ${codeSnippet}
 \`\`\`
 
-Suggested group name:`;
+Hierarchical group name:`;
     }
 
     /**
@@ -192,12 +200,19 @@ Description:`;
      * Build prompt for code analysis
      */
     private buildAnalysisPrompt(code: string, filePath: string): string {
-        return `Analyze the following code from ${filePath} and identify distinct functional areas or features.
-For each functional area, provide a group name, description, and confidence score (0-1).
+        return `Analyze the following code from ${filePath} and identify distinct functional areas using HIERARCHICAL structure.
+For each functional area, provide a hierarchical group name (using > separator), description, and confidence score (0-1).
+
+Use this format for names: Category > Subcategory > Component
+Examples: 
+- Authentication > Login > Session
+- Database > Queries > User Data
+- UI > Components > Input Forms
+
 Respond with ONLY valid JSON in this format:
 [
   {
-    "name": "group-name",
+    "name": "Category > Subcategory > Component",
     "description": "brief description",
     "confidence": 0.9
   }

@@ -41,16 +41,19 @@ export function parseHierarchy(functionality: string): {
 
 /**
  * Enrich a code group with hierarchy information
+ * Explicitly preserves isFavorite to ensure it's not lost
  */
 export function enrichWithHierarchy(group: CodeGroup): CodeGroup {
     const hierarchy = parseHierarchy(group.functionality);
-    
+
     return {
         ...group,
         hierarchyPath: hierarchy.hierarchyPath,
         level: hierarchy.level,
         parent: hierarchy.parent,
-        leaf: hierarchy.leaf
+        leaf: hierarchy.leaf,
+        // Explicitly preserve isFavorite to ensure it's never lost
+        isFavorite: group.isFavorite
     };
 }
 

@@ -11,6 +11,7 @@ export interface CodeGroup {
     description?: string;
     lineNumbers: number[];
     filePath: string;
+    isFavorite?: boolean;      // Marks group as favorite
     // Hierarchical fields (computed, not stored in JSON)
     hierarchyPath?: string[];  // e.g., ["Auth", "Login", "Validation"]
     level?: number;            // e.g., 3

@@ -314,13 +314,23 @@ export async function saveCodeGroups(
                 
                 // Convert absolute paths to relative paths and line numbers to compact ranges
                 // Exclude computed hierarchy fields (they'll be regenerated on load)
-                const groupsWithRelativePaths = filteredGroups.map(group => ({
-                    functionality: group.functionality,
-                    description: group.description,
-                    filePath: path.relative(workspacePath, group.filePath).replace(/\\/g, '/'),
-                    lineNumbers: lineNumbersToRanges(group.lineNumbers)
-                    // Note: hierarchyPath, level, parent, leaf are NOT saved - they're computed on load
-                }));
+                const groupsWithRelativePaths = filteredGroups.map(group => {
+                    // Explicitly handle isFavorite - only save if it's explicitly true
+                    const result: any = {
+                        functionality: group.functionality,
+                        description: group.description,
+                        filePath: path.relative(workspacePath, group.filePath).replace(/\\/g, '/'),
+                        lineNumbers: lineNumbersToRanges(group.lineNumbers)
+                        // Note: hierarchyPath, level, parent, leaf are NOT saved - they're computed on load
+                    };
+
+                    // Only include isFavorite if it's true to keep JSON clean
+                    if (group.isFavorite === true) {
+                        result.isFavorite = true;
+                    }
+
+                    return result;
+                });
                 
                 serializableGroups[fileType] = groupsWithRelativePaths;
             }
@@ -464,21 +474,26 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
                     } else {
                         lineNumbers = [];
                     }
-                    
+
+                    // Explicitly handle isFavorite - check for boolean true, not just truthy
+                    const isFavorite = group.isFavorite === true;
+
                     const codeGroup: CodeGroup = {
                         functionality: group.functionality,
                         description: group.description,
-                        filePath: path.isAbsolute(group.filePath) 
+                        filePath: path.isAbsolute(group.filePath)
                             ? group.filePath  // Already absolute (backwards compatibility)
                             : path.resolve(workspacePath, group.filePath),  // Convert relative to absolute
-                        lineNumbers: lineNumbers
+                        lineNumbers: lineNumbers,
+                        isFavorite: isFavorite
                     };
-                    
+
                     // Enrich with hierarchy information if functionality contains '>'
+                    // The enrichWithHierarchy function will preserve the isFavorite property
                     if (codeGroup.functionality.includes('>')) {
                         return enrichWithHierarchy(codeGroup);
                     }
-                    
+
                     return codeGroup;
                 });
                 

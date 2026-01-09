@@ -1,8 +1,122 @@
 import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { CodeGroup } from '../groupDefinition';
 import logger from './logger';
 import { enrichWithHierarchy } from './hierarchyUtils';
+
+/**
+ * Get the user preferences directory for GroupCode
+ * This is stored in the OS user profile, not in the workspace
+ * Location: ~/.groupcode/ on Unix/Mac, %USERPROFILE%\.groupcode on Windows
+ */
+function getUserPrefsBaseDir(): string {
+    const homeDir = os.homedir();
+    return path.join(homeDir, '.groupcode');
+}
+
+/**
+ * Generate a workspace identifier (hash) from workspace path
+ * This allows us to have separate preferences per project
+ */
+function getWorkspaceHash(workspacePath: string): string {
+    // Normalize path to ensure consistent hashing across platforms
+    const normalizedPath = workspacePath.replace(/\\/g, '/').toLowerCase();
+    const hash = crypto.createHash('md5').update(normalizedPath).digest('hex');
+    return hash.substring(0, 16); // Use first 16 chars for readability
+}
+
+/**
+ * Get the user preferences directory for a specific workspace
+ * @param workspacePath The workspace path
+ * @returns Path like ~/.groupcode/<workspace-hash>/
+ */
+function getUserPrefsDir(workspacePath: string): string {
+    const baseDir = getUserPrefsBaseDir();
+    const workspaceHash = getWorkspaceHash(workspacePath);
+    return path.join(baseDir, workspaceHash);
+}
+
+/**
+ * Ensure the user preferences directory exists
+ */
+async function ensureUserPrefsDir(workspacePath: string): Promise<string> {
+    const userPrefsDir = getUserPrefsDir(workspacePath);
+
+    try {
+        await fs.promises.mkdir(userPrefsDir, { recursive: true });
+        logger.info(`Ensured user prefs directory exists: ${userPrefsDir}`);
+    } catch (error) {
+        logger.error('Error creating user prefs directory:', error);
+        throw error;
+    }
+
+    return userPrefsDir;
+}
+
+/**
+ * Save user favorites to the user profile directory
+ * @param workspacePath The workspace path
+ * @param favorites Map of "filePath::functionality" to boolean (true = favorite)
+ */
+export async function saveUserFavorites(workspacePath: string, favorites: Map<string, boolean>): Promise<void> {
+    try {
+        const userPrefsDir = await ensureUserPrefsDir(workspacePath);
+        const favoritesPath = path.join(userPrefsDir, 'favorites.json');
+
+        // Convert Map to object for JSON serialization
+        const favoritesObj: { [key: string]: boolean } = {};
+        favorites.forEach((value, key) => {
+            if (value === true) { // Only save true values
+                favoritesObj[key] = value;
+            }
+        });
+
+        await fs.promises.writeFile(favoritesPath, JSON.stringify(favoritesObj, null, 2), 'utf8');
+        logger.info(`Saved ${favorites.size} favorites to ${favoritesPath}`);
+    } catch (error) {
+        logger.error('Error saving user favorites:', error);
+        throw error;
+    }
+}
+
+/**
+ * Load user favorites from the user profile directory
+ * @param workspacePath The workspace path
+ * @returns Map of "filePath::functionality" to boolean (true = favorite)
+ */
+export async function loadUserFavorites(workspacePath: string): Promise<Map<string, boolean>> {
+    const favorites = new Map<string, boolean>();
+
+    try {
+        const userPrefsDir = getUserPrefsDir(workspacePath);
+        const favoritesPath = path.join(userPrefsDir, 'favorites.json');
+
+        try {
+            await fs.promises.access(favoritesPath);
+            const content = await fs.promises.readFile(favoritesPath, 'utf8');
+            const favoritesObj = JSON.parse(content);
+
+            // Convert object to Map
+            Object.entries(favoritesObj).forEach(([key, value]) => {
+                if (value === true) {
+                    favorites.set(key, true);
+                }
+            });
+
+            logger.info(`Loaded ${favorites.size} favorites from ${favoritesPath}`);
+        } catch (error) {
+            // File doesn't exist yet, return empty map
+            logger.info('No favorites file found, starting with empty favorites');
+        }
+    } catch (error) {
+        logger.error('Error loading user favorites:', error);
+    }
+
+    return favorites;
+}
 
 /**
  * Converts an array of line numbers to a compact range string
@@ -313,21 +427,16 @@ export async function saveCodeGroups(
                 );
                 
                 // Convert absolute paths to relative paths and line numbers to compact ranges
-                // Exclude computed hierarchy fields (they'll be regenerated on load)
+                // Exclude computed hierarchy fields AND favorites (they'll be stored in user profile)
                 const groupsWithRelativePaths = filteredGroups.map(group => {
-                    // Explicitly handle isFavorite - only save if it's explicitly true
                     const result: any = {
                         functionality: group.functionality,
                         description: group.description,
                         filePath: path.relative(workspacePath, group.filePath).replace(/\\/g, '/'),
                         lineNumbers: lineNumbersToRanges(group.lineNumbers)
                         // Note: hierarchyPath, level, parent, leaf are NOT saved - they're computed on load
+                        // Note: isFavorite is NOT saved here - it's stored in user profile (~/.groupcode/)
                     };
-
-                    // Only include isFavorite if it's true to keep JSON clean
-                    if (group.isFavorite === true) {
-                        result.isFavorite = true;
-                    }
 
                     return result;
                 });
@@ -475,9 +584,8 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
                         lineNumbers = [];
                     }
 
-                    // Explicitly handle isFavorite - check for boolean true, not just truthy
-                    const isFavorite = group.isFavorite === true;
-
+                    // Note: isFavorite is NOT loaded from shared file - it's loaded from user profile
+                    // Any old isFavorite values in codegroups.json are ignored
                     const codeGroup: CodeGroup = {
                         functionality: group.functionality,
                         description: group.description,
@@ -485,7 +593,7 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
                             ? group.filePath  // Already absolute (backwards compatibility)
                             : path.resolve(workspacePath, group.filePath),  // Convert relative to absolute
                         lineNumbers: lineNumbers,
-                        isFavorite: isFavorite
+                        isFavorite: false  // Will be set from user profile later
                     };
 
                     // Enrich with hierarchy information if functionality contains '>'
@@ -755,4 +863,58 @@ export async function setPreferredModel(workspacePath: string, modelId: string |
     const settings = await loadGroupCodeSettings(workspacePath);
     settings.preferredModel = modelId;
     await saveGroupCodeSettings(workspacePath, settings);
+}
+
+/**
+ * Save tree view state (expanded/collapsed nodes) to user profile
+ * @param workspacePath The workspace path
+ * @param expandedNodes Set of node paths that are currently expanded
+ */
+export async function saveTreeViewState(workspacePath: string, expandedNodes: Set<string>): Promise<void> {
+    try {
+        const userPrefsDir = await ensureUserPrefsDir(workspacePath);
+        const treeStatePath = path.join(userPrefsDir, 'treestate.json');
+
+        // Convert Set to array for JSON serialization
+        const expandedArray = Array.from(expandedNodes);
+
+        await fs.promises.writeFile(treeStatePath, JSON.stringify(expandedArray, null, 2), 'utf8');
+        logger.info(`Saved tree state with ${expandedNodes.size} expanded nodes to ${treeStatePath}`);
+    } catch (error) {
+        logger.error('Error saving tree view state:', error);
+    }
+}
+
+/**
+ * Load tree view state (expanded/collapsed nodes) from user profile
+ * @param workspacePath The workspace path
+ * @returns Set of node paths that should be expanded
+ */
+export async function loadTreeViewState(workspacePath: string): Promise<Set<string>> {
+    const expandedNodes = new Set<string>();
+
+    try {
+        const userPrefsDir = getUserPrefsDir(workspacePath);
+        const treeStatePath = path.join(userPrefsDir, 'treestate.json');
+
+        try {
+            await fs.promises.access(treeStatePath);
+            const content = await fs.promises.readFile(treeStatePath, 'utf8');
+            const expandedArray = JSON.parse(content);
+
+            if (Array.isArray(expandedArray)) {
+                expandedArray.forEach(nodePath => expandedNodes.add(nodePath));
+            }
+
+            logger.info(`Loaded tree state with ${expandedNodes.size} expanded nodes from ${treeStatePath}`);
+        } catch (error) {
+            // File doesn't exist yet, return default expanded state (Favorites section)
+            logger.info('No tree state file found, using default state');
+            expandedNodes.add('Favorites'); // Expand favorites by default
+        }
+    } catch (error) {
+        logger.error('Error loading tree view state:', error);
+    }
+
+    return expandedNodes;
 }

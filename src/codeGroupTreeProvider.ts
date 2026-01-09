@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroup } from './groupDefinition';
-import { getFileName } from './utils/fileUtils';
+import { getFileName, saveTreeViewState, loadTreeViewState, getWorkspaceFolders } from './utils/fileUtils';
 import logger from './utils/logger';
 import { buildHierarchyTree, HierarchyNode, enrichWithHierarchy } from './utils/hierarchyUtils';
 
@@ -123,9 +123,13 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     private searchFilter: string = '';
     private mainTreeView?: vscode.TreeView<CodeGroupTreeItem>;
     private explorerTreeView?: vscode.TreeView<CodeGroupTreeItem>;
+    private expandedNodes: Set<string> = new Set<string>();
+    private stateLoadedPromise?: Promise<void>;
 
     constructor(private codeGroupProvider: CodeGroupProvider) {
         logger.info('CodeGroupTreeProvider initialized');
+        // Load tree state asynchronously
+        this.loadTreeState();
     }
 
     setTreeView(view: vscode.TreeView<CodeGroupTreeItem>, viewId: string) {
@@ -135,6 +139,79 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
             this.explorerTreeView = view;
         }
         view.message = 'Type to filter groups';
+
+        // Track expansion and collapse events to persist state
+        view.onDidExpandElement((e) => {
+            const nodePath = this.getNodePath(e.element);
+            if (nodePath) {
+                this.expandedNodes.add(nodePath);
+                this.saveTreeState();
+            }
+        });
+
+        view.onDidCollapseElement((e) => {
+            const nodePath = this.getNodePath(e.element);
+            if (nodePath) {
+                this.expandedNodes.delete(nodePath);
+                this.saveTreeState();
+            }
+        });
+    }
+
+    /**
+     * Get a unique path identifier for a tree item
+     */
+    private getNodePath(element: CodeGroupTreeItem): string | undefined {
+        if (element.type === CodeGroupTreeItemType.FavoritesRoot) {
+            return 'Favorites';
+        } else if (element.type === CodeGroupTreeItemType.HierarchyNode && element.hierarchyNode) {
+            return element.hierarchyNode.fullPath;
+        } else if (element.type === CodeGroupTreeItemType.FileType && element.functionality && element.fileType) {
+            return `${element.functionality}::${element.fileType}`;
+        }
+        return undefined;
+    }
+
+    /**
+     * Load tree state from user profile
+     */
+    private async loadTreeState(): Promise<void> {
+        const workspaceFolders = getWorkspaceFolders();
+        if (workspaceFolders.length === 0) {
+            return;
+        }
+
+        try {
+            this.expandedNodes = await loadTreeViewState(workspaceFolders[0]);
+            logger.info(`Loaded ${this.expandedNodes.size} expanded nodes from tree state`);
+        } catch (error) {
+            logger.error('Error loading tree state:', error);
+        }
+    }
+
+    /**
+     * Save tree state to user profile (debounced)
+     */
+    private saveTreeStateTimeout?: NodeJS.Timeout;
+    private saveTreeState(): void {
+        // Debounce saves to avoid excessive writes
+        if (this.saveTreeStateTimeout) {
+            clearTimeout(this.saveTreeStateTimeout);
+        }
+
+        this.saveTreeStateTimeout = setTimeout(async () => {
+            const workspaceFolders = getWorkspaceFolders();
+            if (workspaceFolders.length === 0) {
+                return;
+            }
+
+            try {
+                await saveTreeViewState(workspaceFolders[0], this.expandedNodes);
+                logger.info(`Saved ${this.expandedNodes.size} expanded nodes to tree state`);
+            } catch (error) {
+                logger.error('Error saving tree state:', error);
+            }
+        }, 500); // Wait 500ms before saving
     }
 
     public updateSearch(query: string): void {
@@ -190,26 +267,32 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                 const favoriteFunctionalities = this.codeGroupProvider.getFavoriteFunctionalities();
                 if (favoriteFunctionalities.length > 0) {
                     // Add Favorites section at the top
+                    const favoritesExpanded = this.expandedNodes.has('Favorites');
                     items.push(new CodeGroupTreeItem(
                         'Favorites',
-                        vscode.TreeItemCollapsibleState.Expanded,
+                        favoritesExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed,
                         CodeGroupTreeItemType.FavoritesRoot
                     ));
                 }
 
                 // Add all hierarchy nodes (with favorite status)
+                // But exclude favorites from the main tree to avoid duplication
                 hierarchyTree.forEach((node, name) => {
                     const isFav = this.codeGroupProvider.isFavorite(node.fullPath);
-                    items.push(new CodeGroupTreeItem(
-                        name,
-                        vscode.TreeItemCollapsibleState.Expanded,
-                        CodeGroupTreeItemType.HierarchyNode,
-                        node,
-                        node.fullPath,  // Pass functionality for toggle favorite command
-                        undefined,
-                        undefined,
-                        isFav
-                    ));
+                    // Only add non-favorite items to the main tree
+                    if (!isFav) {
+                        const isExpanded = this.expandedNodes.has(node.fullPath);
+                        items.push(new CodeGroupTreeItem(
+                            name,
+                            isExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed,
+                            CodeGroupTreeItemType.HierarchyNode,
+                            node,
+                            node.fullPath,  // Pass functionality for toggle favorite command
+                            undefined,
+                            undefined,
+                            isFav
+                        ));
+                    }
                 });
 
                 return items.sort((a, b) => {
@@ -235,9 +318,10 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                     const favoriteHierarchyTree = buildHierarchyTree(favoriteGroups);
 
                     favoriteHierarchyTree.forEach((node, name) => {
+                        const isExpanded = this.expandedNodes.has(node.fullPath);
                         items.push(new CodeGroupTreeItem(
                             name,
-                            vscode.TreeItemCollapsibleState.Expanded,
+                            isExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed,
                             CodeGroupTreeItemType.HierarchyNode,
                             node,
                             node.fullPath,  // Pass functionality for toggle favorite command
@@ -258,9 +342,10 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                     // Add child hierarchy nodes
                     element.hierarchyNode.children.forEach((childNode, name) => {
                         const isFav = this.codeGroupProvider.isFavorite(childNode.fullPath);
+                        const isExpanded = this.expandedNodes.has(childNode.fullPath);
                         items.push(new CodeGroupTreeItem(
                             name,
-                            vscode.TreeItemCollapsibleState.Expanded,
+                            isExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed,
                             CodeGroupTreeItemType.HierarchyNode,
                             childNode,
                             childNode.fullPath,  // Pass functionality for toggle favorite command
@@ -278,9 +363,11 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                         }))];
 
                         fileTypes.forEach(fileType => {
+                            const nodeKey = `${element.hierarchyNode!.fullPath}::${fileType}`;
+                            const isExpanded = this.expandedNodes.has(nodeKey);
                             items.push(new CodeGroupTreeItem(
                                 fileType,
-                                vscode.TreeItemCollapsibleState.Expanded,
+                                isExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed,
                                 CodeGroupTreeItemType.FileType,
                                 undefined,
                                 element.hierarchyNode!.fullPath,

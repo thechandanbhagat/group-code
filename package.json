@@ -138,6 +138,12 @@
         "title": "Open Settings",
         "category": "Group Code",
         "icon": "$(settings-gear)"
+      },
+      {
+        "command": "groupCode.toggleFavorite",
+        "title": "Toggle Favorite",
+        "category": "Group Code",
+        "icon": "$(star)"
       }
     ],
     "chatParticipants": [
@@ -226,6 +232,28 @@
         }
       ],
       "explorer/context": [],
+      "view/item/context": [
+        {
+          "command": "groupCode.toggleFavorite",
+          "when": "view == groupCodeExplorer && viewItem == hierarchyNode || view == groupCodeExplorerView && viewItem == hierarchyNode",
+          "group": "inline@1"
+        },
+        {
+          "command": "groupCode.toggleFavorite",
+          "when": "view == groupCodeExplorer && viewItem == hierarchyNodeFavorite || view == groupCodeExplorerView && viewItem == hierarchyNodeFavorite",
+          "group": "inline@1"
+        },
+        {
+          "command": "groupCode.toggleFavorite",
+          "when": "view == groupCodeExplorer && viewItem == hierarchyNode || view == groupCodeExplorerView && viewItem == hierarchyNode",
+          "group": "favorites@1"
+        },
+        {
+          "command": "groupCode.toggleFavorite",
+          "when": "view == groupCodeExplorer && viewItem == hierarchyNodeFavorite || view == groupCodeExplorerView && viewItem == hierarchyNodeFavorite",
+          "group": "favorites@1"
+        }
+      ],
       "view/title": [
         {
           "command": "groupCode.filterGroups",

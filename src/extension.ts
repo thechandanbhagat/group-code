@@ -22,17 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Create a new instance of our CodeGroupProvider
     codeGroupProvider = new CodeGroupProvider();
-    
-    // Load existing groups or scan workspace if none exist
-    codeGroupProvider.initializeWorkspace().then(() => {
-        logger.info('Workspace initialized with code groups');
-    }).catch(err => {
-        logger.error('Error initializing workspace', err);
-    });
-    
+
     // Initialize rating prompt manager
     ratingPromptManager = new RatingPromptManager(context);
-    
+
     // Create and register the completion provider
     const completionProvider = new GroupCompletionProvider(codeGroupProvider);
     context.subscriptions.push(
@@ -43,12 +36,13 @@ export function activate(context: vscode.ExtensionContext) {
             ' '  // And on space character
         )
     );
-    
+
     // Create the tree data provider with explicit logging for debugging
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider);
     logger.info('Tree data provider created');
 
     // Subscribe to code group updates to auto-refresh the tree view
+    // IMPORTANT: Register this event listener BEFORE loading groups
     context.subscriptions.push(
         codeGroupProvider.onDidUpdateGroups(() => {
             logger.info('Code groups updated, refreshing tree view...');
@@ -992,6 +986,24 @@ export function activate(context: vscode.ExtensionContext) {
             });
         }),
 
+        // Toggle favorite command
+        vscode.commands.registerCommand('groupCode.toggleFavorite', async (item: CodeGroupTreeItem) => {
+            logger.info('Executing command: toggleFavorite');
+
+            if (!item || !item.functionality) {
+                // If called from command palette without context, ask user to select from tree
+                vscode.window.showWarningMessage('Please right-click on a group in the tree view to toggle favorite.');
+                return;
+            }
+
+            await codeGroupProvider.toggleFavorite(item.functionality);
+            codeGroupTreeProvider.refresh();
+
+            const isFav = codeGroupProvider.isFavorite(item.functionality);
+            const status = isFav ? 'added to' : 'removed from';
+            vscode.window.showInformationMessage(`"${item.functionality}" ${status} favorites`);
+        }),
+
         // Set preferred AI model command
         vscode.commands.registerCommand('groupCode.setPreferredModel', async () => {
             logger.info('Executing command: setPreferredModel');
@@ -1055,43 +1067,35 @@ export function activate(context: vscode.ExtensionContext) {
         treeView,
         explorerTreeView
     );
-    
-    // Explicitly scan the workspace immediately
-    logger.info('Starting workspace scan on activation');
-    codeGroupProvider.processWorkspace().then(() => {
-        logger.info('Initial workspace scan completed');
-        codeGroupTreeProvider.refresh(); // Make sure view gets refreshed
-    }).catch(error => {
-        logger.error('Error during initial workspace scan', error);
-    });
-    
-    // Then initialize to load from cache for future runs
+
+    // Load existing groups from cache, or scan workspace if none exist
+    // This single call replaces the redundant initializeWorkspace/processWorkspace/initialize calls
+    logger.info('Initializing workspace with code groups');
     codeGroupProvider.initialize().then(() => {
         logger.info('Code Group Provider initialized');
-        // Explicitly refresh the tree view after initialization
+        // Explicitly refresh the tree view after initialization to ensure favorites are shown
         codeGroupTreeProvider.refresh();
     }).catch(error => {
         logger.error('Error initializing Code Group Provider', error);
     });
 }
 
-export function deactivate() {
+export async function deactivate() {
     logger.info('Group Code is now deactivated');
-    
+
     // Save all code groups data before extension is deactivated
     if (codeGroupProvider) {
         logger.info('Saving code groups before extension deactivation');
-        
-        // Use a synchronous approach for deactivation to ensure it completes
+
         try {
-            // Calling saveGroups directly without awaiting since deactivate isn't async
-            codeGroupProvider.saveGroups();
+            // IMPORTANT: Await the save with force=true to bypass throttling and ensure it completes
+            await codeGroupProvider.saveGroups(undefined, true);
             logger.info('Successfully saved code groups during deactivation');
         } catch (error) {
             logger.error('Error saving code groups during deactivation', error);
         }
     }
-    
+
     // Clean up the logger
     logger.dispose();
 }

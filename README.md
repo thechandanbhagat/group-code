@@ -4,6 +4,9 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 ## Features
 
+- **Favorites System**: Mark important code groups as favorites with star icons for quick access
+- **User Profile Storage**: Personal preferences stored per-user in OS profile, preventing Git conflicts
+- **Tree State Persistence**: Tree expansion/collapse state automatically saved and restored
 - **Cross-File Code Organization**: Group related code blocks from different file types under a common functionality
 - **Unified View**: Access all related code sections through the dedicated Group Code Explorer
 - **Settings UI**: Easy-to-use settings panel for configuring preferences and AI model selection
@@ -20,9 +23,40 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
-## What's New in Version 1.4.3
+## What's New in Version 1.5.0
 
-### Bug Fixes
+### Favorites System
+Mark your most important code groups as favorites for quick access and better organization!
+
+- **Toggle Favorites**: Click the star icon on any group to mark/unmark it as a favorite
+- **Dedicated Favorites Section**: All favorite groups appear in a special section at the top of the tree view
+- **Hierarchical Favorites**: Favorite a parent node to automatically favorite all its children
+- **Visual Indicators**: Star icons clearly identify favorite groups throughout the tree
+- **Context Menu**: Right-click any group and select "Toggle Favorite"
+- **Persistent Across Sessions**: Your favorites are saved and restored when you reopen VS Code
+
+### User Profile Storage
+Your personal preferences are now stored in your OS user profile, separate from the workspace!
+
+- **Per-User Preferences**: Each developer can have their own favorites without conflicts
+- **Git-Safe**: Favorites don't clutter your workspace or create merge conflicts
+- **Persistent Storage**: Favorites survive workspace deletions or moves
+- **Multi-Workspace Support**: Different favorites for each project you work on
+- **Storage Location**: 
+  - Windows: `%USERPROFILE%\.groupcode\<workspace-hash>\`
+  - macOS/Linux: `~/.groupcode/<workspace-hash>/`
+
+### Tree View State Persistence
+The tree view now remembers which nodes you've expanded or collapsed!
+
+- **Expansion Memory**: Automatically restores your last expansion state
+- **Per-Workspace**: Each workspace maintains its own tree state
+- **Auto-Save**: Changes are automatically saved (debounced to reduce I/O)
+- **Better User Experience**: No more re-expanding nodes after restarting VS Code
+
+### Previous Updates (Version 1.4.3)
+
+#### Bug Fixes
 - **Fixed Model Loading Issue**: Resolved infinite loading when fetching available AI models in settings panel
 - **Improved API Stability**: Removed problematic parameters that caused model selection to hang
 
@@ -126,7 +160,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.4.3.vsix` file
+1. Download the `groupcode-1.5.0.vsix` file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 

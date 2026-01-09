@@ -134,3 +134,6 @@ excluded/*
 *.vsix
 website
 exclude
+
+# User preferences (stored in OS user profile instead)
+.groupcode/.userprefs/

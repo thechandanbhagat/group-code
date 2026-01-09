@@ -159,13 +159,33 @@ export class CodeGroupProvider implements vscode.Disposable {
         const fileType = getFileType(filePath);
         
         logger.info(`Processing active document: ${filePath} (${fileType})`);
-        
+
+        // IMPORTANT: Preserve isFavorite flags before updating
+        const favoriteStatusMap = new Map<string, boolean>();
+        this.groups.forEach((groups) => {
+            groups.forEach(group => {
+                if (group.filePath === filePath && group.isFavorite) {
+                    favoriteStatusMap.set(group.functionality, true);
+                }
+            });
+        });
+
+        // Remove existing groups for this file to avoid duplicates
+        this.removeGroupsForFile(filePath);
+
         // Parse the document for code groups
         const codeGroups = parseLanguageSpecificComments(document);
-        
+
+        // Restore isFavorite flags to the new groups
+        codeGroups.forEach(group => {
+            if (favoriteStatusMap.has(group.functionality)) {
+                group.isFavorite = true;
+            }
+        });
+
         // Add the groups to the collection
         this.addGroups(fileType, codeGroups);
-        
+
         // Update functionalities set
         codeGroups.forEach(group => {
             if (group && group.functionality) {
@@ -225,26 +245,43 @@ export class CodeGroupProvider implements vscode.Disposable {
             // If we found code groups, update the collection
             if (codeGroups.length > 0) {
                 logger.info(`Found ${codeGroups.length} code groups in saved file`);
-                
+
+                // IMPORTANT: Preserve isFavorite flags before removing old groups
+                const favoriteStatusMap = new Map<string, boolean>();
+                this.groups.forEach((groups) => {
+                    groups.forEach(group => {
+                        if (group.filePath === filePath && group.isFavorite) {
+                            favoriteStatusMap.set(group.functionality, true);
+                        }
+                    });
+                });
+
                 // First, remove any existing groups for this file
                 this.removeGroupsForFile(filePath);
-                
+
+                // Restore isFavorite flags to the new groups
+                codeGroups.forEach(group => {
+                    if (favoriteStatusMap.has(group.functionality)) {
+                        group.isFavorite = true;
+                    }
+                });
+
                 // Then add the new groups
                 this.addGroups(fileType, codeGroups);
-                
+
                 // Update functionalities set
                 codeGroups.forEach(group => {
                     if (group && group.functionality) {
                         this.functionalities.add(group.functionality);
                     }
                 });
-                
+
                 // Update the status bar
                 this.updateStatusBar();
-                
+
                 // Save the groups to .groupcode folder (with throttling)
                 await this.saveGroups();
-                
+
                 // Notify listeners that groups have been updated
                 this.onDidUpdateGroupsEventEmitter.fire();
             } else {
@@ -476,15 +513,25 @@ export class CodeGroupProvider implements vscode.Disposable {
         }
 
         try {
+            // IMPORTANT: Build a map of existing favorites before scanning
+            const favoriteStatusMap = new Map<string, boolean>();
+            this.groups.forEach((groups) => {
+                groups.forEach(group => {
+                    if (group.isFavorite && group.functionality) {
+                        favoriteStatusMap.set(`${group.filePath}::${group.functionality}`, true);
+                    }
+                });
+            });
+
             // Get ignore patterns from .gitignore and defaults
             const rootFolder = workspaceFolders[0].uri.fsPath;
             const ignorePatterns = await this.getIgnorePatterns(rootFolder);
-            
+
             // Create exclude pattern for findFiles
             const excludePattern = `{${ignorePatterns.join(',')}}`;
-            
+
             logger.info(`Scanning workspace with ${ignorePatterns.length} ignore patterns`);
-            
+
             const files = await vscode.workspace.findFiles('**/*.*', excludePattern);
             let processedCount = 0;
 
@@ -493,18 +540,26 @@ export class CodeGroupProvider implements vscode.Disposable {
                 if (!fileType || !isSupportedFileType(fileType)) {
                     continue;
                 }
-                
+
                 try {
                     // Double-check with shouldIgnoreFile for extra safety
                     if (this.shouldIgnoreFile(file.fsPath, ignorePatterns)) {
                         logger.debug(`Skipping ignored file: ${file.fsPath}`);
                         continue;
                     }
-                    
+
                     const document = await vscode.workspace.openTextDocument(file);
 
                     const groups = parseLanguageSpecificComments(document);
                     if (groups.length > 0) {
+                        // Restore isFavorite flags to groups before adding them
+                        groups.forEach(group => {
+                            const key = `${file.fsPath}::${group.functionality}`;
+                            if (favoriteStatusMap.has(key)) {
+                                group.isFavorite = true;
+                            }
+                        });
+
                         this.addGroups(fileType, groups);
                         processedCount++;
 
@@ -759,30 +814,33 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Save code groups to .groupcode folder
      * Now public so it can be called from extension.ts
+     * @param folderPath Optional folder path to save to
+     * @param force If true, bypass throttling (use for critical saves like deactivation)
      */
-    public async saveGroups(folderPath?: string): Promise<void> {
+    public async saveGroups(folderPath?: string, force: boolean = false): Promise<void> {
         try {
-            // Implement throttling to avoid excessive saves
+            // Implement throttling to avoid excessive saves (unless forced)
             const now = Date.now();
-            if (now - this.lastSaveTime < this.saveThrottleTime) {
+            if (!force && now - this.lastSaveTime < this.saveThrottleTime) {
                 // Skip this save call if it's too soon after the last one
                 logger.info(`Throttling save request - only ${now - this.lastSaveTime}ms since last save`);
                 return;
             }
-            
+
             const workspaceFolders = getWorkspaceFolders();
             const targetFolder = folderPath || (workspaceFolders.length > 0 ? workspaceFolders[0] : undefined);
-            
+
             if (!targetFolder) {
                 logger.info('No target folder provided for saving code groups');
                 return;
             }
-            
-            logger.info(`Saving code groups to ${targetFolder}`);
+
+            logger.info(`Saving code groups to ${targetFolder}${force ? ' (FORCED)' : ''}`);
             await saveCodeGroups(targetFolder, this.groups);
-            
+
             // Update last save time
             this.lastSaveTime = Date.now();
+            logger.info(`Successfully saved ${this.groups.size} file type groups to disk`);
         } catch (error) {
             logger.error('Error saving code groups', error);
         }
@@ -988,12 +1046,124 @@ export class CodeGroupProvider implements vscode.Disposable {
         const functionalities = this.getFunctionalities();
         this.statusBarItem.text = `$(map) Group Code (${functionalities.length})`;  // Changed from "$(compass) Code Compass" to "$(map) Group Code"
     }
-    
+
     // Clear all code groups and refresh
     public clearGroups(): void {
         this.groups.clear();
         this.functionalities.clear();
         this.updateStatusBar();
         this.onDidUpdateGroupsEventEmitter.fire();
+    }
+
+    /**
+     * Toggle favorite status for a specific group
+     * Matches group by functionality name (works for any level of hierarchy)
+     * Also toggles all descendant groups if this is a parent node
+     */
+    public async toggleFavorite(functionality: string): Promise<void> {
+        try {
+            const { isDescendantOf } = await import('./utils/hierarchyUtils');
+            let found = false;
+            let newFavoriteStatus: boolean | undefined;
+
+            logger.info(`=== TOGGLE FAVORITE START: ${functionality} ===`);
+
+            // First pass: determine the new status by checking existing groups
+            this.groups.forEach((groups) => {
+                groups.forEach(group => {
+                    if (group.functionality === functionality) {
+                        // Determine what the new status should be (toggle from current)
+                        if (newFavoriteStatus === undefined) {
+                            newFavoriteStatus = !group.isFavorite;
+                            logger.info(`Current favorite status: ${group.isFavorite}, will change to: ${newFavoriteStatus}`);
+                        }
+                        found = true;
+                    }
+                });
+            });
+
+            if (!found) {
+                logger.warn(`No groups found for functionality: ${functionality}`);
+                return;
+            }
+
+            // Second pass: apply the new status to this functionality and all descendants
+            let updatedCount = 0;
+            this.groups.forEach((groups) => {
+                groups.forEach(group => {
+                    // Toggle if it matches exactly OR if it's a descendant
+                    if (group.functionality === functionality || isDescendantOf(group.functionality, functionality)) {
+                        group.isFavorite = newFavoriteStatus!;
+                        updatedCount++;
+                        logger.info(`Updated ${group.functionality} (${group.filePath}) - isFavorite: ${newFavoriteStatus}`);
+                    }
+                });
+            });
+
+            logger.info(`Updated ${updatedCount} groups with favorite status: ${newFavoriteStatus}`);
+
+            // Save the updated groups
+            await this.saveGroups();
+            logger.info(`Saved groups to disk`);
+
+            // Notify listeners that groups have been updated
+            this.onDidUpdateGroupsEventEmitter.fire();
+
+            logger.info(`=== TOGGLE FAVORITE END ===`);
+        } catch (error) {
+            logger.error('Error toggling favorite', error);
+            vscode.window.showErrorMessage('Failed to toggle favorite status');
+        }
+    }
+
+    /**
+     * Get all favorite groups
+     */
+    public getFavoriteGroups(): CodeGroup[] {
+        const favorites: CodeGroup[] = [];
+
+        this.groups.forEach((groups) => {
+            groups.forEach(group => {
+                if (group.isFavorite) {
+                    favorites.push(group);
+                }
+            });
+        });
+
+        return favorites;
+    }
+
+    /**
+     * Check if a functionality is marked as favorite
+     */
+    public isFavorite(functionality: string): boolean {
+        let isFav = false;
+
+        this.groups.forEach((groups) => {
+            groups.forEach(group => {
+                if (group.functionality === functionality && group.isFavorite) {
+                    isFav = true;
+                }
+            });
+        });
+
+        return isFav;
+    }
+
+    /**
+     * Get all favorite functionalities (unique)
+     */
+    public getFavoriteFunctionalities(): string[] {
+        const favoriteFuncs = new Set<string>();
+
+        this.groups.forEach((groups) => {
+            groups.forEach(group => {
+                if (group.isFavorite && group.functionality) {
+                    favoriteFuncs.add(group.functionality);
+                }
+            });
+        });
+
+        return Array.from(favoriteFuncs);
     }
 }

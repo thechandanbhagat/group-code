@@ -9,6 +9,7 @@ import { buildHierarchyTree, HierarchyNode, enrichWithHierarchy } from './utils/
  * Represents the different types of tree items in the code group explorer
  */
 enum CodeGroupTreeItemType {
+    FavoritesRoot = 'favoritesRoot',  // Root "Favorites" section
     HierarchyNode = 'hierarchyNode',  // New: Hierarchy level (e.g., "Auth", "Auth > Login")
     FileType = 'fileType',
     CodeGroup = 'codeGroup'
@@ -25,27 +26,37 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
         public readonly hierarchyNode?: HierarchyNode,
         public readonly functionality?: string,
         public readonly fileType?: string,
-        public readonly codeGroup?: CodeGroup
+        public readonly codeGroup?: CodeGroup,
+        public readonly isFavorite?: boolean
     ) {
         super(label, collapsibleState);
 
         // Set basic properties common to all item types
         this.tooltip = label;
-        
+
         // Set type-specific properties
         switch (type) {
+            case CodeGroupTreeItemType.FavoritesRoot:
+                // Root "Favorites" section
+                this.contextValue = 'favoritesRoot';
+                this.tooltip = 'Your favorite code groups';
+                this.iconPath = new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.yellow'));
+                break;
+
             case CodeGroupTreeItemType.HierarchyNode:
                 // Hierarchy node (e.g., "Auth", "Login", "Validation")
-                this.contextValue = 'hierarchyNode';
+                this.contextValue = isFavorite ? 'hierarchyNodeFavorite' : 'hierarchyNode';
                 if (hierarchyNode) {
                     const groupCount = this.countGroupsInNode(hierarchyNode);
                     const childCount = hierarchyNode.children.size;
-                    
-                    this.tooltip = `${hierarchyNode.fullPath}`;
+
+                    this.tooltip = `${hierarchyNode.fullPath}${isFavorite ? ' ⭐' : ''}`;
                     this.description = groupCount > 0 ? `${groupCount} group(s)` : '';
-                    
-                    // Use folder icon for nodes with children, file icon for leaf nodes
-                    if (childCount > 0 || groupCount > 0) {
+
+                    // Use star icon for favorites, otherwise use folder/namespace icon
+                    if (isFavorite) {
+                        this.iconPath = new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.yellow'));
+                    } else if (childCount > 0 || groupCount > 0) {
                         this.iconPath = new vscode.ThemeIcon(
                             childCount > 0 ? 'folder' : 'symbol-namespace',
                             new vscode.ThemeColor('symbolIcon.namespaceForeground')
@@ -162,28 +173,51 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     async getChildren(element?: CodeGroupTreeItem): Promise<CodeGroupTreeItem[]> {
         try {
             if (!element) {
-                // Root level - build hierarchy tree from all groups
+                // Root level - show Favorites section and all groups
                 const groups = await this.codeGroupProvider.getAllGroups();
                 const filteredGroups = groups.filter(g => this.matchesSearch(g));
-                
+
                 // Enrich groups with hierarchy information
                 const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
-                
+
                 // Build hierarchy tree
                 const hierarchyTree = buildHierarchyTree(enrichedGroups);
-                
+
                 // Convert root nodes to tree items
                 const items: CodeGroupTreeItem[] = [];
+
+                // Check if there are any favorites
+                const favoriteFunctionalities = this.codeGroupProvider.getFavoriteFunctionalities();
+                if (favoriteFunctionalities.length > 0) {
+                    // Add Favorites section at the top
+                    items.push(new CodeGroupTreeItem(
+                        'Favorites',
+                        vscode.TreeItemCollapsibleState.Expanded,
+                        CodeGroupTreeItemType.FavoritesRoot
+                    ));
+                }
+
+                // Add all hierarchy nodes (with favorite status)
                 hierarchyTree.forEach((node, name) => {
+                    const isFav = this.codeGroupProvider.isFavorite(node.fullPath);
                     items.push(new CodeGroupTreeItem(
                         name,
                         vscode.TreeItemCollapsibleState.Expanded,
                         CodeGroupTreeItemType.HierarchyNode,
-                        node
+                        node,
+                        node.fullPath,  // Pass functionality for toggle favorite command
+                        undefined,
+                        undefined,
+                        isFav
                     ));
                 });
-                
-                return items.sort((a, b) => a.label.localeCompare(b.label));
+
+                return items.sort((a, b) => {
+                    // Favorites section always first
+                    if (a.type === CodeGroupTreeItemType.FavoritesRoot) return -1;
+                    if (b.type === CodeGroupTreeItemType.FavoritesRoot) return 1;
+                    return a.label.localeCompare(b.label);
+                });
             }
 
             const allGroups = await this.codeGroupProvider.getAllGroups();
@@ -191,28 +225,58 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
             const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
 
             switch (element.type) {
-                case CodeGroupTreeItemType.HierarchyNode: {
-                    if (!element.hierarchyNode) return [];
-                    
+                case CodeGroupTreeItemType.FavoritesRoot: {
+                    // Show only favorite hierarchy nodes
+                    const favoriteFunctionalities = this.codeGroupProvider.getFavoriteFunctionalities();
                     const items: CodeGroupTreeItem[] = [];
-                    
-                    // Add child hierarchy nodes
-                    element.hierarchyNode.children.forEach((childNode, name) => {
+
+                    // Build hierarchy tree for favorites only
+                    const favoriteGroups = enrichedGroups.filter(g => g.isFavorite);
+                    const favoriteHierarchyTree = buildHierarchyTree(favoriteGroups);
+
+                    favoriteHierarchyTree.forEach((node, name) => {
                         items.push(new CodeGroupTreeItem(
                             name,
                             vscode.TreeItemCollapsibleState.Expanded,
                             CodeGroupTreeItemType.HierarchyNode,
-                            childNode
+                            node,
+                            node.fullPath,  // Pass functionality for toggle favorite command
+                            undefined,
+                            undefined,
+                            true
                         ));
                     });
-                    
+
+                    return items.sort((a, b) => a.label.localeCompare(b.label));
+                }
+
+                case CodeGroupTreeItemType.HierarchyNode: {
+                    if (!element.hierarchyNode) return [];
+
+                    const items: CodeGroupTreeItem[] = [];
+
+                    // Add child hierarchy nodes
+                    element.hierarchyNode.children.forEach((childNode, name) => {
+                        const isFav = this.codeGroupProvider.isFavorite(childNode.fullPath);
+                        items.push(new CodeGroupTreeItem(
+                            name,
+                            vscode.TreeItemCollapsibleState.Expanded,
+                            CodeGroupTreeItemType.HierarchyNode,
+                            childNode,
+                            childNode.fullPath,  // Pass functionality for toggle favorite command
+                            undefined,
+                            undefined,
+                            isFav
+                        ));
+                    });
+
                     // If this node has groups (leaf node), show file types
                     if (element.hierarchyNode.groups.length > 0) {
                         const fileTypes = [...new Set(element.hierarchyNode.groups.map(g => {
                             const ext = g.filePath.split('.').pop() || 'other';
                             return ext.toLowerCase();
                         }))];
-                        
+
                         fileTypes.forEach(fileType => {
                             items.push(new CodeGroupTreeItem(
                                 fileType,
@@ -224,7 +288,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                             ));
                         });
                     }
-                    
+
                     return items.sort((a, b) => {
                         // Hierarchy nodes first, then file types
                         if (a.type === b.type) {

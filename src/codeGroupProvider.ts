@@ -3,13 +3,15 @@ import * as fs from 'fs';
 import { GroupDefinition, CodeGroup } from './groupDefinition';
 import { parseLanguageSpecificComments } from './utils/commentParser';
 import { groupCodeByFunctionality } from './utils/groupingUtils';
-import { 
-    saveCodeGroups, 
-    loadCodeGroups, 
+import {
+    saveCodeGroups,
+    loadCodeGroups,
     getWorkspaceFolders,
     getFileType,
     getFileName,
-    isSupportedFileType
+    isSupportedFileType,
+    loadUserFavorites,
+    saveUserFavorites
 } from './utils/fileUtils';
 import logger from './utils/logger';
 
@@ -47,10 +49,10 @@ export class CodeGroupProvider implements vscode.Disposable {
         if (workspaceFolders.length === 0) {
             return;
         }
-        
+
         // Try to load saved groups first
         let loadedGroups = false;
-        
+
         for (const folder of workspaceFolders) {
             const savedGroups = await loadCodeGroups(folder);
             if (savedGroups) {
@@ -66,11 +68,14 @@ export class CodeGroupProvider implements vscode.Disposable {
                 loadedGroups = true;
             }
         }
-        
+
         // If no saved groups found, scan the workspace
         if (!loadedGroups) {
             await this.processWorkspace();
         } else {
+            // Load user favorites from user profile and apply them
+            await this.loadAndApplyUserFavorites();
+
             // Update UI for loaded groups
             this.updateStatusBar();
             this.onDidUpdateGroupsEventEmitter.fire();
@@ -115,6 +120,9 @@ export class CodeGroupProvider implements vscode.Disposable {
                 logger.info('No existing groups found, scanning workspace...');
                 await this.processWorkspace();
             } else {
+                // Load user favorites from user profile and apply them
+                await this.loadAndApplyUserFavorites();
+
                 // Update UI for loaded groups
                 this.updateStatusBar();
                 // Notify listeners that groups have been loaded
@@ -575,6 +583,9 @@ export class CodeGroupProvider implements vscode.Disposable {
                 }
             }
 
+            // Load user favorites from user profile and apply them
+            await this.loadAndApplyUserFavorites();
+
             // Update UI
             this.updateStatusBar();
             await this.saveGroups();
@@ -585,7 +596,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                     `Found ${this.functionalities.size} code groups in ${processedCount} files`
                 );
             }
-            
+
             logger.info(`Workspace scan complete. Processed ${processedCount} files, found ${this.functionalities.size} groups`);
         } catch (err) {
             logger.error('Error scanning workspace', err);
@@ -1056,6 +1067,73 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
 
     /**
+     * Load user favorites from user profile and apply them to existing groups
+     * This should be called after loading groups from the shared codegroups.json
+     */
+    private async loadAndApplyUserFavorites(): Promise<void> {
+        try {
+            const workspaceFolders = getWorkspaceFolders();
+            if (workspaceFolders.length === 0) {
+                logger.warn('No workspace folders found, cannot load user favorites');
+                return;
+            }
+
+            // Use the first workspace folder for favorites storage
+            const workspacePath = workspaceFolders[0];
+            const favorites = await loadUserFavorites(workspacePath);
+
+            logger.info(`Loaded ${favorites.size} favorites from user profile`);
+
+            // Apply favorites to existing groups
+            let appliedCount = 0;
+            this.groups.forEach((groups) => {
+                groups.forEach(group => {
+                    const key = `${group.filePath}::${group.functionality}`;
+                    if (favorites.has(key) && favorites.get(key) === true) {
+                        group.isFavorite = true;
+                        appliedCount++;
+                    }
+                });
+            });
+
+            logger.info(`Applied ${appliedCount} favorites to groups`);
+        } catch (error) {
+            logger.error('Error loading and applying user favorites:', error);
+        }
+    }
+
+    /**
+     * Save current favorites to user profile
+     */
+    private async saveUserFavoritesToProfile(): Promise<void> {
+        try {
+            const workspaceFolders = getWorkspaceFolders();
+            if (workspaceFolders.length === 0) {
+                logger.warn('No workspace folders found, cannot save user favorites');
+                return;
+            }
+
+            const workspacePath = workspaceFolders[0];
+            const favorites = new Map<string, boolean>();
+
+            // Collect all favorites from groups
+            this.groups.forEach((groups) => {
+                groups.forEach(group => {
+                    if (group.isFavorite) {
+                        const key = `${group.filePath}::${group.functionality}`;
+                        favorites.set(key, true);
+                    }
+                });
+            });
+
+            await saveUserFavorites(workspacePath, favorites);
+            logger.info(`Saved ${favorites.size} favorites to user profile`);
+        } catch (error) {
+            logger.error('Error saving user favorites to profile:', error);
+        }
+    }
+
+    /**
      * Toggle favorite status for a specific group
      * Matches group by functionality name (works for any level of hierarchy)
      * Also toggles all descendant groups if this is a parent node
@@ -1069,9 +1147,10 @@ export class CodeGroupProvider implements vscode.Disposable {
             logger.info(`=== TOGGLE FAVORITE START: ${functionality} ===`);
 
             // First pass: determine the new status by checking existing groups
+            // Check both exact matches and descendants
             this.groups.forEach((groups) => {
                 groups.forEach(group => {
-                    if (group.functionality === functionality) {
+                    if (group.functionality === functionality || isDescendantOf(group.functionality, functionality)) {
                         // Determine what the new status should be (toggle from current)
                         if (newFavoriteStatus === undefined) {
                             newFavoriteStatus = !group.isFavorite;
@@ -1102,9 +1181,9 @@ export class CodeGroupProvider implements vscode.Disposable {
 
             logger.info(`Updated ${updatedCount} groups with favorite status: ${newFavoriteStatus}`);
 
-            // Save the updated groups
-            await this.saveGroups();
-            logger.info(`Saved groups to disk`);
+            // Save favorites to user profile (not to shared codegroups.json)
+            await this.saveUserFavoritesToProfile();
+            logger.info(`Saved favorites to user profile`);
 
             // Notify listeners that groups have been updated
             this.onDidUpdateGroupsEventEmitter.fire();
@@ -1135,14 +1214,22 @@ export class CodeGroupProvider implements vscode.Disposable {
 
     /**
      * Check if a functionality is marked as favorite
+     * This also returns true if any descendant is marked as favorite
      */
     public isFavorite(functionality: string): boolean {
         let isFav = false;
 
         this.groups.forEach((groups) => {
             groups.forEach(group => {
-                if (group.functionality === functionality && group.isFavorite) {
-                    isFav = true;
+                // Check if this group matches exactly OR if this group's functionality starts with the given functionality path
+                // For parent nodes like "Auth", this will match "Auth", "Auth > Login", "Auth > Signup", etc.
+                if (group.isFavorite) {
+                    if (group.functionality === functionality) {
+                        isFav = true;
+                    } else if (group.functionality.startsWith(functionality + ' > ')) {
+                        // This is a descendant - check if it's a proper descendant
+                        isFav = true;
+                    }
                 }
             });
         });

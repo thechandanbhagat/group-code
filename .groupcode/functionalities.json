@@ -1,7 +1,16 @@
 {
   "version": "1.3.0",
-  "totalFunctionalities": 2,
+  "totalFunctionalities": 260,
   "functionalities": {
+    "name": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 3,
+      "fileTypes": [
+        "ts"
+      ]
+    },
     "${groupname}${description ? '": {
       "level": 1,
       "parent": null,
@@ -11,11 +20,2452 @@
         "ts"
       ]
     },
-    "name": {
+    "data > models > groupdefinition": {
+      "level": 3,
+      "parent": "data > models",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "data": {
       "level": 1,
       "parent": null,
+      "children": [
+        "data > models"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "data > models": {
+      "level": 2,
+      "parent": "data",
+      "children": [
+        "data > models > codegroup",
+        "data > models > groupdefinition"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "data > models > codegroup": {
+      "level": 3,
+      "parent": "data > models",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "management > groups > manager": {
+      "level": 3,
+      "parent": "management > groups",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "management": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "management > groups"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "management > groups": {
+      "level": 2,
+      "parent": "management",
+      "children": [
+        "management > groups > add",
+        "management > groups > delete",
+        "management > groups > list",
+        "management > groups > lookup",
+        "management > groups > manager"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "management > groups > add": {
+      "level": 3,
+      "parent": "management > groups",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "management > groups > list": {
+      "level": 3,
+      "parent": "management > groups",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "management > groups > lookup": {
+      "level": 3,
+      "parent": "management > groups",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "management > groups > delete": {
+      "level": 3,
+      "parent": "management > groups",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "models > tree items": {
+      "level": 2,
+      "parent": "models",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "models": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "models > tree items"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ui > tree item > renderer": {
+      "level": 3,
+      "parent": "ui > tree item",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "ui > favorites",
+        "ui > navigation",
+        "ui > prompts",
+        "ui > statusbar",
+        "ui > tree item"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ui > tree item": {
+      "level": 2,
+      "parent": "ui",
+      "children": [
+        "ui > tree item > helpers",
+        "ui > tree item > renderer"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ui > tree item > helpers": {
+      "level": 3,
+      "parent": "ui > tree item",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > tree provider > code groups": {
+      "level": 3,
+      "parent": "providers > tree provider",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "providers > persistence",
+        "providers > search",
+        "providers > tree provider"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "providers > tree provider": {
+      "level": 2,
+      "parent": "providers",
+      "children": [
+        "providers > tree provider > adapter",
+        "providers > tree provider > children",
+        "providers > tree provider > code groups",
+        "providers > tree provider > initialization",
+        "providers > tree provider > refresh",
+        "providers > tree provider > utilities",
+        "providers > tree provider > view management"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "providers > tree provider > initialization": {
+      "level": 3,
+      "parent": "providers > tree provider",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > tree provider > view management": {
+      "level": 3,
+      "parent": "providers > tree provider",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > tree provider > utilities": {
+      "level": 3,
+      "parent": "providers > tree provider",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > persistence > load state": {
+      "level": 3,
+      "parent": "providers > persistence",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > persistence": {
+      "level": 2,
+      "parent": "providers",
+      "children": [
+        "providers > persistence > load state",
+        "providers > persistence > save state"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "providers > persistence > save state": {
+      "level": 3,
+      "parent": "providers > persistence",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > search > filter": {
+      "level": 3,
+      "parent": "providers > search",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > search": {
+      "level": 2,
+      "parent": "providers",
+      "children": [
+        "providers > search > filter",
+        "providers > search > matching",
+        "providers > search > query"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "providers > search > query": {
+      "level": 3,
+      "parent": "providers > search",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > search > matching": {
+      "level": 3,
+      "parent": "providers > search",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > tree provider > refresh": {
+      "level": 3,
+      "parent": "providers > tree provider",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > tree provider > adapter": {
+      "level": 3,
+      "parent": "providers > tree provider",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "providers > tree provider > children": {
+      "level": 3,
+      "parent": "providers > tree provider",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filesystem > preferences > paths": {
+      "level": 3,
+      "parent": "filesystem > preferences",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filesystem": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "filesystem > io",
+        "filesystem > preferences"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filesystem > preferences": {
+      "level": 2,
+      "parent": "filesystem",
+      "children": [
+        "filesystem > preferences > management",
+        "filesystem > preferences > paths"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > hashing > workspace": {
+      "level": 3,
+      "parent": "utilities > hashing",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "utilities > fileinfo",
+        "utilities > grouping",
+        "utilities > hashing",
+        "utilities > lineranges",
+        "utilities > normalization",
+        "utilities > string"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > hashing": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > hashing > workspace"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filesystem > preferences > management": {
+      "level": 3,
+      "parent": "filesystem > preferences",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata > favorites > persistence": {
+      "level": 3,
+      "parent": "userdata > favorites",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "userdata > favorites",
+        "userdata > treestate"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "userdata > favorites": {
+      "level": 2,
+      "parent": "userdata",
+      "children": [
+        "userdata > favorites > persistence"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > lineranges > conversion": {
+      "level": 3,
+      "parent": "utilities > lineranges",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > lineranges": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > lineranges > conversion"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filesystem > io > filereadwrite": {
+      "level": 3,
+      "parent": "filesystem > io",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filesystem > io": {
+      "level": 2,
+      "parent": "filesystem",
+      "children": [
+        "filesystem > io > filereadwrite"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > fileinfo > parsing": {
+      "level": 3,
+      "parent": "utilities > fileinfo",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > fileinfo": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > fileinfo > parsing"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filetypes > supported": {
+      "level": 2,
+      "parent": "filetypes",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filetypes": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "filetypes > helpers",
+        "filetypes > supported"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filetypes > helpers > retrieval": {
+      "level": 3,
+      "parent": "filetypes > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filetypes > helpers": {
+      "level": 2,
+      "parent": "filetypes",
+      "children": [
+        "filetypes > helpers > patterns",
+        "filetypes > helpers > retrieval",
+        "filetypes > helpers > validation"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filetypes > helpers > patterns": {
+      "level": 3,
+      "parent": "filetypes > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filetypes > helpers > validation": {
+      "level": 3,
+      "parent": "filetypes > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > groupcode > management": {
+      "level": 3,
+      "parent": "workspace > groupcode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "workspace > folders",
+        "workspace > group management",
+        "workspace > groupcode",
+        "workspace > initialization",
+        "workspace > provider",
+        "workspace > retrieval",
+        "workspace > scanning"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > groupcode": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > groupcode > management",
+        "workspace > groupcode > persistence"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > groupcode > persistence": {
+      "level": 3,
+      "parent": "workspace > groupcode",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > functionalities > loading": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "hierarchy > enrichment",
+        "hierarchy > functionalities",
+        "hierarchy > metrics",
+        "hierarchy > parsing",
+        "hierarchy > query",
+        "hierarchy > tree",
+        "hierarchy > types",
+        "hierarchy > utilities"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > functionalities": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > functionalities > loading",
+        "hierarchy > functionalities > query",
+        "hierarchy > functionalities > similarity",
+        "hierarchy > functionalities > stats"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > functionalities > query": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
       "children": [],
       "groupCount": 3,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > functionalities > similarity": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > functionalities > stats": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > folders > access": {
+      "level": 3,
+      "parent": "workspace > folders",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > folders": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > folders > access"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "settings > groupcode > types": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "settings": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "settings > groupcode"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "settings > groupcode": {
+      "level": 2,
+      "parent": "settings",
+      "children": [
+        "settings > groupcode > convenience",
+        "settings > groupcode > defaults",
+        "settings > groupcode > management",
+        "settings > groupcode > types"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "settings > groupcode > defaults": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "settings > groupcode > management": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "settings > groupcode > convenience": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata > treestate > persistence": {
+      "level": 3,
+      "parent": "userdata > treestate",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata > treestate": {
+      "level": 2,
+      "parent": "userdata",
+      "children": [
+        "userdata > treestate > persistence"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "integration > copilot > core": {
+      "level": 3,
+      "parent": "integration > copilot",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "integration": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "integration > ai",
+        "integration > availability",
+        "integration > copilot"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "integration > copilot": {
+      "level": 2,
+      "parent": "integration",
+      "children": [
+        "integration > copilot > core",
+        "integration > copilot > initialization"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "integration > copilot > initialization": {
+      "level": 3,
+      "parent": "integration > copilot",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "integration > availability > check": {
+      "level": 3,
+      "parent": "integration > availability",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "integration > availability": {
+      "level": 2,
+      "parent": "integration",
+      "children": [
+        "integration > availability > check",
+        "integration > availability > status"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "integration > availability > status": {
+      "level": 3,
+      "parent": "integration > availability",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ai > suggestions > groupname": {
+      "level": 3,
+      "parent": "ai > suggestions",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ai": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "ai > analysis",
+        "ai > explanation",
+        "ai > similarity",
+        "ai > suggestions"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ai > suggestions": {
+      "level": 2,
+      "parent": "ai",
+      "children": [
+        "ai > suggestions > description",
+        "ai > suggestions > groupname"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ai > suggestions > description": {
+      "level": 3,
+      "parent": "ai > suggestions",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ai > analysis > groupanalysis": {
+      "level": 3,
+      "parent": "ai > analysis",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ai > analysis": {
+      "level": 2,
+      "parent": "ai",
+      "children": [
+        "ai > analysis > groupanalysis"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "prompts > builders > groupname": {
+      "level": 3,
+      "parent": "prompts > builders",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "prompts": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "prompts > builders"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "prompts > builders": {
+      "level": 2,
+      "parent": "prompts",
+      "children": [
+        "prompts > builders > analysis",
+        "prompts > builders > description",
+        "prompts > builders > groupname",
+        "prompts > builders > similarity"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "prompts > builders > description": {
+      "level": 3,
+      "parent": "prompts > builders",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "prompts > builders > analysis": {
+      "level": 3,
+      "parent": "prompts > builders",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ai > similarity > check": {
+      "level": 3,
+      "parent": "ai > similarity",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ai > similarity": {
+      "level": 2,
+      "parent": "ai",
+      "children": [
+        "ai > similarity > check"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "prompts > builders > similarity": {
+      "level": 3,
+      "parent": "prompts > builders",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > normalization > groupname": {
+      "level": 3,
+      "parent": "utilities > normalization",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > normalization": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > normalization > getnormalized",
+        "utilities > normalization > groupname",
+        "utilities > normalization > variations"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ai > explanation > codegroup": {
+      "level": 3,
+      "parent": "ai > explanation",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ai > explanation": {
+      "level": 2,
+      "parent": "ai",
+      "children": [
+        "ai > explanation > codegroup"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "exports > singleton > instance": {
+      "level": 3,
+      "parent": "exports > singleton",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "exports": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "exports > singleton"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "exports > singleton": {
+      "level": 2,
+      "parent": "exports",
+      "children": [
+        "exports > singleton > instance"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > grouping > groupbyfunctionality": {
+      "level": 3,
+      "parent": "utilities > grouping",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > grouping": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > grouping > groupbyfunctionality",
+        "utilities > grouping > mergegroups"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > grouping > mergegroups": {
+      "level": 3,
+      "parent": "utilities > grouping",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > string > similarity": {
+      "level": 3,
+      "parent": "utilities > string",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > string": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > string > prefix",
+        "utilities > string > similarity"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "types > enums > issuetypes": {
+      "level": 3,
+      "parent": "types > enums",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "types": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "types > enums",
+        "types > interfaces",
+        "types > models"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "types > enums": {
+      "level": 2,
+      "parent": "types",
+      "children": [
+        "types > enums > issuetypes",
+        "types > enums > severity"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "types > enums > severity": {
+      "level": 3,
+      "parent": "types > enums",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "types > interfaces > refactoringissue": {
+      "level": 3,
+      "parent": "types > interfaces",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "types > interfaces": {
+      "level": 2,
+      "parent": "types",
+      "children": [
+        "types > interfaces > refactoringconfig",
+        "types > interfaces > refactoringissue"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "types > interfaces > refactoringconfig": {
+      "level": 3,
+      "parent": "types > interfaces",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "configuration > defaults > refactoringconfig": {
+      "level": 3,
+      "parent": "configuration > defaults",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "configuration": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "configuration > defaults"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "configuration > defaults": {
+      "level": 2,
+      "parent": "configuration",
+      "children": [
+        "configuration > defaults > refactoringconfig"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > analyzer > groupanalyzer": {
+      "level": 3,
+      "parent": "analysis > analyzer",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "analysis > algorithms",
+        "analysis > analyzer",
+        "analysis > decision",
+        "analysis > detection",
+        "analysis > hierarchy",
+        "analysis > matching",
+        "analysis > pattern analysis",
+        "analysis > patternanalysis",
+        "analysis > similarity",
+        "analysis > suggestions"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > analyzer": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > analyzer > analyze",
+        "analysis > analyzer > groupanalyzer"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > analyzer > analyze": {
+      "level": 3,
+      "parent": "analysis > analyzer",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > detection > duplicates": {
+      "level": 3,
+      "parent": "analysis > detection",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > detection": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > detection > duplicates",
+        "analysis > detection > naming",
+        "analysis > detection > orphaned",
+        "analysis > detection > similarity",
+        "analysis > detection > singleuse",
+        "analysis > detection > toolarge",
+        "analysis > detection > toosmall"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > detection > similarity": {
+      "level": 3,
+      "parent": "analysis > detection",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > detection > orphaned": {
+      "level": 3,
+      "parent": "analysis > detection",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > detection > naming": {
+      "level": 3,
+      "parent": "analysis > detection",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > detection > singleuse": {
+      "level": 3,
+      "parent": "analysis > detection",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > detection > toolarge": {
+      "level": 3,
+      "parent": "analysis > detection",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > detection > toosmall": {
+      "level": 3,
+      "parent": "analysis > detection",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "reporting > report > generate": {
+      "level": 3,
+      "parent": "reporting > report",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "reporting": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "reporting > helpers",
+        "reporting > report",
+        "reporting > reports"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "reporting > report": {
+      "level": 2,
+      "parent": "reporting",
+      "children": [
+        "reporting > report > generate"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "reporting > helpers > labels": {
+      "level": 3,
+      "parent": "reporting > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "reporting > helpers": {
+      "level": 2,
+      "parent": "reporting",
+      "children": [
+        "reporting > helpers > labels"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "extension > prompts > rating": {
+      "level": 3,
+      "parent": "extension > prompts",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "extension": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "extension > prompts"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "extension > prompts": {
+      "level": 2,
+      "parent": "extension",
+      "children": [
+        "extension > prompts > initialization",
+        "extension > prompts > rating"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "extension > prompts > initialization": {
+      "level": 3,
+      "parent": "extension > prompts",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "telemetry > usage > increment": {
+      "level": 3,
+      "parent": "telemetry > usage",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "telemetry": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "telemetry > usage"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "telemetry > usage": {
+      "level": 2,
+      "parent": "telemetry",
+      "children": [
+        "telemetry > usage > increment"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ui > prompts > ratingdialog": {
+      "level": 3,
+      "parent": "ui > prompts",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui > prompts": {
+      "level": 2,
+      "parent": "ui",
+      "children": [
+        "ui > prompts > ratingdialog"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "types > models > patternsuggestion": {
+      "level": 3,
+      "parent": "types > models",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "types > models": {
+      "level": 2,
+      "parent": "types",
+      "children": [
+        "types > models > patternsuggestion",
+        "types > models > semanticsimilarityresult"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "types > models > semanticsimilarityresult": {
+      "level": 3,
+      "parent": "types > models",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > pattern analysis > analyzer": {
+      "level": 3,
+      "parent": "analysis > pattern analysis",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > pattern analysis": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > pattern analysis > analyzer"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > algorithms > levenshtein": {
+      "level": 3,
+      "parent": "analysis > algorithms",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > algorithms": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > algorithms > levenshtein",
+        "analysis > algorithms > similarity"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > algorithms > similarity": {
+      "level": 3,
+      "parent": "analysis > algorithms",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > string > prefix": {
+      "level": 3,
+      "parent": "utilities > string",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > normalization > variations": {
+      "level": 3,
+      "parent": "utilities > normalization",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > similarity > findsimilar": {
+      "level": 3,
+      "parent": "analysis > similarity",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > similarity": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > similarity > findsimilar",
+        "analysis > similarity > semanticcheck"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > decision > choosename": {
+      "level": 3,
+      "parent": "analysis > decision",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > decision": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > decision > choosename"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > similarity > semanticcheck": {
+      "level": 3,
+      "parent": "analysis > similarity",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > normalization > getnormalized": {
+      "level": 3,
+      "parent": "utilities > normalization",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > matching > findmatch": {
+      "level": 3,
+      "parent": "analysis > matching",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > matching": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > matching > bestmatch",
+        "analysis > matching > findmatch"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > hierarchy > suggest": {
+      "level": 3,
+      "parent": "analysis > hierarchy",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > hierarchy": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > hierarchy > suggest"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > patternanalysis > analyze": {
+      "level": 3,
+      "parent": "analysis > patternanalysis",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > patternanalysis": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > patternanalysis > analyze"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > suggestions > getsuggested": {
+      "level": 3,
+      "parent": "analysis > suggestions",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "analysis > suggestions": {
+      "level": 2,
+      "parent": "analysis",
+      "children": [
+        "analysis > suggestions > getsuggested"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "reporting > reports > generate": {
+      "level": 3,
+      "parent": "reporting > reports",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "reporting > reports": {
+      "level": 2,
+      "parent": "reporting",
+      "children": [
+        "reporting > reports > generate"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "integration > ai > semanticcheck": {
+      "level": 3,
+      "parent": "integration > ai",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "integration > ai": {
+      "level": 2,
+      "parent": "integration",
+      "children": [
+        "integration > ai > semanticcheck"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "analysis > matching > bestmatch": {
+      "level": 3,
+      "parent": "analysis > matching",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "export > instance > patternanalyzer": {
+      "level": 3,
+      "parent": "export > instance",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "export": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "export > instance"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "export > instance": {
+      "level": 2,
+      "parent": "export",
+      "children": [
+        "export > instance > patternanalyzer"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "logging > levels": {
+      "level": 2,
+      "parent": "logging",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "logging > api",
+        "logging > core",
+        "logging > instance",
+        "logging > levels"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "logging > core > logger": {
+      "level": 3,
+      "parent": "logging > core",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > core": {
+      "level": 2,
+      "parent": "logging",
+      "children": [
+        "logging > core > configuration",
+        "logging > core > errorhandling",
+        "logging > core > internal",
+        "logging > core > lifecycle",
+        "logging > core > logger",
+        "logging > core > shortcuts",
+        "logging > core > ui"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "logging > core > configuration": {
+      "level": 3,
+      "parent": "logging > core",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > core > shortcuts": {
+      "level": 3,
+      "parent": "logging > core",
+      "children": [],
+      "groupCount": 3,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > core > errorhandling": {
+      "level": 3,
+      "parent": "logging > core",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > core > internal": {
+      "level": 3,
+      "parent": "logging > core",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > core > ui": {
+      "level": 3,
+      "parent": "logging > core",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > core > lifecycle": {
+      "level": 3,
+      "parent": "logging > core",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > instance > singleton": {
+      "level": 3,
+      "parent": "logging > instance",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > instance": {
+      "level": 2,
+      "parent": "logging",
+      "children": [
+        "logging > instance > singleton"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "logging > api > exports": {
+      "level": 3,
+      "parent": "logging > api",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "logging > api": {
+      "level": 2,
+      "parent": "logging",
+      "children": [
+        "logging > api > exports"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > parsing > parse": {
+      "level": 3,
+      "parent": "hierarchy > parsing",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > parsing": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > parsing > parse"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > enrichment > groupenrichment": {
+      "level": 3,
+      "parent": "hierarchy > enrichment",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > enrichment": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > enrichment > batch",
+        "hierarchy > enrichment > groupenrichment"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > enrichment > batch": {
+      "level": 3,
+      "parent": "hierarchy > enrichment",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > types > node": {
+      "level": 3,
+      "parent": "hierarchy > types",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > types": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > types > node"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > tree > builder": {
+      "level": 3,
+      "parent": "hierarchy > tree",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > tree": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > tree > builder"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > utilities > ancestors": {
+      "level": 3,
+      "parent": "hierarchy > utilities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > utilities": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > utilities > ancestors",
+        "hierarchy > utilities > parent",
+        "hierarchy > utilities > relation"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > utilities > relation": {
+      "level": 3,
+      "parent": "hierarchy > utilities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > utilities > parent": {
+      "level": 3,
+      "parent": "hierarchy > utilities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > query > level": {
+      "level": 3,
+      "parent": "hierarchy > query",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > query": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > query > level"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "validation > hierarchy > syntax": {
+      "level": 3,
+      "parent": "validation > hierarchy",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "validation": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "validation > hierarchy"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "validation > hierarchy": {
+      "level": 2,
+      "parent": "validation",
+      "children": [
+        "validation > hierarchy > syntax"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "formatting > hierarchy > display": {
+      "level": 3,
+      "parent": "formatting > hierarchy",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "formatting": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "formatting > hierarchy"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "formatting > hierarchy": {
+      "level": 2,
+      "parent": "formatting",
+      "children": [
+        "formatting > hierarchy > display"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > metrics > depth": {
+      "level": 3,
+      "parent": "hierarchy > metrics",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > metrics": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > metrics > depth"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > provider": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > provider > lifecycle"
+      ],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > provider > lifecycle": {
+      "level": 3,
+      "parent": "workspace > provider",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > initialization > loading": {
+      "level": 3,
+      "parent": "workspace > initialization",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > initialization": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > initialization > loading",
+        "workspace > initialization > scanning"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > initialization > scanning": {
+      "level": 3,
+      "parent": "workspace > initialization",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "parsing > document scan": {
+      "level": 2,
+      "parent": "parsing",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "parsing": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "parsing > active document",
+        "parsing > document scan",
+        "parsing > file save handling",
+        "parsing > language parsers"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "parsing > active document": {
+      "level": 2,
+      "parent": "parsing",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "parsing > file save handling": {
+      "level": 2,
+      "parent": "parsing",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > group management > removal": {
+      "level": 3,
+      "parent": "workspace > group management",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > group management": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > group management > addition",
+        "workspace > group management > clear",
+        "workspace > group management > recalculation",
+        "workspace > group management > removal"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > group management > recalculation": {
+      "level": 3,
+      "parent": "workspace > group management",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "io > ignore patterns > conversion": {
+      "level": 3,
+      "parent": "io > ignore patterns",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "io": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "io > ignore patterns"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "io > ignore patterns": {
+      "level": 2,
+      "parent": "io",
+      "children": [
+        "io > ignore patterns > conversion",
+        "io > ignore patterns > loading",
+        "io > ignore patterns > matching"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "io > ignore patterns > matching": {
+      "level": 3,
+      "parent": "io > ignore patterns",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "io > ignore patterns > loading": {
+      "level": 3,
+      "parent": "io > ignore patterns",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > scanning > fullscan": {
+      "level": 3,
+      "parent": "workspace > scanning",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > scanning": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > scanning > external",
+        "workspace > scanning > fullscan"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > scanning > external": {
+      "level": 3,
+      "parent": "workspace > scanning",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "parsing > language parsers > python": {
+      "level": 3,
+      "parent": "parsing > language parsers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "parsing > language parsers": {
+      "level": 2,
+      "parent": "parsing",
+      "children": [
+        "parsing > language parsers > python"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "persistence > storage > save": {
+      "level": 3,
+      "parent": "persistence > storage",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "persistence": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "persistence > favorites",
+        "persistence > storage"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "persistence > storage": {
+      "level": 2,
+      "parent": "persistence",
+      "children": [
+        "persistence > storage > save"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > group management > addition": {
+      "level": 3,
+      "parent": "workspace > group management",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > retrieval > functionalitygroups": {
+      "level": 3,
+      "parent": "workspace > retrieval",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > retrieval": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > retrieval > allgroups",
+        "workspace > retrieval > byfunctionality",
+        "workspace > retrieval > favoritefunctionalities",
+        "workspace > retrieval > favorites",
+        "workspace > retrieval > favoritescheck",
+        "workspace > retrieval > functionalities",
+        "workspace > retrieval > functionalitygroups"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > retrieval > functionalities": {
+      "level": 3,
+      "parent": "workspace > retrieval",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > retrieval > allgroups": {
+      "level": 3,
+      "parent": "workspace > retrieval",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > retrieval > byfunctionality": {
+      "level": 3,
+      "parent": "workspace > retrieval",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui > navigation > opengroup": {
+      "level": 3,
+      "parent": "ui > navigation",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui > navigation": {
+      "level": 2,
+      "parent": "ui",
+      "children": [
+        "ui > navigation > functionalitieslist",
+        "ui > navigation > opengroup",
+        "ui > navigation > quickpickgroups"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ui > navigation > quickpickgroups": {
+      "level": 3,
+      "parent": "ui > navigation",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui > navigation > functionalitieslist": {
+      "level": 3,
+      "parent": "ui > navigation",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui > statusbar": {
+      "level": 2,
+      "parent": "ui",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > group management > clear": {
+      "level": 3,
+      "parent": "workspace > group management",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "persistence > favorites > load": {
+      "level": 3,
+      "parent": "persistence > favorites",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "persistence > favorites": {
+      "level": 2,
+      "parent": "persistence",
+      "children": [
+        "persistence > favorites > load",
+        "persistence > favorites > save"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "persistence > favorites > save": {
+      "level": 3,
+      "parent": "persistence > favorites",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui > favorites > toggle": {
+      "level": 3,
+      "parent": "ui > favorites",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "ui > favorites": {
+      "level": 2,
+      "parent": "ui",
+      "children": [
+        "ui > favorites > toggle"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > retrieval > favorites": {
+      "level": 3,
+      "parent": "workspace > retrieval",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > retrieval > favoritescheck": {
+      "level": 3,
+      "parent": "workspace > retrieval",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > retrieval > favoritefunctionalities": {
+      "level": 3,
+      "parent": "workspace > retrieval",
+      "children": [],
+      "groupCount": 1,
       "fileTypes": [
         "ts"
       ]

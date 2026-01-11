@@ -1,12 +1,6 @@
 {
   "ts": [
     {
-      "functionality": "${groupname}${description ? '",
-      "description": "' + description : ''}`",
-      "filePath": "src/utils/aiCodeGroupTool.ts",
-      "lineNumbers": "206"
-    },
-    {
       "functionality": "name",
       "description": "description",
       "filePath": "src/extension.ts",
@@ -23,6 +17,1039 @@
       "description": "description */",
       "filePath": "src/extension.ts",
       "lineNumbers": "683"
+    },
+    {
+      "functionality": "${groupname}${description ? '",
+      "description": "' + description : ''}`",
+      "filePath": "src/utils/aiCodeGroupTool.ts",
+      "lineNumbers": "206"
+    },
+    {
+      "functionality": "data > models > groupdefinition",
+      "description": "Represents persisted group metadata including file types and line numbers",
+      "filePath": "src/groupDefinition.ts",
+      "lineNumbers": "1-9"
+    },
+    {
+      "functionality": "data > models > codegroup",
+      "description": "Computed group structure for UI and serialization including hierarchy fields",
+      "filePath": "src/groupDefinition.ts",
+      "lineNumbers": "10-16"
+    },
+    {
+      "functionality": "management > groups > manager",
+      "description": "Create, retrieve, find and remove group definitions in memory at runtime",
+      "filePath": "src/groupDefinition.ts",
+      "lineNumbers": "24-27"
+    },
+    {
+      "functionality": "management > groups > add",
+      "description": "Add group definition to internal collection, no validation performed synchronously",
+      "filePath": "src/groupDefinition.ts",
+      "lineNumbers": "28-32"
+    },
+    {
+      "functionality": "management > groups > list",
+      "description": "Return all stored group definitions as an array copy for external use",
+      "filePath": "src/groupDefinition.ts",
+      "lineNumbers": "33-37"
+    },
+    {
+      "functionality": "management > groups > lookup",
+      "description": "Find group definition by id or return undefined if not found",
+      "filePath": "src/groupDefinition.ts",
+      "lineNumbers": "38-42"
+    },
+    {
+      "functionality": "management > groups > delete",
+      "description": "Remove group by id, mutating internal collection in place without persistence",
+      "filePath": "src/groupDefinition.ts",
+      "lineNumbers": "43-46"
+    },
+    {
+      "functionality": "models > tree items",
+      "description": "Enumerations for tree item types used in the explorer extension",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "11-21"
+    },
+    {
+      "functionality": "ui > tree item > renderer",
+      "description": "Represents tree items and visual properties in explorer view extension",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "22-35"
+    },
+    {
+      "functionality": "ui > tree item > helpers",
+      "description": "Count groups recursively within a hierarchy node helper function implementation",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "112-119"
+    },
+    {
+      "functionality": "providers > tree provider > code groups",
+      "description": "Provides hierarchical tree data, state management, and search for explorer",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "123-132"
+    },
+    {
+      "functionality": "providers > tree provider > initialization",
+      "description": "Initialize provider and asynchronously load persisted tree view state from workspace",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "133-135"
+    },
+    {
+      "functionality": "providers > tree provider > view management",
+      "description": "Attach tree view and handle expansion/collapse events",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "140-148"
+    },
+    {
+      "functionality": "providers > tree provider > utilities",
+      "description": "Compute unique identifier path for various tree item types used",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "170-184"
+    },
+    {
+      "functionality": "providers > persistence > load state",
+      "description": "Load expanded node state from workspace storage asynchronously with error handling",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "185-203"
+    },
+    {
+      "functionality": "providers > persistence > save state",
+      "description": "Persist expanded nodes to workspace storage with debounce to reduce writes",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "204-205"
+    },
+    {
+      "functionality": "providers > search > filter",
+      "description": "Update search filter and refresh views",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "226-228"
+    },
+    {
+      "functionality": "providers > search > query",
+      "description": "Return current lowercase search filter string used by UI and commands",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "239-243"
+    },
+    {
+      "functionality": "providers > search > matching",
+      "description": "Determine if a code group matches the current search filter",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "244-252"
+    },
+    {
+      "functionality": "providers > tree provider > refresh",
+      "description": "Trigger tree data refresh event to update views immediately now",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "253-258"
+    },
+    {
+      "functionality": "providers > tree provider > adapter",
+      "description": "Adapter to return the vscode.TreeItem for a given element instance",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "259-263"
+    },
+    {
+      "functionality": "providers > tree provider > children",
+      "description": "Compute child tree items for element types, build hierarchy and filter results",
+      "filePath": "src/codeGroupTreeProvider.ts",
+      "lineNumbers": "264-267"
+    },
+    {
+      "functionality": "filesystem > preferences > paths",
+      "description": "Get user preferences directory path in user profile for GroupCode across platforms",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "1-11"
+    },
+    {
+      "functionality": "utilities > hashing > workspace",
+      "description": "Generate a consistent workspace identifier hash from its path",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "12-17"
+    },
+    {
+      "functionality": "filesystem > preferences > paths",
+      "description": "Get the preferences directory for a specific workspace using its hash",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "24-35"
+    },
+    {
+      "functionality": "filesystem > preferences > management",
+      "description": "Ensure user preferences directory exists, creating it if necessary",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "36-53"
+    },
+    {
+      "functionality": "userdata > favorites > persistence",
+      "description": "Save user favorites map to user profile favorites.json file",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "54-64"
+    },
+    {
+      "functionality": "userdata > favorites > persistence",
+      "description": "Load user favorites from user profile favorites.json into a Map",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "81-98"
+    },
+    {
+      "functionality": "utilities > lineranges > conversion",
+      "description": "Convert array of line numbers to compact range string representation",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "118-127"
+    },
+    {
+      "functionality": "utilities > lineranges > conversion",
+      "description": "Convert compact range string back to array of line numbers",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "157-172"
+    },
+    {
+      "functionality": "filesystem > io > filereadwrite",
+      "description": "Promise-based file read helper",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "195-206"
+    },
+    {
+      "functionality": "filesystem > io > filereadwrite",
+      "description": "Promise-based file write helper",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "207-218"
+    },
+    {
+      "functionality": "utilities > fileinfo > parsing",
+      "description": "Determine file extension/type from file path safely",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "219-237"
+    },
+    {
+      "functionality": "utilities > fileinfo > parsing",
+      "description": "Extract filename from path with robust validation and fallbacks",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "238-239"
+    },
+    {
+      "functionality": "filetypes > supported",
+      "description": "Centralized list of supported file extensions for scanning and indexing",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "272"
+    },
+    {
+      "functionality": "filetypes > helpers > retrieval",
+      "description": "Return array copy of supported file extensions",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "349-356"
+    },
+    {
+      "functionality": "filetypes > helpers > patterns",
+      "description": "Generate a glob pattern matching all supported file types",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "357-364"
+    },
+    {
+      "functionality": "filetypes > helpers > validation",
+      "description": "Check if file type string is among supported extensions",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "365-373"
+    },
+    {
+      "functionality": "workspace > groupcode > management",
+      "description": "Ensure .groupcode directory exists in the workspace",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "374-382"
+    },
+    {
+      "functionality": "workspace > groupcode > persistence",
+      "description": "Serialize and save code groups and functionalities metadata",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "413-429"
+    },
+    {
+      "functionality": "workspace > groupcode > persistence",
+      "description": "Load and deserialize code groups from .groupcode directory",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "555-584"
+    },
+    {
+      "functionality": "hierarchy > functionalities > loading",
+      "description": "Load functionalities metadata for suggestion and analysis",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "631-657"
+    },
+    {
+      "functionality": "hierarchy > functionalities > query",
+      "description": "Get suggested child functionalities for a parent path",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "658-670"
+    },
+    {
+      "functionality": "hierarchy > functionalities > query",
+      "description": "Retrieve all functionalities at a specified hierarchy level",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "671-685"
+    },
+    {
+      "functionality": "hierarchy > functionalities > query",
+      "description": "Get top-level root functionalities (level 1)",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "686-693"
+    },
+    {
+      "functionality": "hierarchy > functionalities > similarity",
+      "description": "Find similar functionalities based on partial text similarity",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "694-709"
+    },
+    {
+      "functionality": "hierarchy > functionalities > stats",
+      "description": "Retrieve statistics and metadata for a given functionality path",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "737-748"
+    },
+    {
+      "functionality": "workspace > folders > access",
+      "description": "Safely obtain workspace folder filesystem paths as normalized strings",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "749-778"
+    },
+    {
+      "functionality": "settings > groupcode > types",
+      "description": "Interface defining persistent GroupCode settings used across workspace",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "795-809"
+    },
+    {
+      "functionality": "settings > groupcode > defaults",
+      "description": "Default GroupCode settings used when no saved settings exist",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "810-820"
+    },
+    {
+      "functionality": "settings > groupcode > management",
+      "description": "Load GroupCode settings from workspace .groupcode/settings.json",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "821-840"
+    },
+    {
+      "functionality": "settings > groupcode > management",
+      "description": "Save provided GroupCode settings to workspace .groupcode/settings.json",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "850-871"
+    },
+    {
+      "functionality": "settings > groupcode > convenience",
+      "description": "Retrieve preferred model ID from GroupCode settings",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "872-880"
+    },
+    {
+      "functionality": "settings > groupcode > convenience",
+      "description": "Update preferred model ID in settings and persist it",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "881-890"
+    },
+    {
+      "functionality": "userdata > treestate > persistence",
+      "description": "Save tree view expanded/collapsed state to user profile treestate.json",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "891-901"
+    },
+    {
+      "functionality": "userdata > treestate > persistence",
+      "description": "Load tree view expanded nodes from user profile, with default fallback",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "912-935"
+    },
+    {
+      "functionality": "integration > copilot > core",
+      "description": "Integrates Copilot and VS Code Language Model API functionality for suggestions and analysis",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "7-10"
+    },
+    {
+      "functionality": "integration > copilot > initialization",
+      "description": "Initialize integration instance and perform initial availability check with VS Code API",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "11-18"
+    },
+    {
+      "functionality": "integration > availability > check",
+      "description": "Detect whether VS Code language model API is present and update availability state",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "19-21"
+    },
+    {
+      "functionality": "integration > availability > status",
+      "description": "Ensure availability is up-to-date and return boolean integration availability status",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "39-47"
+    },
+    {
+      "functionality": "ai > suggestions > groupname",
+      "description": "Use language model to suggest hierarchical group name for given code snippet",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "48-55"
+    },
+    {
+      "functionality": "ai > suggestions > description",
+      "description": "Request AI to generate concise description (10-20 words) for specified code group",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "88-124"
+    },
+    {
+      "functionality": "ai > analysis > groupanalysis",
+      "description": "Analyze file code with AI and return hierarchical group suggestions with confidence",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "125-150"
+    },
+    {
+      "functionality": "prompts > builders > groupname",
+      "description": "Compose prompt guiding AI to suggest hierarchical group names for code snippets",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "168-193"
+    },
+    {
+      "functionality": "prompts > builders > description",
+      "description": "Compose prompt instructing AI to produce brief description for a given group",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "194-210"
+    },
+    {
+      "functionality": "prompts > builders > analysis",
+      "description": "Compose prompt directing AI to identify functional areas and output JSON with confidences",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "211-242"
+    },
+    {
+      "functionality": "ai > similarity > check",
+      "description": "Use AI to compare new group name against existing names and detect similarity",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "243-277"
+    },
+    {
+      "functionality": "prompts > builders > similarity",
+      "description": "Compose prompt asking AI to evaluate semantic similarity and recommend canonical name",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "306-338"
+    },
+    {
+      "functionality": "utilities > normalization > groupname",
+      "description": "Return canonical suggestion for group name based on semantic similarity analysis",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "339-353"
+    },
+    {
+      "functionality": "ai > explanation > codegroup",
+      "description": "Ask AI to explain code snippet clearly for documentation under given group name",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "354-394"
+    },
+    {
+      "functionality": "exports > singleton > instance",
+      "description": "Export singleton instance of CopilotIntegration for global use in extension",
+      "filePath": "src/utils/copilotIntegration.ts",
+      "lineNumbers": "398-399"
+    },
+    {
+      "functionality": "utilities > grouping > groupbyfunctionality",
+      "description": "Organize and return code groups by functionality, preserving existing group definitions and order",
+      "filePath": "src/utils/groupingUtils.ts",
+      "lineNumbers": "3-7"
+    },
+    {
+      "functionality": "utilities > grouping > mergegroups",
+      "description": "Merge two group maps of functionality to line numbers, concatenating line arrays and preserving duplicates.",
+      "filePath": "src/utils/groupingUtils.ts",
+      "lineNumbers": "8-21"
+    },
+    {
+      "functionality": "utilities > string > similarity",
+      "description": "Compute similarity between two strings using Levenshtein algorithm, returning 0 to 1.",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "8-47"
+    },
+    {
+      "functionality": "types > enums > issuetypes",
+      "description": "Enumerates types of refactoring issues detected across code groups for classification and reporting",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "48-61"
+    },
+    {
+      "functionality": "types > enums > severity",
+      "description": "Defines severity levels for refactoring suggestions to prioritize review and remediation actions",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "62-71"
+    },
+    {
+      "functionality": "types > interfaces > refactoringissue",
+      "description": "Defines structure for a detected refactoring issue with metadata, suggestions, and metrics",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "72-91"
+    },
+    {
+      "functionality": "types > interfaces > refactoringconfig",
+      "description": "Configuration options controlling thresholds and enabled checks for refactoring analysis",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "92-104"
+    },
+    {
+      "functionality": "configuration > defaults > refactoringconfig",
+      "description": "Default threshold values and enabled checks used when analyzing groups for refactoring opportunities",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "105-123"
+    },
+    {
+      "functionality": "analysis > analyzer > groupanalyzer",
+      "description": "Analyzes code groups to detect refactoring opportunities and returns structured issue reports",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "124-134"
+    },
+    {
+      "functionality": "analysis > analyzer > analyze",
+      "description": "Run enabled checks across groups and aggregate all detected RefactoringIssue results",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "135-172"
+    },
+    {
+      "functionality": "analysis > detection > duplicates",
+      "description": "Identify exact duplicate group names considering case variations and aggregate locations",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "173-178"
+    },
+    {
+      "functionality": "analysis > detection > similarity",
+      "description": "Find similarly named groups using string similarity threshold and report potential merges",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "218-227"
+    },
+    {
+      "functionality": "analysis > detection > orphaned",
+      "description": "Detect groups without recent file modifications exceeding configured orphaned threshold days",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "266-276"
+    },
+    {
+      "functionality": "analysis > detection > naming",
+      "description": "Analyze naming patterns across groups to identify inconsistent naming conventions",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "322-326"
+    },
+    {
+      "functionality": "analysis > detection > singleuse",
+      "description": "Flag groups used fewer times than configured threshold for potential consolidation",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "376-402"
+    },
+    {
+      "functionality": "analysis > detection > toolarge",
+      "description": "Identify groups spanning many files exceeding configured size threshold suggesting splits",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "403-431"
+    },
+    {
+      "functionality": "analysis > detection > toosmall",
+      "description": "Detect very small groups confined to single files that may lack cross-file value",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "432-439"
+    },
+    {
+      "functionality": "reporting > report > generate",
+      "description": "Generate markdown summary report grouping issues, metrics, and suggestions for review",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "464-502"
+    },
+    {
+      "functionality": "reporting > helpers > labels",
+      "description": "Map issue type enums to human-readable labels for report headings",
+      "filePath": "src/utils/groupRefactoring.ts",
+      "lineNumbers": "503-515"
+    },
+    {
+      "functionality": "extension > prompts > rating",
+      "description": "Manages rating prompt display, state, and usage tracking for the VS Code extension",
+      "filePath": "src/utils/ratingPrompt.ts",
+      "lineNumbers": "7-10"
+    },
+    {
+      "functionality": "extension > prompts > initialization",
+      "description": "Initialize manager with extension context and persistent global state access",
+      "filePath": "src/utils/ratingPrompt.ts",
+      "lineNumbers": "11-15"
+    },
+    {
+      "functionality": "telemetry > usage > increment",
+      "description": "Increment usage counter and trigger prompt display when threshold reached",
+      "filePath": "src/utils/ratingPrompt.ts",
+      "lineNumbers": "16-30"
+    },
+    {
+      "functionality": "ui > prompts > ratingdialog",
+      "description": "Show information message with rating options and handle user choice",
+      "filePath": "src/utils/ratingPrompt.ts",
+      "lineNumbers": "31-47"
+    },
+    {
+      "functionality": "types > models > patternsuggestion",
+      "description": "Type definition for pattern suggestions returned by analysis processes and reports",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "8-19"
+    },
+    {
+      "functionality": "types > models > semanticsimilarityresult",
+      "description": "Result structure for semantic similarity checks, contains match and normalization details",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "20-30"
+    },
+    {
+      "functionality": "analysis > pattern analysis > analyzer",
+      "description": "Analyze group naming patterns and suggest improvements with heuristics and AI integration",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "31-35"
+    },
+    {
+      "functionality": "analysis > algorithms > levenshtein",
+      "description": "Compute Levenshtein string edit distance between two strings for similarity calculations",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "36-65"
+    },
+    {
+      "functionality": "analysis > algorithms > similarity",
+      "description": "Calculate normalized similarity score (0-1) between two strings for matching",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "66-75"
+    },
+    {
+      "functionality": "utilities > string > prefix",
+      "description": "Extract common prefix from array of group names, handling word boundaries and trimming",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "76-91"
+    },
+    {
+      "functionality": "utilities > normalization > variations",
+      "description": "Normalize abbreviations, word forms, and synonyms to canonical forms for comparisons",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "101-102"
+    },
+    {
+      "functionality": "analysis > similarity > findsimilar",
+      "description": "Identify and suggest consolidation for similar group names based on string and semantic similarity",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "319-329"
+    },
+    {
+      "functionality": "analysis > decision > choosename",
+      "description": "Choose preferred group name by usage, descriptiveness, then alphabetical fallback",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "377-378"
+    },
+    {
+      "functionality": "analysis > similarity > semanticcheck",
+      "description": "Synchronous semantic similarity check using normalization and string similarity thresholds locally",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "404-410"
+    },
+    {
+      "functionality": "utilities > normalization > getnormalized",
+      "description": "Return normalized canonical form of a group name for comparisons and deduplication",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "443-451"
+    },
+    {
+      "functionality": "analysis > matching > findmatch",
+      "description": "Find existing group name that best matches a new name, or null if unique",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "452-466"
+    },
+    {
+      "functionality": "analysis > hierarchy > suggest",
+      "description": "Detect groups sharing prefixes and suggest parent>child hierarchies based on prefixes",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "467-471"
+    },
+    {
+      "functionality": "analysis > patternanalysis > analyze",
+      "description": "Run comprehensive pattern analysis returning similar, hierarchical, and combined suggestions",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "540-548"
+    },
+    {
+      "functionality": "analysis > suggestions > getsuggested",
+      "description": "Return suggested hierarchical name for a partial name based on existing hierarchies",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "559-567"
+    },
+    {
+      "functionality": "reporting > reports > generate",
+      "description": "Generate markdown report summarizing similarity and hierarchy suggestions for review",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "584-601"
+    },
+    {
+      "functionality": "integration > ai > semanticcheck",
+      "description": "Asynchronously check semantic similarity using AI copilot integration, fallback on failure",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "632-637"
+    },
+    {
+      "functionality": "analysis > matching > bestmatch",
+      "description": "Combine string heuristics and optional AI checks to find best matching suggestion",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "670-675"
+    },
+    {
+      "functionality": "export > instance > patternanalyzer",
+      "description": "Export singleton PatternAnalyzer instance for reuse across the application modules",
+      "filePath": "src/utils/patternAnalyzer.ts",
+      "lineNumbers": "698-699"
+    },
+    {
+      "functionality": "logging > levels",
+      "description": "Enumeration of supported logging levels used to control logger verbosity and filtering behavior",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "1-3"
+    },
+    {
+      "functionality": "logging > levels",
+      "description": "Enumeration of supported logging levels used to control logger verbosity and filtering behavior",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "4-11"
+    },
+    {
+      "functionality": "logging > core > logger",
+      "description": "Core logger implementation for formatting messages, level checks, and output to channels",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "12-20"
+    },
+    {
+      "functionality": "logging > core > configuration",
+      "description": "Set the logger's global logging level, affecting which messages are emitted subsequently",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "21-25"
+    },
+    {
+      "functionality": "logging > core > shortcuts",
+      "description": "Log a debug-level message with optional formatting arguments to the output channel",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "26-30"
+    },
+    {
+      "functionality": "logging > core > shortcuts",
+      "description": "Log an info-level message with optional formatting arguments to the output channel",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "31-35"
+    },
+    {
+      "functionality": "logging > core > shortcuts",
+      "description": "Log a warning-level message with optional formatting arguments to the output channel",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "36-40"
+    },
+    {
+      "functionality": "logging > core > errorhandling",
+      "description": "Log an error message with optional Error object, includes stack trace when available",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "41-56"
+    },
+    {
+      "functionality": "logging > core > internal",
+      "description": "Internal logging core that formats messages, respects log level, and writes to outputs",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "57-71"
+    },
+    {
+      "functionality": "logging > core > ui",
+      "description": "Reveal the output channel UI to the user, bringing focus to logs",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "91-95"
+    },
+    {
+      "functionality": "logging > core > lifecycle",
+      "description": "Dispose of the output channel and free associated resources used by logger",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "96-99"
+    },
+    {
+      "functionality": "logging > instance > singleton",
+      "description": "Singleton logger instance created for consistent, application-wide logging and shared usage",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "103-105"
+    },
+    {
+      "functionality": "logging > api > exports",
+      "description": "Export the logger instance and default export to be consumed by other modules",
+      "filePath": "src/utils/logger.ts",
+      "lineNumbers": "107-109"
+    },
+    {
+      "functionality": "hierarchy > parsing > parse",
+      "description": "Parse functionality string into hierarchy path and metadata for grouping and navigation",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "3-22"
+    },
+    {
+      "functionality": "hierarchy > enrichment > groupenrichment",
+      "description": "Add hierarchical metadata to a code group, preserve isFavorite flag",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "43-56"
+    },
+    {
+      "functionality": "hierarchy > enrichment > batch",
+      "description": "Batch enrich multiple code groups with hierarchical metadata for consistency and performance",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "62-69"
+    },
+    {
+      "functionality": "hierarchy > types > node",
+      "description": "Node structure for hierarchical tree representing code groups and metadata",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "70-82"
+    },
+    {
+      "functionality": "hierarchy > tree > builder",
+      "description": "Build nested Map tree from flat groups for efficient hierarchical rendering",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "83-111"
+    },
+    {
+      "functionality": "hierarchy > utilities > ancestors",
+      "description": "Return all ancestor paths for a functionality string, ordered root-to-leaf",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "124-139"
+    },
+    {
+      "functionality": "hierarchy > utilities > relation",
+      "description": "Determine whether one functionality path is descendant of another ancestor path",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "140-148"
+    },
+    {
+      "functionality": "hierarchy > utilities > parent",
+      "description": "Return immediate parent functionality path or null when no parent",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "168-176"
+    },
+    {
+      "functionality": "hierarchy > query > level",
+      "description": "Retrieve unique functionalities present at specified hierarchy level across groups",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "177-193"
+    },
+    {
+      "functionality": "validation > hierarchy > syntax",
+      "description": "Validate hierarchy string syntax and allowed characters for each path segment",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "194-204"
+    },
+    {
+      "functionality": "formatting > hierarchy > display",
+      "description": "Format hierarchy path array into human-readable string with proper separators",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "215-222"
+    },
+    {
+      "functionality": "hierarchy > metrics > depth",
+      "description": "Compute maximum hierarchy depth across groups to determine tree levels",
+      "filePath": "src/utils/hierarchyUtils.ts",
+      "lineNumbers": "223-238"
+    },
+    {
+      "functionality": "workspace > provider",
+      "description": "VS Code provider managing code groups and UI integration",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "18-26"
+    },
+    {
+      "functionality": "workspace > provider > lifecycle",
+      "description": "Initialize UI elements and log provider startup",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "30-40"
+    },
+    {
+      "functionality": "workspace > provider > lifecycle",
+      "description": "Dispose provider resources and event emitters",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "41-49"
+    },
+    {
+      "functionality": "workspace > initialization > loading",
+      "description": "Load saved groups or scan workspace for groups",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "50-56"
+    },
+    {
+      "functionality": "workspace > initialization > scanning",
+      "description": "Robust initialization with workspace scanning and error handling",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "92-94"
+    },
+    {
+      "functionality": "parsing > document scan",
+      "description": "Parse document comments and group code by functionality",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "145-160"
+    },
+    {
+      "functionality": "parsing > active document",
+      "description": "Extract groups from currently active editor document and preserve favorites",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "162-172"
+    },
+    {
+      "functionality": "parsing > file save handling",
+      "description": "Update groups when files are saved, preserve favorites, and save",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "227-232"
+    },
+    {
+      "functionality": "workspace > group management > removal",
+      "description": "Remove groups for a file and update state accordingly",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "323-336"
+    },
+    {
+      "functionality": "workspace > group management > recalculation",
+      "description": "Recompute functionality set from current groups",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "349-364"
+    },
+    {
+      "functionality": "io > ignore patterns > conversion",
+      "description": "Convert gitignore-style patterns into regular expressions",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "365-366"
+    },
+    {
+      "functionality": "io > ignore patterns > matching",
+      "description": "Determine if a file path matches ignore patterns",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "407-408"
+    },
+    {
+      "functionality": "io > ignore patterns > loading",
+      "description": "Load .gitignore and default ignore patterns for scanning",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "426-429"
+    },
+    {
+      "functionality": "workspace > scanning > fullscan",
+      "description": "Scan workspace files, parse groups, and preserve favorites",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "530-537"
+    },
+    {
+      "functionality": "workspace > scanning > external",
+      "description": "Scan external folder, batch process files, and save results externally",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "622-630"
+    },
+    {
+      "functionality": "parsing > language parsers > python",
+      "description": "Manual Python comment parser extracting starred groups",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "772-781"
+    },
+    {
+      "functionality": "persistence > storage > save",
+      "description": "Persist groups to disk with optional throttling or forced save",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "847-849"
+    },
+    {
+      "functionality": "workspace > group management > addition",
+      "description": "Add unique code groups per file type avoiding duplicates",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "877-884"
+    },
+    {
+      "functionality": "workspace > retrieval > functionalitygroups",
+      "description": "Retrieve groups grouped by file type for a functionality",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "907-913"
+    },
+    {
+      "functionality": "workspace > retrieval > functionalities",
+      "description": "Return list of discovered functionality names",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "928-932"
+    },
+    {
+      "functionality": "workspace > retrieval > allgroups",
+      "description": "Flatten and return all code groups across file types",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "934-945"
+    },
+    {
+      "functionality": "workspace > retrieval > byfunctionality",
+      "description": "Reorganize groups keyed by functionality for analysis",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "946-949"
+    },
+    {
+      "functionality": "ui > navigation > opengroup",
+      "description": "Open file and reveal the group's primary line number in editor",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "966-968"
+    },
+    {
+      "functionality": "ui > navigation > quickpickgroups",
+      "description": "Present quick pick list of groups for chosen functionality",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "994-1030"
+    },
+    {
+      "functionality": "ui > navigation > functionalitieslist",
+      "description": "Display list of functionalities for user selection",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1063-1080"
+    },
+    {
+      "functionality": "ui > statusbar",
+      "description": "Update status bar with current functionality count",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1081-1086"
+    },
+    {
+      "functionality": "workspace > group management > clear",
+      "description": "Remove all groups, reset state, and notify UI",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1088-1099"
+    },
+    {
+      "functionality": "persistence > favorites > load",
+      "description": "Load user favorites and apply to in-memory groups",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1100-1108"
+    },
+    {
+      "functionality": "persistence > favorites > save",
+      "description": "Persist user's favorite selections to profile storage",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1136-1147"
+    },
+    {
+      "functionality": "ui > favorites > toggle",
+      "description": "Toggle favorite status for functionality and its descendants, then persist",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1170-1178"
+    },
+    {
+      "functionality": "workspace > retrieval > favorites",
+      "description": "Return all groups currently marked as favorites",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1231-1249"
+    },
+    {
+      "functionality": "workspace > retrieval > favoritescheck",
+      "description": "Check favorite status including descendant matching",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1250-1255"
+    },
+    {
+      "functionality": "workspace > retrieval > favoritefunctionalities",
+      "description": "Return unique favorite functionality names",
+      "filePath": "src/codeGroupProvider.ts",
+      "lineNumbers": "1275-1288"
     }
-  ]
+  ],
+  "svg": []
 }

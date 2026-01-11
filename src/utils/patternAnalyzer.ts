@@ -5,6 +5,7 @@ import logger from './logger';
 /**
  * Pattern analysis result
  */
+// @group Types > Models > PatternSuggestion: Type definition for pattern suggestions returned by analysis processes and reports
 export interface PatternSuggestion {
     originalName: string;
     suggestedName: string;
@@ -16,6 +17,7 @@ export interface PatternSuggestion {
 /**
  * Result of semantic similarity check
  */
+// @group Types > Models > SemanticSimilarityResult: Result structure for semantic similarity checks, contains match and normalization details
 export interface SemanticSimilarityResult {
     isSemanticallySimilar: boolean;
     normalizedName: string;
@@ -26,10 +28,12 @@ export interface SemanticSimilarityResult {
 /**
  * Analyze group naming patterns and suggest improvements
  */
+// @group Analysis > Pattern Analysis > Analyzer: Analyze group naming patterns and suggest improvements with heuristics and AI integration
 export class PatternAnalyzer {
     /**
      * Calculate Levenshtein distance between two strings
      */
+    // @group Analysis > Algorithms > Levenshtein: Compute Levenshtein string edit distance between two strings for similarity calculations
     private levenshteinDistance(str1: string, str2: string): number {
         const len1 = str1.length;
         const len2 = str2.length;
@@ -59,6 +63,7 @@ export class PatternAnalyzer {
     /**
      * Calculate similarity score (0-1)
      */
+    // @group Analysis > Algorithms > Similarity: Calculate normalized similarity score (0-1) between two strings for matching
     private calculateSimilarity(str1: string, str2: string): number {
         const distance = this.levenshteinDistance(str1.toLowerCase(), str2.toLowerCase());
         const maxLength = Math.max(str1.length, str2.length);
@@ -68,6 +73,7 @@ export class PatternAnalyzer {
     /**
      * Extract common prefix from group names
      */
+    // @group Utilities > String > Prefix: Extract common prefix from array of group names, handling word boundaries and trimming
     private extractCommonPrefix(names: string[]): string {
         if (names.length === 0) return '';
         if (names.length === 1) return names[0];
@@ -92,6 +98,7 @@ export class PatternAnalyzer {
      * Normalize name variations (e.g., "api config" vs "api configuration")
      * This handles abbreviations, word form variations, and common synonyms
      */
+    // @group Utilities > Normalization > Variations: Normalize abbreviations, word forms, and synonyms to canonical forms for comparisons
     private normalizeVariations(name: string): string {
         // Common abbreviations and their full forms
         const abbreviations: { [key: string]: string } = {
@@ -309,6 +316,7 @@ export class PatternAnalyzer {
      * Find similar group names that should be consolidated
      * Uses both string similarity and semantic normalization
      */
+    // @group Analysis > Similarity > FindSimilar: Identify and suggest consolidation for similar group names based on string and semantic similarity
     findSimilarGroups(groups: CodeGroup[], threshold: number = 0.8): PatternSuggestion[] {
         const suggestions: PatternSuggestion[] = [];
         const functionalities = [...new Set(groups.map(g => g.functionality))];
@@ -366,6 +374,7 @@ export class PatternAnalyzer {
      * Choose the best name between two similar names
      * Prefers: more usage > longer/more descriptive > alphabetically first
      */
+    // @group Analysis > Decision > ChooseName: Choose preferred group name by usage, descriptiveness, then alphabetical fallback
     private chooseBestName(name1: string, name2: string, groups: CodeGroup[]): string {
         // Count usage of each name
         const count1 = groups.filter(g => g.functionality === name1).length;
@@ -392,6 +401,7 @@ export class PatternAnalyzer {
      * @param existingNames Array of existing group names
      * @returns Result with similarity info, or null if no similar names found
      */
+    // @group Analysis > Similarity > SemanticCheck: Synchronous semantic similarity check using normalization and string similarity thresholds locally
     public checkSemanticSimilarity(newName: string, existingNames: string[]): SemanticSimilarityResult {
         const normalizedNew = this.normalizeVariations(newName);
         
@@ -430,6 +440,7 @@ export class PatternAnalyzer {
      * Get the normalized form of a group name
      * Useful for comparing names or finding duplicates
      */
+    // @group Utilities > Normalization > GetNormalized: Return normalized canonical form of a group name for comparisons and deduplication
     public getNormalizedName(name: string): string {
         return this.normalizeVariations(name);
     }
@@ -438,6 +449,7 @@ export class PatternAnalyzer {
      * Find the best matching existing group name for a new name
      * Returns the existing name that should be used instead, or null if the name is unique
      */
+    // @group Analysis > Matching > FindMatch: Find existing group name that best matches a new name, or null if unique
     public findMatchingGroup(newName: string, existingGroups: CodeGroup[]): string | null {
         const existingNames = [...new Set(existingGroups.map(g => g.functionality))];
         const result = this.checkSemanticSimilarity(newName, existingNames);
@@ -452,6 +464,7 @@ export class PatternAnalyzer {
     /**
      * Find groups that share common prefixes and suggest hierarchies
      */
+    // @group Analysis > Hierarchy > Suggest: Detect groups sharing prefixes and suggest parent>child hierarchies based on prefixes
     suggestHierarchies(groups: CodeGroup[]): PatternSuggestion[] {
         const suggestions: PatternSuggestion[] = [];
         const flatGroups = groups.filter(g => !g.functionality.includes('>'));
@@ -524,6 +537,7 @@ export class PatternAnalyzer {
     /**
      * Analyze all patterns and return comprehensive suggestions
      */
+    // @group Analysis > PatternAnalysis > Analyze: Run comprehensive pattern analysis returning similar, hierarchical, and combined suggestions
     analyzePatterns(groups: CodeGroup[]): {
         similar: PatternSuggestion[];
         hierarchies: PatternSuggestion[];
@@ -542,6 +556,7 @@ export class PatternAnalyzer {
     /**
      * Get suggested name based on patterns
      */
+    // @group Analysis > Suggestions > GetSuggested: Return suggested hierarchical name for a partial name based on existing hierarchies
     getSuggestedName(partialName: string, existingGroups: CodeGroup[]): string | null {
         const normalized = this.normalizeVariations(partialName.toLowerCase());
         const words = normalized.split(/\s+/);
@@ -566,6 +581,7 @@ export class PatternAnalyzer {
     /**
      * Generate a pattern report
      */
+    // @group Reporting > Reports > Generate: Generate markdown report summarizing similarity and hierarchy suggestions for review
     generateReport(groups: CodeGroup[]): string {
         const analysis = this.analyzePatterns(groups);
         
@@ -613,6 +629,7 @@ export class PatternAnalyzer {
      * Check if a new group name is semantically similar to existing groups using AI
      * This provides smarter detection than string similarity alone
      */
+    // @group Integration > AI > SemanticCheck: Asynchronously check semantic similarity using AI copilot integration, fallback on failure
     async checkSemanticSimilarityWithAI(
         newGroupName: string,
         existingGroups: CodeGroup[]
@@ -650,6 +667,7 @@ export class PatternAnalyzer {
      * Find the best matching existing group name for a new group
      * Combines both string similarity and AI-powered semantic analysis
      */
+    // @group Analysis > Matching > BestMatch: Combine string heuristics and optional AI checks to find best matching suggestion
     async findBestMatch(
         newGroupName: string,
         existingGroups: CodeGroup[],
@@ -677,4 +695,5 @@ export class PatternAnalyzer {
     }
 }
 
+// @group Export > Instance > PatternAnalyzer: Export singleton PatternAnalyzer instance for reuse across the application modules
 export const patternAnalyzer = new PatternAnalyzer();

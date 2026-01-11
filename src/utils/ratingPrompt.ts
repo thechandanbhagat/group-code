@@ -4,13 +4,16 @@ const RATING_PROMPT_KEY = 'groupCode.hasShownRatingPrompt';
 const USAGE_COUNT_KEY = 'groupCode.usageCount';
 const PROMPT_THRESHOLD = 5; // Show prompt after 5 uses
 
+// @group Extension > Prompts > Rating: Manages rating prompt display, state, and usage tracking for the VS Code extension
 export class RatingPromptManager {
     private context: vscode.ExtensionContext;
 
+    // @group Extension > Prompts > Initialization: Initialize manager with extension context and persistent global state access
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
     }
 
+    // @group Telemetry > Usage > Increment: Increment usage counter and trigger prompt display when threshold reached
     public async incrementUsageAndCheckPrompt(): Promise<void> {
         const hasShownPrompt = this.context.globalState.get<boolean>(RATING_PROMPT_KEY, false);
         if (hasShownPrompt) {
@@ -25,6 +28,7 @@ export class RatingPromptManager {
         }
     }
 
+    // @group UI > Prompts > RatingDialog: Show information message with rating options and handle user choice
     private async showRatingPrompt(): Promise<void> {
         const response = await vscode.window.showInformationMessage(
             'Are you enjoying Group Code? Would you mind taking a moment to rate it?',

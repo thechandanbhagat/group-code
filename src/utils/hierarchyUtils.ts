@@ -1,5 +1,6 @@
 import { CodeGroup } from '../groupDefinition';
 
+// @group Hierarchy > Parsing > Parse: Parse functionality string into hierarchy path and metadata for grouping and navigation
 /**
  * Parse hierarchy from a functionality string
  * Example: "Auth > Login > Validation" -> ["Auth", "Login", "Validation"]
@@ -39,6 +40,7 @@ export function parseHierarchy(functionality: string): {
     };
 }
 
+// @group Hierarchy > Enrichment > GroupEnrichment: Add hierarchical metadata to a code group, preserve isFavorite flag
 /**
  * Enrich a code group with hierarchy information
  * Explicitly preserves isFavorite to ensure it's not lost
@@ -57,6 +59,7 @@ export function enrichWithHierarchy(group: CodeGroup): CodeGroup {
     };
 }
 
+// @group Hierarchy > Enrichment > Batch: Batch enrich multiple code groups with hierarchical metadata for consistency and performance
 /**
  * Enrich multiple code groups with hierarchy information
  */
@@ -64,6 +67,7 @@ export function enrichGroupsWithHierarchy(groups: CodeGroup[]): CodeGroup[] {
     return groups.map(enrichWithHierarchy);
 }
 
+// @group Hierarchy > Types > Node: Node structure for hierarchical tree representing code groups and metadata
 /**
  * Build a hierarchical tree structure from flat code groups
  * Returns a nested Map structure for efficient tree rendering
@@ -76,6 +80,7 @@ export interface HierarchyNode {
     groups: CodeGroup[];
 }
 
+// @group Hierarchy > Tree > Builder: Build nested Map tree from flat groups for efficient hierarchical rendering
 export function buildHierarchyTree(groups: CodeGroup[]): Map<string, HierarchyNode> {
     const rootNodes = new Map<string, HierarchyNode>();
 
@@ -116,6 +121,7 @@ export function buildHierarchyTree(groups: CodeGroup[]): Map<string, HierarchyNo
     return rootNodes;
 }
 
+// @group Hierarchy > Utilities > Ancestors: Return all ancestor paths for a functionality string, ordered root-to-leaf
 /**
  * Get all ancestor paths for a given functionality path
  * Example: "Auth > Login > Validation" -> ["Auth", "Auth > Login", "Auth > Login > Validation"]
@@ -131,6 +137,7 @@ export function getAncestorPaths(functionality: string): string[] {
     return paths;
 }
 
+// @group Hierarchy > Utilities > Relation: Determine whether one functionality path is descendant of another ancestor path
 /**
  * Check if one functionality is a descendant of another
  */
@@ -158,6 +165,7 @@ export function isDescendantOf(functionality: string, ancestor: string): boolean
     return true;
 }
 
+// @group Hierarchy > Utilities > Parent: Return immediate parent functionality path or null when no parent
 /**
  * Get the immediate parent of a functionality
  */
@@ -166,6 +174,7 @@ export function getParent(functionality: string): string | null {
     return hierarchy.parent || null;
 }
 
+// @group Hierarchy > Query > Level: Retrieve unique functionalities present at specified hierarchy level across groups
 /**
  * Get all functionalities at a specific level
  */
@@ -182,6 +191,7 @@ export function getFunctionalitiesAtLevel(groups: CodeGroup[], level: number): S
     return functionalities;
 }
 
+// @group Validation > Hierarchy > Syntax: Validate hierarchy string syntax and allowed characters for each path segment
 /**
  * Validate hierarchy path (no empty parts, valid characters)
  */
@@ -202,6 +212,7 @@ export function isValidHierarchy(functionality: string): boolean {
     return parts.every(p => validPattern.test(p));
 }
 
+// @group Formatting > Hierarchy > Display: Format hierarchy path array into human-readable string with proper separators
 /**
  * Format a hierarchy path for display with proper separators
  */
@@ -209,6 +220,7 @@ export function formatHierarchyPath(hierarchyPath: string[]): string {
     return hierarchyPath.join(' > ');
 }
 
+// @group Hierarchy > Metrics > Depth: Compute maximum hierarchy depth across groups to determine tree levels
 /**
  * Get depth of hierarchy (number of levels)
  */

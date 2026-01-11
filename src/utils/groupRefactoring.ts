@@ -5,6 +5,7 @@ import { CodeGroup } from '../groupDefinition';
  * Calculate similarity between two strings using Levenshtein distance
  * Returns a value between 0 (completely different) and 1 (identical)
  */
+// @group Utilities > String > Similarity: Compute similarity between two strings using Levenshtein algorithm, returning 0 to 1.
 function calculateStringSimilarity(str1: string, str2: string): number {
     const s1 = str1.toLowerCase();
     const s2 = str2.toLowerCase();
@@ -44,6 +45,7 @@ function calculateStringSimilarity(str1: string, str2: string): number {
 /**
  * Types of refactoring issues that can be detected
  */
+// @group Types > Enums > IssueTypes: Enumerates types of refactoring issues detected across code groups for classification and reporting
 export enum RefactoringIssueType {
     DUPLICATE = 'duplicate',
     SIMILAR = 'similar',
@@ -57,6 +59,7 @@ export enum RefactoringIssueType {
 /**
  * Severity level for refactoring suggestions
  */
+// @group Types > Enums > Severity: Defines severity levels for refactoring suggestions to prioritize review and remediation actions
 export enum RefactoringSeverity {
     INFO = 'info',
     WARNING = 'warning',
@@ -66,6 +69,7 @@ export enum RefactoringSeverity {
 /**
  * Represents a refactoring issue found in the codebase
  */
+// @group Types > Interfaces > RefactoringIssue: Defines structure for a detected refactoring issue with metadata, suggestions, and metrics
 export interface RefactoringIssue {
     type: RefactoringIssueType;
     severity: RefactoringSeverity;
@@ -85,6 +89,7 @@ export interface RefactoringIssue {
 /**
  * Configuration for refactoring analysis
  */
+// @group Types > Interfaces > RefactoringConfig: Configuration options controlling thresholds and enabled checks for refactoring analysis
 export interface RefactoringConfig {
     similarityThreshold: number;        // 0.8 = 80% similarity
     orphanedThreshold: number;          // Days without modification
@@ -97,6 +102,7 @@ export interface RefactoringConfig {
 /**
  * Default configuration for refactoring analysis
  */
+// @group Configuration > Defaults > RefactoringConfig: Default threshold values and enabled checks used when analyzing groups for refactoring opportunities
 const DEFAULT_CONFIG: RefactoringConfig = {
     similarityThreshold: 0.8,
     orphanedThreshold: 90,
@@ -115,6 +121,7 @@ const DEFAULT_CONFIG: RefactoringConfig = {
 /**
  * Analyzer for detecting refactoring opportunities in code groups
  */
+// @group Analysis > Analyzer > GroupAnalyzer: Analyzes code groups to detect refactoring opportunities and returns structured issue reports
 export class GroupRefactoringAnalyzer {
     private config: RefactoringConfig;
 
@@ -125,6 +132,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Analyze all groups and return refactoring issues
      */
+    // @group Analysis > Analyzer > Analyze: Run enabled checks across groups and aggregate all detected RefactoringIssue results
     public async analyzeGroups(groups: Map<string, CodeGroup[]>): Promise<RefactoringIssue[]> {
         const issues: RefactoringIssue[] = [];
 
@@ -162,6 +170,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Detect exact duplicate group names (case variations)
      */
+    // @group Analysis > Detection > Duplicates: Identify exact duplicate group names considering case variations and aggregate locations
     private detectDuplicates(groups: Map<string, CodeGroup[]>): RefactoringIssue[] {
         const issues: RefactoringIssue[] = [];
         const groupNames = Array.from(groups.keys());
@@ -206,6 +215,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Detect similar group names that might be duplicates
      */
+    // @group Analysis > Detection > Similarity: Find similarly named groups using string similarity threshold and report potential merges
     private detectSimilarGroups(groups: Map<string, CodeGroup[]>): RefactoringIssue[] {
         const issues: RefactoringIssue[] = [];
         const groupNames = Array.from(groups.keys());
@@ -253,6 +263,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Detect groups that haven't been modified in a long time
      */
+    // @group Analysis > Detection > Orphaned: Detect groups without recent file modifications exceeding configured orphaned threshold days
     private async detectOrphanedGroups(groups: Map<string, CodeGroup[]>): Promise<RefactoringIssue[]> {
         const issues: RefactoringIssue[] = [];
         const now = Date.now();
@@ -308,6 +319,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Detect inconsistent naming patterns
      */
+    // @group Analysis > Detection > Naming: Analyze naming patterns across groups to identify inconsistent naming conventions
     private detectInconsistentNaming(groups: Map<string, CodeGroup[]>): RefactoringIssue[] {
         const issues: RefactoringIssue[] = [];
         const groupNames = Array.from(groups.keys());
@@ -361,6 +373,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Detect groups used only once or twice
      */
+    // @group Analysis > Detection > SingleUse: Flag groups used fewer times than configured threshold for potential consolidation
     private detectSingleUseGroups(groups: Map<string, CodeGroup[]>): RefactoringIssue[] {
         const issues: RefactoringIssue[] = [];
 
@@ -387,6 +400,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Detect groups that are too large
      */
+    // @group Analysis > Detection > TooLarge: Identify groups spanning many files exceeding configured size threshold suggesting splits
     private detectTooLargeGroups(groups: Map<string, CodeGroup[]>): RefactoringIssue[] {
         const issues: RefactoringIssue[] = [];
 
@@ -415,6 +429,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Detect groups that are too small to be useful
      */
+    // @group Analysis > Detection > TooSmall: Detect very small groups confined to single files that may lack cross-file value
     private detectTooSmallGroups(groups: Map<string, CodeGroup[]>): RefactoringIssue[] {
         const issues: RefactoringIssue[] = [];
 
@@ -446,6 +461,7 @@ export class GroupRefactoringAnalyzer {
     /**
      * Generate a summary report of all issues
      */
+    // @group Reporting > Report > Generate: Generate markdown summary report grouping issues, metrics, and suggestions for review
     public generateReport(issues: RefactoringIssue[]): string {
         const grouped = new Map<RefactoringIssueType, RefactoringIssue[]>();
         
@@ -484,6 +500,7 @@ export class GroupRefactoringAnalyzer {
         return report;
     }
 
+    // @group Reporting > Helpers > Labels: Map issue type enums to human-readable labels for report headings
     private getIssueTypeLabel(type: RefactoringIssueType): string {
         const labels = {
             [RefactoringIssueType.DUPLICATE]: 'Duplicate Groups',

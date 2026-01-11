@@ -1,12 +1,4 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import * as crypto from 'crypto';
-import * as vscode from 'vscode';
-import { CodeGroup } from '../groupDefinition';
-import logger from './logger';
-import { enrichWithHierarchy } from './hierarchyUtils';
-
+// @group FileSystem > Preferences > Paths: Get user preferences directory path in user profile for GroupCode across platforms
 /**
  * Get the user preferences directory for GroupCode
  * This is stored in the OS user profile, not in the workspace
@@ -17,6 +9,7 @@ function getUserPrefsBaseDir(): string {
     return path.join(homeDir, '.groupcode');
 }
 
+// @group Utilities > Hashing > Workspace: Generate a consistent workspace identifier hash from its path
 /**
  * Generate a workspace identifier (hash) from workspace path
  * This allows us to have separate preferences per project
@@ -28,6 +21,7 @@ function getWorkspaceHash(workspacePath: string): string {
     return hash.substring(0, 16); // Use first 16 chars for readability
 }
 
+// @group FileSystem > Preferences > Paths: Get the preferences directory for a specific workspace using its hash
 /**
  * Get the user preferences directory for a specific workspace
  * @param workspacePath The workspace path
@@ -39,6 +33,7 @@ function getUserPrefsDir(workspacePath: string): string {
     return path.join(baseDir, workspaceHash);
 }
 
+// @group FileSystem > Preferences > Management: Ensure user preferences directory exists, creating it if necessary
 /**
  * Ensure the user preferences directory exists
  */
@@ -56,6 +51,7 @@ async function ensureUserPrefsDir(workspacePath: string): Promise<string> {
     return userPrefsDir;
 }
 
+// @group UserData > Favorites > Persistence: Save user favorites map to user profile favorites.json file
 /**
  * Save user favorites to the user profile directory
  * @param workspacePath The workspace path
@@ -82,6 +78,7 @@ export async function saveUserFavorites(workspacePath: string, favorites: Map<st
     }
 }
 
+// @group UserData > Favorites > Persistence: Load user favorites from user profile favorites.json into a Map
 /**
  * Load user favorites from the user profile directory
  * @param workspacePath The workspace path
@@ -118,6 +115,7 @@ export async function loadUserFavorites(workspacePath: string): Promise<Map<stri
     return favorites;
 }
 
+// @group Utilities > LineRanges > Conversion: Convert array of line numbers to compact range string representation
 /**
  * Converts an array of line numbers to a compact range string
  * Example: [8,9,10,11,15,16,17,18] -> "8-11,15-18"
@@ -156,6 +154,7 @@ function lineNumbersToRanges(lineNumbers: number[]): string {
     return ranges.join(',');
 }
 
+// @group Utilities > LineRanges > Conversion: Convert compact range string back to array of line numbers
 /**
  * Converts a compact range string back to an array of line numbers
  * Example: "8-11,15-18" -> [8,9,10,11,15,16,17,18]
@@ -193,6 +192,7 @@ function rangesToLineNumbers(rangeString: string): number[] {
     return lineNumbers;
 }
 
+// @group FileSystem > IO > FileReadWrite: Promise-based file read helper
 export function readFile(filePath: string): Promise<string> {
     return new Promise((resolve, reject) => {
         fs.readFile(filePath, 'utf8', (err, data) => {
@@ -204,6 +204,7 @@ export function readFile(filePath: string): Promise<string> {
     });
 }
 
+// @group FileSystem > IO > FileReadWrite: Promise-based file write helper
 export function writeFile(filePath: string, data: string): Promise<void> {
     return new Promise((resolve, reject) => {
         fs.writeFile(filePath, data, 'utf8', (err) => {
@@ -215,6 +216,7 @@ export function writeFile(filePath: string, data: string): Promise<void> {
     });
 }
 
+// @group Utilities > FileInfo > Parsing: Determine file extension/type from file path safely
 export function getFileType(filePath: string | undefined): string {
     if (!filePath) {
         logger.warn("Received undefined filePath in getFileType()");
@@ -233,6 +235,7 @@ export function getFileType(filePath: string | undefined): string {
     }
 }
 
+// @group Utilities > FileInfo > Parsing: Extract filename from path with robust validation and fallbacks
 export function getFileName(filePath: string | undefined | null): string {
     // Early check for invalid inputs
     if (filePath === undefined || filePath === null || filePath === '') {
@@ -266,6 +269,7 @@ export function getFileName(filePath: string | undefined | null): string {
     }
 }
 
+// @group FileTypes > Supported: Centralized list of supported file extensions for scanning and indexing
 // Centralized list of supported file extensions
 const supportedTypes = [
     // JavaScript/TypeScript
@@ -342,6 +346,7 @@ const supportedTypes = [
     'tcl'
 ];
 
+// @group FileTypes > Helpers > Retrieval: Return array copy of supported file extensions
 /**
  * Get all supported file extensions as an array
  */
@@ -349,6 +354,7 @@ export function getSupportedExtensions(): string[] {
     return [...supportedTypes];
 }
 
+// @group FileTypes > Helpers > Patterns: Generate a glob pattern matching all supported file types
 /**
  * Get a glob pattern for all supported file types
  */
@@ -356,6 +362,7 @@ export function getSupportedFilesGlobPattern(): string {
     return `**/*.{${supportedTypes.join(',')}}`;
 }
 
+// @group FileTypes > Helpers > Validation: Check if file type string is among supported extensions
 export function isSupportedFileType(fileType: string): boolean {
     if (!fileType) {
         return false;
@@ -364,6 +371,7 @@ export function isSupportedFileType(fileType: string): boolean {
     return supportedTypes.includes(fileType.toLowerCase());
 }
 
+// @group Workspace > GroupCode > Management: Ensure .groupcode directory exists in the workspace
 /**
  * Ensures that the .groupcode directory exists in the workspace
  */
@@ -402,6 +410,7 @@ export async function ensureGroupCodeDir(workspacePath: string): Promise<string>
     return groupCodeDir;
 }
 
+// @group Workspace > GroupCode > Persistence: Serialize and save code groups and functionalities metadata
 /**
  * Saves code groups to a JSON file in the .groupcode directory
  */
@@ -543,6 +552,7 @@ export async function saveCodeGroups(
     }
 }
 
+// @group Workspace > GroupCode > Persistence: Load and deserialize code groups from .groupcode directory
 /**
  * Loads code groups from the .groupcode directory
  */
@@ -618,6 +628,7 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
     }
 }
 
+// @group Hierarchy > Functionalities > Loading: Load functionalities metadata for suggestion and analysis
 /**
  * Load functionalities metadata for intelligent suggestions
  */
@@ -644,6 +655,7 @@ export async function loadFunctionalities(workspacePath: string): Promise<any | 
     }
 }
 
+// @group Hierarchy > Functionalities > Query: Get suggested child functionalities for a parent path
 /**
  * Get suggested child functionalities for a parent path
  */
@@ -656,6 +668,7 @@ export function getSuggestedChildren(functionalitiesData: any, parentPath: strin
     return functionality?.children || [];
 }
 
+// @group Hierarchy > Functionalities > Query: Retrieve all functionalities at a specified hierarchy level
 /**
  * Get all functionalities at a specific level
  */
@@ -670,13 +683,15 @@ export function getFunctionalitiesByLevel(functionalitiesData: any, level: numbe
         .sort();
 }
 
-/**
+// @group Hierarchy > Functionalities > Query: Get top-level root functionalities (level 1)
+ /**
  * Get top-level functionalities (root nodes)
  */
 export function getRootFunctionalities(functionalitiesData: any): string[] {
     return getFunctionalitiesByLevel(functionalitiesData, 1);
 }
 
+// @group Hierarchy > Functionalities > Similarity: Find similar functionalities based on partial text similarity
 /**
  * Get similar functionalities based on text similarity
  */
@@ -719,6 +734,7 @@ export function getSimilarFunctionalities(functionalitiesData: any, partial: str
         .map(m => m.path);
 }
 
+// @group Hierarchy > Functionalities > Stats: Retrieve statistics and metadata for a given functionality path
 /**
  * Get functionality statistics
  */
@@ -730,6 +746,7 @@ export function getFunctionalityStats(functionalitiesData: any, path: string): a
     return functionalitiesData.functionalities[path] || null;
 }
 
+// @group Workspace > Folders > Access: Safely obtain workspace folder filesystem paths as normalized strings
 /**
  * Get the workspace folder paths in a safe manner
  * Returns an empty array if no workspace folders are found
@@ -775,6 +792,7 @@ export function getWorkspaceFolders(): string[] {
     }
 }
 
+// @group Settings > GroupCode > Types: Interface defining persistent GroupCode settings used across workspace
 /**
  * GroupCode settings interface
  */
@@ -789,6 +807,7 @@ export interface GroupCodeSettings {
     additionalIgnorePatterns?: string[];
 }
 
+// @group Settings > GroupCode > Defaults: Default GroupCode settings used when no saved settings exist
 /**
  * Default settings
  */
@@ -799,6 +818,7 @@ const defaultSettings: GroupCodeSettings = {
     additionalIgnorePatterns: []
 };
 
+// @group Settings > GroupCode > Management: Load GroupCode settings from workspace .groupcode/settings.json
 /**
  * Load settings from .groupcode/settings.json
  */
@@ -827,6 +847,7 @@ export async function loadGroupCodeSettings(workspacePath: string): Promise<Grou
     }
 }
 
+// @group Settings > GroupCode > Management: Save provided GroupCode settings to workspace .groupcode/settings.json
 /**
  * Save settings to .groupcode/settings.json
  */
@@ -848,6 +869,7 @@ export async function saveGroupCodeSettings(workspacePath: string, settings: Gro
     }
 }
 
+// @group Settings > GroupCode > Convenience: Retrieve preferred model ID from GroupCode settings
 /**
  * Get the preferred model from settings
  */
@@ -856,6 +878,7 @@ export async function getPreferredModel(workspacePath: string): Promise<string |
     return settings.preferredModel;
 }
 
+// @group Settings > GroupCode > Convenience: Update preferred model ID in settings and persist it
 /**
  * Set the preferred model in settings
  */
@@ -865,6 +888,7 @@ export async function setPreferredModel(workspacePath: string, modelId: string |
     await saveGroupCodeSettings(workspacePath, settings);
 }
 
+// @group UserData > TreeState > Persistence: Save tree view expanded/collapsed state to user profile treestate.json
 /**
  * Save tree view state (expanded/collapsed nodes) to user profile
  * @param workspacePath The workspace path
@@ -885,6 +909,7 @@ export async function saveTreeViewState(workspacePath: string, expandedNodes: Se
     }
 }
 
+// @group UserData > TreeState > Persistence: Load tree view expanded nodes from user profile, with default fallback
 /**
  * Load tree view state (expanded/collapsed nodes) from user profile
  * @param workspacePath The workspace path

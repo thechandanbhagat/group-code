@@ -4,9 +4,11 @@ import logger from './logger';
 /**
  * Integration with GitHub Copilot and VS Code Language Model API
  */
+// @group Integration > Copilot > Core: Integrates Copilot and VS Code Language Model API functionality for suggestions and analysis
 export class CopilotIntegration {
     private isAvailable: boolean = false;
 
+    // @group Integration > Copilot > Initialization: Initialize integration instance and perform initial availability check with VS Code API
     constructor() {
         this.checkAvailability();
     }
@@ -14,6 +16,7 @@ export class CopilotIntegration {
     /**
      * Check if language model API is available
      */
+    // @group Integration > Availability > Check: Detect whether VS Code language model API is present and update availability state
     private async checkAvailability(): Promise<void> {
         try {
             // Check if the language model API is available
@@ -33,6 +36,7 @@ export class CopilotIntegration {
     /**
      * Check if Copilot integration is available
      */
+    // @group Integration > Availability > Status: Ensure availability is up-to-date and return boolean integration availability status
     public async isIntegrationAvailable(): Promise<boolean> {
         await this.checkAvailability();
         return this.isAvailable;
@@ -41,6 +45,7 @@ export class CopilotIntegration {
     /**
      * Generate code group suggestions using AI
      */
+    // @group AI > Suggestions > GroupName: Use language model to suggest hierarchical group name for given code snippet
     public async suggestGroupName(codeSnippet: string, context?: string): Promise<string | undefined> {
         try {
             if (!await this.isIntegrationAvailable()) {
@@ -80,6 +85,7 @@ export class CopilotIntegration {
     /**
      * Generate description for a code group using AI
      */
+    // @group AI > Suggestions > Description: Request AI to generate concise description (10-20 words) for specified code group
     public async suggestDescription(codeSnippet: string, groupName: string): Promise<string | undefined> {
         try {
             if (!await this.isIntegrationAvailable()) {
@@ -116,6 +122,7 @@ export class CopilotIntegration {
     /**
      * Analyze code and suggest multiple group names
      */
+    // @group AI > Analysis > GroupAnalysis: Analyze file code with AI and return hierarchical group suggestions with confidence
     public async analyzeCodeForGroups(code: string, filePath: string): Promise<Array<{name: string, description: string, confidence: number}>> {
         try {
             if (!await this.isIntegrationAvailable()) {
@@ -158,6 +165,7 @@ export class CopilotIntegration {
     /**
      * Build prompt for group name suggestion
      */
+    // @group Prompts > Builders > GroupName: Compose prompt guiding AI to suggest hierarchical group names for code snippets
     private buildGroupNamePrompt(codeSnippet: string, context?: string): string {
         return `You are helping to organize code into functional groups using a HIERARCHICAL structure.
 Given the following code snippet, suggest a hierarchical group name using the format: Category > Subcategory > Component
@@ -183,6 +191,7 @@ Hierarchical group name:`;
     /**
      * Build prompt for description suggestion
      */
+    // @group Prompts > Builders > Description: Compose prompt instructing AI to produce brief description for a given group
     private buildDescriptionPrompt(codeSnippet: string, groupName: string): string {
         return `You are helping to document code groups. 
 Given the code snippet and group name "${groupName}", provide a brief description (10-20 words) of what this code does.
@@ -199,6 +208,7 @@ Description:`;
     /**
      * Build prompt for code analysis
      */
+    // @group Prompts > Builders > Analysis: Compose prompt directing AI to identify functional areas and output JSON with confidences
     private buildAnalysisPrompt(code: string, filePath: string): string {
         return `Analyze the following code from ${filePath} and identify distinct functional areas using HIERARCHICAL structure.
 For each functional area, provide a hierarchical group name (using > separator), description, and confidence score (0-1).
@@ -230,6 +240,7 @@ JSON Response:`;
      * Check if a new group name is semantically similar to existing group names using AI
      * Returns the most similar existing group name if found, or null if the name is unique
      */
+    // @group AI > Similarity > Check: Use AI to compare new group name against existing names and detect similarity
     public async checkSemanticSimilarity(
         newGroupName: string,
         existingGroupNames: string[]
@@ -292,6 +303,7 @@ JSON Response:`;
     /**
      * Build prompt for semantic similarity check
      */
+    // @group Prompts > Builders > Similarity: Compose prompt asking AI to evaluate semantic similarity and recommend canonical name
     private buildSemanticSimilarityPrompt(newName: string, existingNames: string[]): string {
         return `You are helping to maintain consistent code group naming in a project.
 
@@ -324,6 +336,7 @@ JSON Response:`;
      * Normalize a group name by finding and suggesting the canonical form
      * Uses AI to find the best standardized name from a set of similar names
      */
+    // @group Utilities > Normalization > GroupName: Return canonical suggestion for group name based on semantic similarity analysis
     public async normalizeGroupName(
         groupName: string,
         existingGroupNames: string[]
@@ -338,6 +351,7 @@ JSON Response:`;
     /**
      * Get AI-powered code explanation
      */
+    // @group AI > Explanation > CodeGroup: Ask AI to explain code snippet clearly for documentation under given group name
     public async explainCodeGroup(codeSnippet: string, groupName: string): Promise<string | undefined> {
         try {
             if (!await this.isIntegrationAvailable()) {
@@ -381,4 +395,5 @@ Explanation:`;
 }
 
 // Singleton instance
+// @group Exports > Singleton > Instance: Export singleton instance of CopilotIntegration for global use in extension
 export const copilotIntegration = new CopilotIntegration();

@@ -1,5 +1,11 @@
 # Group Code for VS Code
 
+Group Code Navigation    
+![Group Code Demo](resources/groupcode.gif)   
+
+Generate Groups from github copilot   
+![Group Code Demo](resources/groupcode1.gif)   
+
 This Visual Studio Code extension helps you navigate and organize your codebase based on functionality rather than just files. Using special comments to tag related code sections across multiple files and languages, it creates a unified view that makes it easier to understand and work with your project's different functional components.
 
 ## Features
@@ -458,73 +464,13 @@ You can add `.groupcode/` to your `.gitignore` if you don't want to commit this 
 
 Found a bug or have a feature request? Please open an issue on the [GitHub repository](https://github.com/thechandanbhagat/group-code).
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed version history of all changes, additions, and fixes.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Changelog
-
-### Version 1.4.3
-
-- **Fixed Model Loading Issue**: Resolved infinite loading when fetching available AI models in settings panel
-- **Improved API Call**: Removed problematic parameters from model selection API that caused hanging
-
-### Version 1.4.1
-
-- **Removed Markdown Support**: Excluded markdown files from code grouping to focus on programming languages only
-- **Data Structure Simplification**: Removed global `lastUpdated` timestamp from functionalities.json
-- **Improved File Type Filtering**: Cleaner separation between documentation and code files
-
-### Version 1.4.0
-
-- **Improved .gitignore Support**: Properly converts .gitignore patterns to VS Code glob patterns
-- **Model Selection**: AI generation now uses the model selected in Copilot Chat
-- **Configurable Model Settings**: Set preferred model in `.groupcode/settings.json`
-- **New Command**: `Group Code: Set Preferred AI Model` to configure default model
-- **Clickable Group References**: Groups show as clickable links in chat output
-- **Jump to Location**: Click on any group name to navigate directly to that line
-- **File Anchors**: File names are clickable to open the file
-- **Centralized Extensions**: All supported file extensions defined in one place
-- **Fixed Directory Exclusion**: `.venv`, `node_modules`, `__pycache__` properly excluded
-- **Fixed File Pattern Handling**: `*.pyc`, `*.log` patterns handled correctly
-
-### Version 1.3.0
-
-- Added multi-level hierarchical grouping with `>` separator
-- Added live tree view updates - automatic refresh when editing @group comments
-- Added `/scan` command for current file scanning
-- Added `/scan workspace` command for full workspace scanning
-- Added two-mode generation (safe mode and update mode)
-- Improved duplicate detection for word order variations
-- Enhanced hierarchy autocomplete with existing path suggestions
-- Added breadcrumb navigation in chat responses
-- Added hierarchy search support in `@groupcode find`
-- Improved tree view with folder icons and group counts
-- Updated VS Code engine requirement to 1.99.1
-
-### Version 1.2.0
-
-- Added GitHub Copilot Chat integration with @groupcode participant
-- Added AI-powered automatic code group generation
-- Added language model tool for Copilot integration
-- Added workspace-wide generation support
-- Added smart format detection and auto-correction
-- Added real-time tree view updates when editing @group comments
-- Added semantic duplicate detection for group names
-- Added AI-powered semantic similarity checking
-- Added comprehensive word form normalization (150+ variations)
-- Fixed format to use colon (:) instead of dash (-)
-- Improved scanning performance
-- Enhanced error handling and user feedback
-
-### Version 1.1.0
-
-- Improved language support with 40+ programming languages
-- Enhanced code completion with inline documentation
-- Added support for inline code group comments
-- Better block comment detection
-- Performance optimizations for large workspaces
-- Git-aware file scanning
 
 ## Support
 

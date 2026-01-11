@@ -15,6 +15,7 @@ import {
 } from './utils/fileUtils';
 import logger from './utils/logger';
 
+// @group Workspace > Provider: VS Code provider managing code groups and UI integration
 export class CodeGroupProvider implements vscode.Disposable {
     private groups: Map<string, CodeGroup[]> = new Map();
     private functionalities: Set<string> = new Set();
@@ -26,6 +27,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     // Event that fires whenever code groups are updated
     public readonly onDidUpdateGroups: vscode.Event<void> = this.onDidUpdateGroupsEventEmitter.event;
     
+    // @group Workspace > Provider > Lifecycle: Initialize UI elements and log provider startup
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
         this.statusBarItem.text = "$(map) Group Code"; // Changed from "Code Compass" to "Group Code"
@@ -36,6 +38,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         logger.info('CodeGroupProvider initialized');
     }
     
+    // @group Workspace > Provider > Lifecycle: Dispose provider resources and event emitters
     public dispose() {
         this.statusBarItem.dispose();
         this.onDidUpdateGroupsEventEmitter.dispose();
@@ -44,6 +47,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Initialize by loading saved groups or scanning the workspace
      */
+    // @group Workspace > Initialization > Loading: Load saved groups or scan workspace for groups
     public async initialize(): Promise<void> {
         const workspaceFolders = getWorkspaceFolders();
         if (workspaceFolders.length === 0) {
@@ -85,6 +89,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Initialize the workspace by either loading existing groups or scanning for new ones
      */
+    // @group Workspace > Initialization > Scanning: Robust initialization with workspace scanning and error handling
     public async initializeWorkspace(): Promise<void> {
         try {
             // First try to load existing groups
@@ -137,6 +142,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Scan a document for code groups
      */
+    // @group Parsing > Document Scan: Parse document comments and group code by functionality
     private async scanDocument(document: vscode.TextDocument): Promise<void> {
         const fileName = document.fileName;
         const fileType = getFileType(fileName);
@@ -153,6 +159,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
 
     // Process the active document and extract code groups based on comments
+    // @group Parsing > Active Document: Extract groups from currently active editor document and preserve favorites
     public async processActiveDocument(): Promise<void> {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -217,6 +224,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Process a file when it's saved to update code groups
      */
+    // @group Parsing > File Save Handling: Update groups when files are saved, preserve favorites, and save
     public async processFileOnSave(document: vscode.TextDocument): Promise<void> {
         try {
             const filePath = document.uri.fsPath;
@@ -312,6 +320,7 @@ export class CodeGroupProvider implements vscode.Disposable {
      * Remove all code groups associated with a specific file
      * @returns true if any groups were removed
      */
+    // @group Workspace > Group Management > Removal: Remove groups for a file and update state accordingly
     private removeGroupsForFile(filePath: string): boolean {
         let removedAny = false;
         
@@ -337,6 +346,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Recalculate the set of functionalities based on existing groups
      */
+    // @group Workspace > Group Management > Recalculation: Recompute functionality set from current groups
     private recalculateFunctionalities(): void {
         this.functionalities.clear();
         
@@ -352,6 +362,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Convert a gitignore pattern to a regular expression that matches file paths
      */
+    // @group IO > Ignore Patterns > Conversion: Convert gitignore-style patterns into regular expressions
     private gitignorePatternToRegex(pattern: string): RegExp {
         // Remove leading slash to keep patterns relative to any folder
         let processedPattern = pattern.startsWith('/') ? pattern.substring(1) : pattern;
@@ -393,6 +404,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Check if a file path should be ignored based on ignore patterns
      */
+    // @group IO > Ignore Patterns > Matching: Determine if a file path matches ignore patterns
     private shouldIgnoreFile(filePath: string, ignorePatterns: string[]): boolean {
         // Forward slashes for consistency
         const normalizedPath = filePath.replace(/\\/g, '/');
@@ -411,6 +423,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Get glob patterns to ignore based on .gitignore and common folders to exclude
      */
+    // @group IO > Ignore Patterns > Loading: Load .gitignore and default ignore patterns for scanning
     private async getIgnorePatterns(folderPath?: string): Promise<string[]> {
         const ignorePatterns: string[] = [];
         
@@ -514,6 +527,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Process all documents in the workspace
+    // @group Workspace > Scanning > FullScan: Scan workspace files, parse groups, and preserve favorites
     public async processWorkspace(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -605,6 +619,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Process files in an external folder (outside of the current workspace)
+    // @group Workspace > Scanning > External: Scan external folder, batch process files, and save results externally
     public async processExternalFolder(folderPath: string): Promise<void> {
         if (!folderPath) {
             vscode.window.showErrorMessage('Invalid folder path');
@@ -754,6 +769,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Direct Python parser
+    // @group Parsing > Language Parsers > Python: Manual Python comment parser extracting starred groups
     private parsePythonCommentsDirectly(content: string, filePath: string): CodeGroup[] {
         const codeGroups: CodeGroup[] = [];
         const lines = content.split('\n');
@@ -828,6 +844,7 @@ export class CodeGroupProvider implements vscode.Disposable {
      * @param folderPath Optional folder path to save to
      * @param force If true, bypass throttling (use for critical saves like deactivation)
      */
+    // @group Persistence > Storage > Save: Persist groups to disk with optional throttling or forced save
     public async saveGroups(folderPath?: string, force: boolean = false): Promise<void> {
         try {
             // Implement throttling to avoid excessive saves (unless forced)
@@ -857,6 +874,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         }
     }
     
+    // @group Workspace > Group Management > Addition: Add unique code groups per file type avoiding duplicates
     private addGroups(fileType: string, groups: CodeGroup[]): void {
         if (!this.groups.has(fileType)) {
             this.groups.set(fileType, []);
@@ -886,6 +904,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Get all groups for a specific functionality across different file types
+    // @group Workspace > Retrieval > FunctionalityGroups: Retrieve groups grouped by file type for a functionality
     public getFunctionalityGroups(functionality: string): Map<string, CodeGroup[]> {
         const functionalityGroups = new Map<string, CodeGroup[]>();
         const functionalityLower = functionality.toLowerCase();
@@ -906,11 +925,13 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Get all available functionalities
+    // @group Workspace > Retrieval > Functionalities: Return list of discovered functionality names
     public getFunctionalities(): string[] {
         return Array.from(this.functionalities);
     }
     
     // Get all code groups across all file types
+    // @group Workspace > Retrieval > AllGroups: Flatten and return all code groups across file types
     public getAllGroups(): CodeGroup[] {
         const allGroups: CodeGroup[] = [];
         this.groups.forEach((groups) => {
@@ -922,6 +943,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Get groups organized by functionality name for refactoring analysis
      */
+    // @group Workspace > Retrieval > ByFunctionality: Reorganize groups keyed by functionality for analysis
     public getGroupsByFunctionality(): Map<string, CodeGroup[]> {
         const groupsByFunc = new Map<string, CodeGroup[]>();
         
@@ -941,6 +963,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Navigate to a specific group
+    // @group UI > Navigation > OpenGroup: Open file and reveal the group's primary line number in editor
     public async navigateToGroup(group: CodeGroup): Promise<void> {
         try {
             // Validate group object
@@ -968,6 +991,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Show all groups for a specific functionality
+    // @group UI > Navigation > QuickPickGroups: Present quick pick list of groups for chosen functionality
     public async showFunctionalityGroups(functionality: string): Promise<void> {
         const functionalityGroups = this.getFunctionalityGroups(functionality);
         
@@ -1036,6 +1060,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     }
     
     // Show all available functionalities
+    // @group UI > Navigation > FunctionalitiesList: Display list of functionalities for user selection
     public async showFunctionalities(): Promise<void> {
         const functionalities = this.getFunctionalities();
         
@@ -1053,12 +1078,14 @@ export class CodeGroupProvider implements vscode.Disposable {
         }
     }
     
+    // @group UI > StatusBar: Update status bar with current functionality count
     private updateStatusBar(): void {
         const functionalities = this.getFunctionalities();
         this.statusBarItem.text = `$(map) Group Code (${functionalities.length})`;  // Changed from "$(compass) Code Compass" to "$(map) Group Code"
     }
 
     // Clear all code groups and refresh
+    // @group Workspace > Group Management > Clear: Remove all groups, reset state, and notify UI
     public clearGroups(): void {
         this.groups.clear();
         this.functionalities.clear();
@@ -1070,6 +1097,7 @@ export class CodeGroupProvider implements vscode.Disposable {
      * Load user favorites from user profile and apply them to existing groups
      * This should be called after loading groups from the shared codegroups.json
      */
+    // @group Persistence > Favorites > Load: Load user favorites and apply to in-memory groups
     private async loadAndApplyUserFavorites(): Promise<void> {
         try {
             const workspaceFolders = getWorkspaceFolders();
@@ -1105,6 +1133,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Save current favorites to user profile
      */
+    // @group Persistence > Favorites > Save: Persist user's favorite selections to profile storage
     private async saveUserFavoritesToProfile(): Promise<void> {
         try {
             const workspaceFolders = getWorkspaceFolders();
@@ -1138,6 +1167,7 @@ export class CodeGroupProvider implements vscode.Disposable {
      * Matches group by functionality name (works for any level of hierarchy)
      * Also toggles all descendant groups if this is a parent node
      */
+    // @group UI > Favorites > Toggle: Toggle favorite status for functionality and its descendants, then persist
     public async toggleFavorite(functionality: string): Promise<void> {
         try {
             const { isDescendantOf } = await import('./utils/hierarchyUtils');
@@ -1198,6 +1228,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Get all favorite groups
      */
+    // @group Workspace > Retrieval > Favorites: Return all groups currently marked as favorites
     public getFavoriteGroups(): CodeGroup[] {
         const favorites: CodeGroup[] = [];
 
@@ -1216,6 +1247,7 @@ export class CodeGroupProvider implements vscode.Disposable {
      * Check if a functionality is marked as favorite
      * This also returns true if any descendant is marked as favorite
      */
+    // @group Workspace > Retrieval > FavoritesCheck: Check favorite status including descendant matching
     public isFavorite(functionality: string): boolean {
         let isFav = false;
 
@@ -1240,6 +1272,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     /**
      * Get all favorite functionalities (unique)
      */
+    // @group Workspace > Retrieval > FavoriteFunctionalities: Return unique favorite functionality names
     public getFavoriteFunctionalities(): string[] {
         const favoriteFuncs = new Set<string>();
 

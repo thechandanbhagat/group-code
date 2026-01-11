@@ -8,6 +8,7 @@ import { buildHierarchyTree, HierarchyNode, enrichWithHierarchy } from './utils/
 /**
  * Represents the different types of tree items in the code group explorer
  */
+// @group Models > Tree Items: Enumerations for tree item types used in the explorer extension
 enum CodeGroupTreeItemType {
     FavoritesRoot = 'favoritesRoot',  // Root "Favorites" section
     HierarchyNode = 'hierarchyNode',  // New: Hierarchy level (e.g., "Auth", "Auth > Login")
@@ -18,6 +19,7 @@ enum CodeGroupTreeItemType {
 /**
  * Tree item class representing different levels in the code group tree
  */
+// @group UI > Tree Item > Renderer: Represents tree items and visual properties in explorer view extension
 export class CodeGroupTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
@@ -107,6 +109,7 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
         }
     }
 
+    // @group UI > Tree Item > Helpers: Count groups recursively within a hierarchy node helper function implementation
     private countGroupsInNode(node: HierarchyNode): number {
         let count = node.groups.length;
         node.children.forEach(child => {
@@ -117,6 +120,7 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
 }
 
 // Tree data provider for code groups
+// @group Providers > Tree Provider > Code Groups: Provides hierarchical tree data, state management, and search for explorer
 export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<CodeGroupTreeItem | undefined | null> = new vscode.EventEmitter<CodeGroupTreeItem | undefined | null>();
     readonly onDidChangeTreeData: vscode.Event<CodeGroupTreeItem | undefined | null> = this._onDidChangeTreeData.event;
@@ -126,12 +130,14 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     private expandedNodes: Set<string> = new Set<string>();
     private stateLoadedPromise?: Promise<void>;
 
+    // @group Providers > Tree Provider > Initialization: Initialize provider and asynchronously load persisted tree view state from workspace
     constructor(private codeGroupProvider: CodeGroupProvider) {
         logger.info('CodeGroupTreeProvider initialized');
         // Load tree state asynchronously
         this.loadTreeState();
     }
 
+    // @group Providers > Tree Provider > View Management: Attach tree view and handle expansion/collapse events
     setTreeView(view: vscode.TreeView<CodeGroupTreeItem>, viewId: string) {
         if (viewId === 'groupCodeExplorer') {
             this.mainTreeView = view;
@@ -161,6 +167,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     /**
      * Get a unique path identifier for a tree item
      */
+    // @group Providers > Tree Provider > Utilities: Compute unique identifier path for various tree item types used
     private getNodePath(element: CodeGroupTreeItem): string | undefined {
         if (element.type === CodeGroupTreeItemType.FavoritesRoot) {
             return 'Favorites';
@@ -175,6 +182,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     /**
      * Load tree state from user profile
      */
+    // @group Providers > Persistence > Load State: Load expanded node state from workspace storage asynchronously with error handling
     private async loadTreeState(): Promise<void> {
         const workspaceFolders = getWorkspaceFolders();
         if (workspaceFolders.length === 0) {
@@ -193,6 +201,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
      * Save tree state to user profile (debounced)
      */
     private saveTreeStateTimeout?: NodeJS.Timeout;
+    // @group Providers > Persistence > Save State: Persist expanded nodes to workspace storage with debounce to reduce writes
     private saveTreeState(): void {
         // Debounce saves to avoid excessive writes
         if (this.saveTreeStateTimeout) {
@@ -214,6 +223,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
         }, 500); // Wait 500ms before saving
     }
 
+    // @group Providers > Search > Filter: Update search filter and refresh views
     public updateSearch(query: string): void {
         this.searchFilter = query.toLowerCase();
         // Update both tree views
@@ -226,10 +236,12 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
         this.refresh();
     }
 
+    // @group Providers > Search > Query: Return current lowercase search filter string used by UI and commands
     public getCurrentSearch(): string {
         return this.searchFilter;
     }
 
+    // @group Providers > Search > Matching: Determine if a code group matches the current search filter
     private matchesSearch(group: CodeGroup): boolean {
         if (!this.searchFilter) return true;
         const searchTerm = this.searchFilter.toLowerCase();
@@ -238,15 +250,18 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
             group.filePath.toLowerCase().includes(searchTerm);
     }
 
+    // @group Providers > Tree Provider > Refresh: Trigger tree data refresh event to update views immediately now
     refresh(): void {
         logger.info('Tree view refresh triggered');
         this._onDidChangeTreeData.fire(null);
     }
 
+    // @group Providers > Tree Provider > Adapter: Adapter to return the vscode.TreeItem for a given element instance
     getTreeItem(element: CodeGroupTreeItem): vscode.TreeItem {
         return element;
     }
 
+    // @group Providers > Tree Provider > Children: Compute child tree items for element types, build hierarchy and filter results
     async getChildren(element?: CodeGroupTreeItem): Promise<CodeGroupTreeItem[]> {
         try {
             if (!element) {

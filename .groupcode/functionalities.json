@@ -338,415 +338,6 @@
         "ts"
       ]
     },
-    "filesystem > preferences > paths": {
-      "level": 3,
-      "parent": "filesystem > preferences",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "filesystem": {
-      "level": 1,
-      "parent": null,
-      "children": [
-        "filesystem > io",
-        "filesystem > preferences"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "filesystem > preferences": {
-      "level": 2,
-      "parent": "filesystem",
-      "children": [
-        "filesystem > preferences > management",
-        "filesystem > preferences > paths"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "utilities > hashing > workspace": {
-      "level": 3,
-      "parent": "utilities > hashing",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "utilities": {
-      "level": 1,
-      "parent": null,
-      "children": [
-        "utilities > fileinfo",
-        "utilities > grouping",
-        "utilities > hashing",
-        "utilities > lineranges",
-        "utilities > normalization",
-        "utilities > string"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "utilities > hashing": {
-      "level": 2,
-      "parent": "utilities",
-      "children": [
-        "utilities > hashing > workspace"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "filesystem > preferences > management": {
-      "level": 3,
-      "parent": "filesystem > preferences",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "userdata > favorites > persistence": {
-      "level": 3,
-      "parent": "userdata > favorites",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "userdata": {
-      "level": 1,
-      "parent": null,
-      "children": [
-        "userdata > favorites",
-        "userdata > treestate"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "userdata > favorites": {
-      "level": 2,
-      "parent": "userdata",
-      "children": [
-        "userdata > favorites > persistence"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "utilities > lineranges > conversion": {
-      "level": 3,
-      "parent": "utilities > lineranges",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "utilities > lineranges": {
-      "level": 2,
-      "parent": "utilities",
-      "children": [
-        "utilities > lineranges > conversion"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "filesystem > io > filereadwrite": {
-      "level": 3,
-      "parent": "filesystem > io",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "filesystem > io": {
-      "level": 2,
-      "parent": "filesystem",
-      "children": [
-        "filesystem > io > filereadwrite"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "utilities > fileinfo > parsing": {
-      "level": 3,
-      "parent": "utilities > fileinfo",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "utilities > fileinfo": {
-      "level": 2,
-      "parent": "utilities",
-      "children": [
-        "utilities > fileinfo > parsing"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "filetypes > supported": {
-      "level": 2,
-      "parent": "filetypes",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "filetypes": {
-      "level": 1,
-      "parent": null,
-      "children": [
-        "filetypes > helpers",
-        "filetypes > supported"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "filetypes > helpers > retrieval": {
-      "level": 3,
-      "parent": "filetypes > helpers",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "filetypes > helpers": {
-      "level": 2,
-      "parent": "filetypes",
-      "children": [
-        "filetypes > helpers > patterns",
-        "filetypes > helpers > retrieval",
-        "filetypes > helpers > validation"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "filetypes > helpers > patterns": {
-      "level": 3,
-      "parent": "filetypes > helpers",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "filetypes > helpers > validation": {
-      "level": 3,
-      "parent": "filetypes > helpers",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "workspace > groupcode > management": {
-      "level": 3,
-      "parent": "workspace > groupcode",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "workspace": {
-      "level": 1,
-      "parent": null,
-      "children": [
-        "workspace > folders",
-        "workspace > group management",
-        "workspace > groupcode",
-        "workspace > initialization",
-        "workspace > provider",
-        "workspace > retrieval",
-        "workspace > scanning"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "workspace > groupcode": {
-      "level": 2,
-      "parent": "workspace",
-      "children": [
-        "workspace > groupcode > management",
-        "workspace > groupcode > persistence"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "workspace > groupcode > persistence": {
-      "level": 3,
-      "parent": "workspace > groupcode",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "hierarchy > functionalities > loading": {
-      "level": 3,
-      "parent": "hierarchy > functionalities",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "hierarchy": {
-      "level": 1,
-      "parent": null,
-      "children": [
-        "hierarchy > enrichment",
-        "hierarchy > functionalities",
-        "hierarchy > metrics",
-        "hierarchy > parsing",
-        "hierarchy > query",
-        "hierarchy > tree",
-        "hierarchy > types",
-        "hierarchy > utilities"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "hierarchy > functionalities": {
-      "level": 2,
-      "parent": "hierarchy",
-      "children": [
-        "hierarchy > functionalities > loading",
-        "hierarchy > functionalities > query",
-        "hierarchy > functionalities > similarity",
-        "hierarchy > functionalities > stats"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "hierarchy > functionalities > query": {
-      "level": 3,
-      "parent": "hierarchy > functionalities",
-      "children": [],
-      "groupCount": 3,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "hierarchy > functionalities > similarity": {
-      "level": 3,
-      "parent": "hierarchy > functionalities",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "hierarchy > functionalities > stats": {
-      "level": 3,
-      "parent": "hierarchy > functionalities",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "workspace > folders > access": {
-      "level": 3,
-      "parent": "workspace > folders",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "workspace > folders": {
-      "level": 2,
-      "parent": "workspace",
-      "children": [
-        "workspace > folders > access"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "settings > groupcode > types": {
-      "level": 3,
-      "parent": "settings > groupcode",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "settings": {
-      "level": 1,
-      "parent": null,
-      "children": [
-        "settings > groupcode"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "settings > groupcode": {
-      "level": 2,
-      "parent": "settings",
-      "children": [
-        "settings > groupcode > convenience",
-        "settings > groupcode > defaults",
-        "settings > groupcode > management",
-        "settings > groupcode > types"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
-    "settings > groupcode > defaults": {
-      "level": 3,
-      "parent": "settings > groupcode",
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "settings > groupcode > management": {
-      "level": 3,
-      "parent": "settings > groupcode",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "settings > groupcode > convenience": {
-      "level": 3,
-      "parent": "settings > groupcode",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "userdata > treestate > persistence": {
-      "level": 3,
-      "parent": "userdata > treestate",
-      "children": [],
-      "groupCount": 2,
-      "fileTypes": [
-        "ts"
-      ]
-    },
-    "userdata > treestate": {
-      "level": 2,
-      "parent": "userdata",
-      "children": [
-        "userdata > treestate > persistence"
-      ],
-      "groupCount": 0,
-      "fileTypes": []
-    },
     "integration > copilot > core": {
       "level": 3,
       "parent": "integration > copilot",
@@ -955,6 +546,20 @@
       "fileTypes": [
         "ts"
       ]
+    },
+    "utilities": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "utilities > fileinfo",
+        "utilities > grouping",
+        "utilities > hashing",
+        "utilities > lineranges",
+        "utilities > normalization",
+        "utilities > string"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
     },
     "utilities > normalization": {
       "level": 2,
@@ -1842,6 +1447,22 @@
         "ts"
       ]
     },
+    "hierarchy": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "hierarchy > enrichment",
+        "hierarchy > functionalities",
+        "hierarchy > metrics",
+        "hierarchy > parsing",
+        "hierarchy > query",
+        "hierarchy > tree",
+        "hierarchy > types",
+        "hierarchy > utilities"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
     "hierarchy > parsing": {
       "level": 2,
       "parent": "hierarchy",
@@ -2053,6 +1674,21 @@
       "fileTypes": [
         "ts"
       ]
+    },
+    "workspace": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "workspace > folders",
+        "workspace > group management",
+        "workspace > groupcode",
+        "workspace > initialization",
+        "workspace > provider",
+        "workspace > retrieval",
+        "workspace > scanning"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
     },
     "workspace > provider > lifecycle": {
       "level": 3,
@@ -2469,6 +2105,370 @@
       "fileTypes": [
         "ts"
       ]
+    },
+    "filesystem > preferences > paths": {
+      "level": 3,
+      "parent": "filesystem > preferences",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filesystem": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "filesystem > io",
+        "filesystem > preferences"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filesystem > preferences": {
+      "level": 2,
+      "parent": "filesystem",
+      "children": [
+        "filesystem > preferences > management",
+        "filesystem > preferences > paths"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > hashing > workspace": {
+      "level": 3,
+      "parent": "utilities > hashing",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > hashing": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > hashing > workspace"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filesystem > preferences > management": {
+      "level": 3,
+      "parent": "filesystem > preferences",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata > favorites > persistence": {
+      "level": 3,
+      "parent": "userdata > favorites",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "userdata > favorites",
+        "userdata > treestate"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "userdata > favorites": {
+      "level": 2,
+      "parent": "userdata",
+      "children": [
+        "userdata > favorites > persistence"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > lineranges > conversion": {
+      "level": 3,
+      "parent": "utilities > lineranges",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > lineranges": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > lineranges > conversion"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filesystem > io > filereadwrite": {
+      "level": 3,
+      "parent": "filesystem > io",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filesystem > io": {
+      "level": 2,
+      "parent": "filesystem",
+      "children": [
+        "filesystem > io > filereadwrite"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utilities > fileinfo > parsing": {
+      "level": 3,
+      "parent": "utilities > fileinfo",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "utilities > fileinfo": {
+      "level": 2,
+      "parent": "utilities",
+      "children": [
+        "utilities > fileinfo > parsing"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filetypes > supported": {
+      "level": 2,
+      "parent": "filetypes",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filetypes": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "filetypes > helpers",
+        "filetypes > supported"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filetypes > helpers > retrieval": {
+      "level": 3,
+      "parent": "filetypes > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filetypes > helpers": {
+      "level": 2,
+      "parent": "filetypes",
+      "children": [
+        "filetypes > helpers > patterns",
+        "filetypes > helpers > retrieval",
+        "filetypes > helpers > validation"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "filetypes > helpers > patterns": {
+      "level": 3,
+      "parent": "filetypes > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "filetypes > helpers > validation": {
+      "level": 3,
+      "parent": "filetypes > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > groupcode > management": {
+      "level": 3,
+      "parent": "workspace > groupcode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > groupcode": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > groupcode > management",
+        "workspace > groupcode > persistence"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "workspace > groupcode > persistence": {
+      "level": 3,
+      "parent": "workspace > groupcode",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > functionalities > loading": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > functionalities": {
+      "level": 2,
+      "parent": "hierarchy",
+      "children": [
+        "hierarchy > functionalities > loading",
+        "hierarchy > functionalities > query",
+        "hierarchy > functionalities > similarity",
+        "hierarchy > functionalities > stats"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "hierarchy > functionalities > query": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
+      "children": [],
+      "groupCount": 3,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > functionalities > similarity": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "hierarchy > functionalities > stats": {
+      "level": 3,
+      "parent": "hierarchy > functionalities",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > folders > access": {
+      "level": 3,
+      "parent": "workspace > folders",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "workspace > folders": {
+      "level": 2,
+      "parent": "workspace",
+      "children": [
+        "workspace > folders > access"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "settings > groupcode > types": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "settings": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "settings > groupcode"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "settings > groupcode": {
+      "level": 2,
+      "parent": "settings",
+      "children": [
+        "settings > groupcode > convenience",
+        "settings > groupcode > defaults",
+        "settings > groupcode > management",
+        "settings > groupcode > types"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "settings > groupcode > defaults": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "settings > groupcode > management": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "settings > groupcode > convenience": {
+      "level": 3,
+      "parent": "settings > groupcode",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata > treestate > persistence": {
+      "level": 3,
+      "parent": "userdata > treestate",
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "userdata > treestate": {
+      "level": 2,
+      "parent": "userdata",
+      "children": [
+        "userdata > treestate > persistence"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
     }
   }
 }

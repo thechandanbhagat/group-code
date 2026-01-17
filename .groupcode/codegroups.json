@@ -157,210 +157,6 @@
       "lineNumbers": "264-267"
     },
     {
-      "functionality": "filesystem > preferences > paths",
-      "description": "Get user preferences directory path in user profile for GroupCode across platforms",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "1-11"
-    },
-    {
-      "functionality": "utilities > hashing > workspace",
-      "description": "Generate a consistent workspace identifier hash from its path",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "12-17"
-    },
-    {
-      "functionality": "filesystem > preferences > paths",
-      "description": "Get the preferences directory for a specific workspace using its hash",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "24-35"
-    },
-    {
-      "functionality": "filesystem > preferences > management",
-      "description": "Ensure user preferences directory exists, creating it if necessary",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "36-53"
-    },
-    {
-      "functionality": "userdata > favorites > persistence",
-      "description": "Save user favorites map to user profile favorites.json file",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "54-64"
-    },
-    {
-      "functionality": "userdata > favorites > persistence",
-      "description": "Load user favorites from user profile favorites.json into a Map",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "81-98"
-    },
-    {
-      "functionality": "utilities > lineranges > conversion",
-      "description": "Convert array of line numbers to compact range string representation",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "118-127"
-    },
-    {
-      "functionality": "utilities > lineranges > conversion",
-      "description": "Convert compact range string back to array of line numbers",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "157-172"
-    },
-    {
-      "functionality": "filesystem > io > filereadwrite",
-      "description": "Promise-based file read helper",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "195-206"
-    },
-    {
-      "functionality": "filesystem > io > filereadwrite",
-      "description": "Promise-based file write helper",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "207-218"
-    },
-    {
-      "functionality": "utilities > fileinfo > parsing",
-      "description": "Determine file extension/type from file path safely",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "219-237"
-    },
-    {
-      "functionality": "utilities > fileinfo > parsing",
-      "description": "Extract filename from path with robust validation and fallbacks",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "238-239"
-    },
-    {
-      "functionality": "filetypes > supported",
-      "description": "Centralized list of supported file extensions for scanning and indexing",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "272"
-    },
-    {
-      "functionality": "filetypes > helpers > retrieval",
-      "description": "Return array copy of supported file extensions",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "349-356"
-    },
-    {
-      "functionality": "filetypes > helpers > patterns",
-      "description": "Generate a glob pattern matching all supported file types",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "357-364"
-    },
-    {
-      "functionality": "filetypes > helpers > validation",
-      "description": "Check if file type string is among supported extensions",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "365-373"
-    },
-    {
-      "functionality": "workspace > groupcode > management",
-      "description": "Ensure .groupcode directory exists in the workspace",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "374-382"
-    },
-    {
-      "functionality": "workspace > groupcode > persistence",
-      "description": "Serialize and save code groups and functionalities metadata",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "413-429"
-    },
-    {
-      "functionality": "workspace > groupcode > persistence",
-      "description": "Load and deserialize code groups from .groupcode directory",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "555-584"
-    },
-    {
-      "functionality": "hierarchy > functionalities > loading",
-      "description": "Load functionalities metadata for suggestion and analysis",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "631-657"
-    },
-    {
-      "functionality": "hierarchy > functionalities > query",
-      "description": "Get suggested child functionalities for a parent path",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "658-670"
-    },
-    {
-      "functionality": "hierarchy > functionalities > query",
-      "description": "Retrieve all functionalities at a specified hierarchy level",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "671-685"
-    },
-    {
-      "functionality": "hierarchy > functionalities > query",
-      "description": "Get top-level root functionalities (level 1)",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "686-693"
-    },
-    {
-      "functionality": "hierarchy > functionalities > similarity",
-      "description": "Find similar functionalities based on partial text similarity",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "694-709"
-    },
-    {
-      "functionality": "hierarchy > functionalities > stats",
-      "description": "Retrieve statistics and metadata for a given functionality path",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "737-748"
-    },
-    {
-      "functionality": "workspace > folders > access",
-      "description": "Safely obtain workspace folder filesystem paths as normalized strings",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "749-778"
-    },
-    {
-      "functionality": "settings > groupcode > types",
-      "description": "Interface defining persistent GroupCode settings used across workspace",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "795-809"
-    },
-    {
-      "functionality": "settings > groupcode > defaults",
-      "description": "Default GroupCode settings used when no saved settings exist",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "810-820"
-    },
-    {
-      "functionality": "settings > groupcode > management",
-      "description": "Load GroupCode settings from workspace .groupcode/settings.json",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "821-840"
-    },
-    {
-      "functionality": "settings > groupcode > management",
-      "description": "Save provided GroupCode settings to workspace .groupcode/settings.json",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "850-871"
-    },
-    {
-      "functionality": "settings > groupcode > convenience",
-      "description": "Retrieve preferred model ID from GroupCode settings",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "872-880"
-    },
-    {
-      "functionality": "settings > groupcode > convenience",
-      "description": "Update preferred model ID in settings and persist it",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "881-890"
-    },
-    {
-      "functionality": "userdata > treestate > persistence",
-      "description": "Save tree view expanded/collapsed state to user profile treestate.json",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "891-901"
-    },
-    {
-      "functionality": "userdata > treestate > persistence",
-      "description": "Load tree view expanded nodes from user profile, with default fallback",
-      "filePath": "src/utils/fileUtils.ts",
-      "lineNumbers": "912-935"
-    },
-    {
       "functionality": "integration > copilot > core",
       "description": "Integrates Copilot and VS Code Language Model API functionality for suggestions and analysis",
       "filePath": "src/utils/copilotIntegration.ts",
@@ -1049,7 +845,210 @@
       "description": "Return unique favorite functionality names",
       "filePath": "src/codeGroupProvider.ts",
       "lineNumbers": "1275-1288"
+    },
+    {
+      "functionality": "filesystem > preferences > paths",
+      "description": "Get user preferences directory path in user profile for GroupCode across platforms",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "10-20"
+    },
+    {
+      "functionality": "utilities > hashing > workspace",
+      "description": "Generate a consistent workspace identifier hash from its path",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "21-26"
+    },
+    {
+      "functionality": "filesystem > preferences > paths",
+      "description": "Get the preferences directory for a specific workspace using its hash",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "33-44"
+    },
+    {
+      "functionality": "filesystem > preferences > management",
+      "description": "Ensure user preferences directory exists, creating it if necessary",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "45-62"
+    },
+    {
+      "functionality": "userdata > favorites > persistence",
+      "description": "Save user favorites map to user profile favorites.json file",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "63-73"
+    },
+    {
+      "functionality": "userdata > favorites > persistence",
+      "description": "Load user favorites from user profile favorites.json into a Map",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "90-107"
+    },
+    {
+      "functionality": "utilities > lineranges > conversion",
+      "description": "Convert array of line numbers to compact range string representation",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "127-136"
+    },
+    {
+      "functionality": "utilities > lineranges > conversion",
+      "description": "Convert compact range string back to array of line numbers",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "166-181"
+    },
+    {
+      "functionality": "filesystem > io > filereadwrite",
+      "description": "Promise-based file read helper",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "204-215"
+    },
+    {
+      "functionality": "filesystem > io > filereadwrite",
+      "description": "Promise-based file write helper",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "216-227"
+    },
+    {
+      "functionality": "utilities > fileinfo > parsing",
+      "description": "Determine file extension/type from file path safely",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "228-246"
+    },
+    {
+      "functionality": "utilities > fileinfo > parsing",
+      "description": "Extract filename from path with robust validation and fallbacks",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "247-248"
+    },
+    {
+      "functionality": "filetypes > supported",
+      "description": "Centralized list of supported file extensions for scanning and indexing",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "281"
+    },
+    {
+      "functionality": "filetypes > helpers > retrieval",
+      "description": "Return array copy of supported file extensions",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "358-365"
+    },
+    {
+      "functionality": "filetypes > helpers > patterns",
+      "description": "Generate a glob pattern matching all supported file types",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "366-373"
+    },
+    {
+      "functionality": "filetypes > helpers > validation",
+      "description": "Check if file type string is among supported extensions",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "374-382"
+    },
+    {
+      "functionality": "workspace > groupcode > management",
+      "description": "Ensure .groupcode directory exists in the workspace",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "383-391"
+    },
+    {
+      "functionality": "workspace > groupcode > persistence",
+      "description": "Serialize and save code groups and functionalities metadata",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "422-438"
+    },
+    {
+      "functionality": "workspace > groupcode > persistence",
+      "description": "Load and deserialize code groups from .groupcode directory",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "564-593"
+    },
+    {
+      "functionality": "hierarchy > functionalities > loading",
+      "description": "Load functionalities metadata for suggestion and analysis",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "640-666"
+    },
+    {
+      "functionality": "hierarchy > functionalities > query",
+      "description": "Get suggested child functionalities for a parent path",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "667-679"
+    },
+    {
+      "functionality": "hierarchy > functionalities > query",
+      "description": "Retrieve all functionalities at a specified hierarchy level",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "680-694"
+    },
+    {
+      "functionality": "hierarchy > functionalities > query",
+      "description": "Get top-level root functionalities (level 1)",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "695-702"
+    },
+    {
+      "functionality": "hierarchy > functionalities > similarity",
+      "description": "Find similar functionalities based on partial text similarity",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "703-718"
+    },
+    {
+      "functionality": "hierarchy > functionalities > stats",
+      "description": "Retrieve statistics and metadata for a given functionality path",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "746-757"
+    },
+    {
+      "functionality": "workspace > folders > access",
+      "description": "Safely obtain workspace folder filesystem paths as normalized strings",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "758-787"
+    },
+    {
+      "functionality": "settings > groupcode > types",
+      "description": "Interface defining persistent GroupCode settings used across workspace",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "804-818"
+    },
+    {
+      "functionality": "settings > groupcode > defaults",
+      "description": "Default GroupCode settings used when no saved settings exist",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "819-829"
+    },
+    {
+      "functionality": "settings > groupcode > management",
+      "description": "Load GroupCode settings from workspace .groupcode/settings.json",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "830-849"
+    },
+    {
+      "functionality": "settings > groupcode > management",
+      "description": "Save provided GroupCode settings to workspace .groupcode/settings.json",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "859-880"
+    },
+    {
+      "functionality": "settings > groupcode > convenience",
+      "description": "Retrieve preferred model ID from GroupCode settings",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "881-889"
+    },
+    {
+      "functionality": "settings > groupcode > convenience",
+      "description": "Update preferred model ID in settings and persist it",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "890-899"
+    },
+    {
+      "functionality": "userdata > treestate > persistence",
+      "description": "Save tree view expanded/collapsed state to user profile treestate.json",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "900-910"
+    },
+    {
+      "functionality": "userdata > treestate > persistence",
+      "description": "Load tree view expanded nodes from user profile, with default fallback",
+      "filePath": "src/utils/fileUtils.ts",
+      "lineNumbers": "921-944"
     }
-  ],
-  "svg": []
+  ]
 }

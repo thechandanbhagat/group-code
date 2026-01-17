@@ -7,7 +7,7 @@ export class SettingsViewProvider {
     private static _panel?: vscode.WebviewPanel;
     private static _cachedModels?: Array<{id: string, name: string, vendor: string}>;
     private static _modelsCacheTime?: number;
-    private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (changed from 5 minutes)
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -49,6 +49,9 @@ export class SettingsViewProvider {
                     break;
                 case 'loadSettings':
                     await provider.loadSettings(panel);
+                    break;
+                case 'refreshModels':
+                    await provider.refreshModels(panel);
                     break;
                 case 'openSettingsFile':
                     await provider.openSettingsFile();
@@ -98,14 +101,89 @@ export class SettingsViewProvider {
         }
     }
 
-    private async getAvailableModels(): Promise<Array<{id: string, name: string, vendor: string}>> {
-        // Check cache first
-        const now = Date.now();
-        if (SettingsViewProvider._cachedModels && 
-            SettingsViewProvider._modelsCacheTime && 
-            (now - SettingsViewProvider._modelsCacheTime) < SettingsViewProvider.CACHE_DURATION) {
-            logger.info('Using cached models');
-            return SettingsViewProvider._cachedModels;
+    private getModelsCachePath(): string | null {
+        try {
+            // Store cache globally in user's home directory
+            const homeDir = process.env.USERPROFILE || process.env.HOME;
+            if (!homeDir) {
+                logger.warn('Could not determine user home directory');
+                return null;
+            }
+            const groupCodeDir = path.join(homeDir, '.groupcode');
+            return path.join(groupCodeDir, 'models-cache.json');
+        } catch (error) {
+            logger.warn('Failed to get models cache path', error);
+            return null;
+        }
+    }
+
+    private loadModelsFromDisk(): Array<{id: string, name: string, vendor: string}> | null {
+        try {
+            const cachePath = this.getModelsCachePath();
+            if (!cachePath || !fs.existsSync(cachePath)) {
+                return null;
+            }
+
+            const cacheContent = fs.readFileSync(cachePath, 'utf8');
+            const cache = JSON.parse(cacheContent);
+
+            // Check if cache is still valid (24 hours)
+            const now = Date.now();
+            if (cache.timestamp && (now - cache.timestamp) < SettingsViewProvider.CACHE_DURATION) {
+                logger.info('Loaded models from disk cache');
+                return cache.models;
+            }
+
+            logger.info('Disk cache expired');
+            return null;
+        } catch (error) {
+            logger.warn('Failed to load models from disk cache', error);
+            return null;
+        }
+    }
+
+    private saveModelsToDisk(models: Array<{id: string, name: string, vendor: string}>): void {
+        try {
+            const cachePath = this.getModelsCachePath();
+            if (!cachePath) {
+                return;
+            }
+
+            const cacheDir = path.dirname(cachePath);
+            if (!fs.existsSync(cacheDir)) {
+                fs.mkdirSync(cacheDir, { recursive: true });
+            }
+
+            const cache = {
+                timestamp: Date.now(),
+                models: models
+            };
+
+            fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2), 'utf8');
+            logger.info('Saved models to disk cache');
+        } catch (error) {
+            logger.warn('Failed to save models to disk cache', error);
+        }
+    }
+
+    private async getAvailableModels(forceRefresh: boolean = false): Promise<Array<{id: string, name: string, vendor: string}>> {
+        // Check memory cache first
+        if (!forceRefresh) {
+            const now = Date.now();
+            if (SettingsViewProvider._cachedModels &&
+                SettingsViewProvider._modelsCacheTime &&
+                (now - SettingsViewProvider._modelsCacheTime) < SettingsViewProvider.CACHE_DURATION) {
+                logger.info('Using memory cached models');
+                return SettingsViewProvider._cachedModels;
+            }
+
+            // Check disk cache
+            const diskModels = this.loadModelsFromDisk();
+            if (diskModels && diskModels.length > 0) {
+                SettingsViewProvider._cachedModels = diskModels;
+                SettingsViewProvider._modelsCacheTime = now;
+                return diskModels;
+            }
         }
 
         try {
@@ -117,20 +195,43 @@ export class SettingsViewProvider {
                 name: model.name,
                 vendor: model.vendor
             }));
-            
-            // Cache the results
+
+            // Cache the results in memory and disk
             SettingsViewProvider._cachedModels = modelList;
-            SettingsViewProvider._modelsCacheTime = now;
-            
+            SettingsViewProvider._modelsCacheTime = Date.now();
+            this.saveModelsToDisk(modelList);
+
             logger.info('Models cached');
             return modelList;
         } catch (error) {
             logger.warn('Could not fetch language models, using defaults', error);
-            return [
+            const defaultModels = [
                 { id: 'copilot-gpt-4o', name: 'GPT-4o', vendor: 'Copilot' },
                 { id: 'copilot-gpt-4', name: 'GPT-4', vendor: 'Copilot' },
                 { id: 'copilot-gpt-3.5-turbo', name: 'GPT-3.5 Turbo', vendor: 'Copilot' }
             ];
+            // Also cache defaults
+            this.saveModelsToDisk(defaultModels);
+            return defaultModels;
+        }
+    }
+
+    private async refreshModels(panel: vscode.WebviewPanel, silent: boolean = false) {
+        try {
+            logger.info('Refreshing models...');
+            const models = await this.getAvailableModels(true); // Force refresh
+            panel.webview.postMessage({
+                type: 'modelsRefreshed',
+                models
+            });
+            if (!silent) {
+                vscode.window.showInformationMessage('Models refreshed successfully');
+            }
+        } catch (error) {
+            logger.error('Failed to refresh models', error);
+            if (!silent) {
+                vscode.window.showErrorMessage(`Failed to refresh models: ${error}`);
+            }
         }
     }
 
@@ -139,13 +240,16 @@ export class SettingsViewProvider {
             logger.info('Loading settings...');
             const workspaceFolders = vscode.workspace.workspaceFolders;
             const models = await this.getAvailableModels();
-            
+
+            // Check if cache is old (more than 12 hours) and trigger silent background refresh
+            this.checkAndRefreshModelsInBackground(panel);
+
             if (!workspaceFolders || workspaceFolders.length === 0) {
                 logger.info('No workspace folder, using defaults');
-                panel.webview.postMessage({ 
-                    type: 'settingsLoaded', 
+                panel.webview.postMessage({
+                    type: 'settingsLoaded',
                     settings: this.getDefaultSettings(),
-                    models 
+                    models
                 });
                 return;
             }
@@ -164,19 +268,47 @@ export class SettingsViewProvider {
             }
 
             logger.info('Sending message to webview with models:', models);
-            panel.webview.postMessage({ 
-                type: 'settingsLoaded', 
+            panel.webview.postMessage({
+                type: 'settingsLoaded',
                 settings,
-                models 
+                models
             });
         } catch (error) {
             logger.error('Failed to load settings', error);
             const models = await this.getAvailableModels();
-            panel.webview.postMessage({ 
-                type: 'settingsLoaded', 
+            panel.webview.postMessage({
+                type: 'settingsLoaded',
                 settings: this.getDefaultSettings(),
-                models 
+                models
             });
+        }
+    }
+
+    private checkAndRefreshModelsInBackground(panel: vscode.WebviewPanel): void {
+        try {
+            const cachePath = this.getModelsCachePath();
+            if (!cachePath || !fs.existsSync(cachePath)) {
+                // No cache exists, will be created on first fetch
+                return;
+            }
+
+            const cacheContent = fs.readFileSync(cachePath, 'utf8');
+            const cache = JSON.parse(cacheContent);
+
+            // If cache is older than 12 hours, refresh in background
+            const now = Date.now();
+            const cacheAge = now - (cache.timestamp || 0);
+            const BACKGROUND_REFRESH_THRESHOLD = 12 * 60 * 60 * 1000; // 12 hours
+
+            if (cacheAge > BACKGROUND_REFRESH_THRESHOLD) {
+                logger.info('Cache is old, triggering silent background refresh');
+                // Refresh in background without blocking or showing notifications
+                this.refreshModels(panel, true).catch(err => {
+                    logger.warn('Background refresh failed', err);
+                });
+            }
+        } catch (error) {
+            logger.warn('Failed to check cache age for background refresh', error);
         }
     }
 
@@ -412,11 +544,11 @@ export class SettingsViewProvider {
     
     <div class="setting-group">
         <div class="setting-item">
-            <label>Available AI Models</label>
+            <label>Available AI Models <button class="secondary" id="refreshModelsBtn" style="padding: 2px 8px; font-size: 11px; margin-left: 8px;">Refresh</button></label>
             <div id="modelsList" class="models-list">
                 <div class="loading">Loading available models...</div>
             </div>
-            <div class="description">Models available through GitHub Copilot</div>
+            <div class="description">Models available through GitHub Copilot (cached globally, auto-refreshes in background)</div>
         </div>
 
         <div class="setting-item">
@@ -489,7 +621,19 @@ export class SettingsViewProvider {
                     populateModelDropdown(message.models);
                 }
                 loadSettingsIntoForm(message.settings);
+            } else if (message.type === 'modelsRefreshed') {
+                if (message.models) {
+                    populateModelDropdown(message.models);
+                    updateSelectedModel();
+                }
             }
+        });
+
+        // Refresh models button click handler
+        document.getElementById('refreshModelsBtn').addEventListener('click', () => {
+            const listContainer = document.getElementById('modelsList');
+            listContainer.innerHTML = '<div class="loading">Refreshing models...</div>';
+            vscode.postMessage({ type: 'refreshModels' });
         });
 
         // Save button click handler
@@ -499,14 +643,7 @@ export class SettingsViewProvider {
                 autoScan: document.getElementById('autoScan').checked,
                 showNotifications: document.getElementById('showNotifications').checked,
                 autoRefreshOnSave: document.getElementById('autoRefreshOnSave').checked,
-           
-
-        // Clear all groups button click handler
-        document.getElementById('clearAllBtn').addEventListener('click', () => {
-            if (confirm('Are you sure you want to remove ALL @group comments from your entire workspace? This action cannot be undone.')) {
-                vscode.postMessage({ type: 'clearAllGroups' });
-            }
-        });     enableHierarchicalGrouping: document.getElementById('enableHierarchicalGrouping').checked,
+                enableHierarchicalGrouping: document.getElementById('enableHierarchicalGrouping').checked,
                 maxSearchResults: parseInt(document.getElementById('maxSearchResults').value)
             };
             vscode.postMessage({ type: 'saveSettings', settings });
@@ -515,6 +652,13 @@ export class SettingsViewProvider {
         // Open file button click handler
         document.getElementById('openFileBtn').addEventListener('click', () => {
             vscode.postMessage({ type: 'openSettingsFile' });
+        });
+
+        // Clear all groups button click handler
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to remove ALL @group comments from your entire workspace? This action cannot be undone.')) {
+                vscode.postMessage({ type: 'clearAllGroups' });
+            }
         });
 
         function populateModelDropdown(models) {

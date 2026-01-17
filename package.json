@@ -210,6 +210,37 @@
     "enabledApiProposals": [
       "languageModels"
     ],
+    "grammars": [
+      {
+        "scopeName": "groupcode.injection",
+        "path": "./syntaxes/groupcode.tmLanguage.json",
+        "injectTo": [
+          "source.ts",
+          "source.js",
+          "source.jsx",
+          "source.tsx",
+          "source.python",
+          "source.java",
+          "source.cs",
+          "source.cpp",
+          "source.c",
+          "source.go",
+          "source.rust",
+          "source.ruby",
+          "source.php",
+          "source.swift",
+          "source.kotlin",
+          "source.dart",
+          "source.scala",
+          "text.html.basic",
+          "source.css",
+          "source.scss",
+          "source.less",
+          "source.yaml",
+          "source.json"
+        ]
+      }
+    ],
     "keybindings": [
       {
         "command": "groupCode.showGroups",

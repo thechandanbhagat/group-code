@@ -1,0 +1,33 @@
+{
+  "scopeName": "groupcode.injection",
+  "injectionSelector": "L:comment",
+  "patterns": [
+    {
+      "name": "meta.groupcode.comment",
+      "match": "(@group)\\s+([^:]+):\\s*(.*?)\\s*$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.groupcode storage.type.annotation.groupcode"
+        },
+        "2": {
+          "name": "entity.name.type.groupcode string.quoted.groupcode"
+        },
+        "3": {
+          "name": "comment.line.groupcode.description"
+        }
+      }
+    },
+    {
+      "name": "meta.groupcode.comment.simple",
+      "match": "(@group)\\s+([^\\s:]+)",
+      "captures": {
+        "1": {
+          "name": "keyword.control.groupcode storage.type.annotation.groupcode"
+        },
+        "2": {
+          "name": "entity.name.type.groupcode string.quoted.groupcode"
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvider';
+import { CodeGroup } from './groupDefinition';
 import { GroupCompletionProvider } from './utils/completionProvider';
 import { RatingPromptManager } from './utils/ratingPrompt';
 import { copilotIntegration } from './utils/copilotIntegration';
@@ -1002,6 +1003,164 @@ export function activate(context: vscode.ExtensionContext) {
             const isFav = codeGroupProvider.isFavorite(item.functionality);
             const status = isFav ? 'added to' : 'removed from';
             vscode.window.showInformationMessage(`"${item.functionality}" ${status} favorites`);
+        }),
+
+        // Rename group command
+        vscode.commands.registerCommand('groupCode.renameGroup', async (item: CodeGroupTreeItem) => {
+            logger.info('Executing command: renameGroup');
+
+            // If no item provided (e.g., called via F2), get the selected item from the tree view
+            if (!item) {
+                const selectedItems = treeView.selection.length > 0 
+                    ? treeView.selection 
+                    : explorerTreeView.selection;
+                
+                if (selectedItems.length === 0) {
+                    vscode.window.showWarningMessage('Please select a group to rename.');
+                    return;
+                }
+                
+                item = selectedItems[0];
+            }
+
+            if (!item || !item.functionality) {
+                vscode.window.showWarningMessage('Please select a group in the tree view to rename it.');
+                return;
+            }
+
+            const oldName = item.functionality;
+
+            // Prompt for new name
+            const newName = await vscode.window.showInputBox({
+                prompt: 'Enter new name for the code group',
+                value: oldName,
+                placeHolder: 'e.g., Authentication > Login',
+                validateInput: (value) => {
+                    if (!value || value.trim().length === 0) {
+                        return 'Group name cannot be empty';
+                    }
+                    if (value === oldName) {
+                        return 'New name must be different from the old name';
+                    }
+                    return null;
+                }
+            });
+
+            if (!newName || newName === oldName) {
+                return;
+            }
+
+            // Show progress notification
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: `Renaming "${oldName}" to "${newName}"...`,
+                cancellable: false
+            }, async (progress) => {
+                try {
+                    // Get all groups with the old name
+                    const allGroups = codeGroupProvider.getAllGroups();
+                    const groupsToRename = allGroups.filter(g => g.functionality === oldName);
+
+                    if (groupsToRename.length === 0) {
+                        vscode.window.showWarningMessage(`No groups found with name "${oldName}"`);
+                        return;
+                    }
+
+                    progress.report({ message: `Found ${groupsToRename.length} occurrence(s)` });
+
+                    // Group by file
+                    const fileGroups = new Map<string, CodeGroup[]>();
+                    for (const group of groupsToRename) {
+                        const filePath = group.filePath;
+                        if (!fileGroups.has(filePath)) {
+                            fileGroups.set(filePath, []);
+                        }
+                        fileGroups.get(filePath)!.push(group);
+                    }
+
+                    let filesUpdated = 0;
+                    const totalFiles = fileGroups.size;
+
+                    // Update each file
+                    for (const [filePath, groups] of fileGroups) {
+                        try {
+                            const uri = vscode.Uri.file(filePath);
+                            const document = await vscode.workspace.openTextDocument(uri);
+                            const edit = new vscode.WorkspaceEdit();
+
+                            // Sort groups by first line number in descending order to avoid offset issues
+                            const sortedGroups = groups.sort((a, b) => {
+                                const aLine = a.lineNumbers[0] || 0;
+                                const bLine = b.lineNumbers[0] || 0;
+                                return bLine - aLine;
+                            });
+
+                            for (const group of sortedGroups) {
+                                // The @group comment should be on or before the first line
+                                const firstLine = group.lineNumbers[0] || 0;
+                                
+                                // Search backwards from the first line to find the @group comment
+                                for (let lineNum = firstLine; lineNum >= Math.max(0, firstLine - 10); lineNum--) {
+                                    const line = document.lineAt(lineNum);
+                                    const lineText = line.text;
+
+                                    // Find the @group comment - match until : or end of line (case-insensitive)
+                                    const groupRegex = /@group\s+(.+?)(?:\s*:\s*|$)/i;
+                                    const match = lineText.match(groupRegex);
+
+                                    if (match && match[1].trim().toLowerCase() === oldName.toLowerCase()) {
+                                        // Find the exact position of the group name
+                                        const groupIndex = lineText.toLowerCase().indexOf('@group');
+                                        const afterGroup = lineText.substring(groupIndex + '@group'.length);
+                                        const nameMatch = afterGroup.match(/^\s*(.+?)(?:\s*:\s*|$)/);
+                                        
+                                        if (nameMatch) {
+                                            const whitespaceLength = nameMatch[0].length - nameMatch[0].trimStart().length;
+                                            const actualNameStart = groupIndex + '@group'.length + whitespaceLength;
+                                            const actualNameEnd = actualNameStart + nameMatch[1].trim().length;
+                                            
+                                            const startPos = line.range.start.translate(0, actualNameStart);
+                                            const endPos = line.range.start.translate(0, actualNameEnd);
+                                            edit.replace(uri, new vscode.Range(startPos, endPos), newName);
+                                            break; // Found the comment for this group
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Apply the edits
+                            const success = await vscode.workspace.applyEdit(edit);
+                            if (success) {
+                                await document.save();
+                                filesUpdated++;
+                                progress.report({
+                                    message: `Updated ${filesUpdated}/${totalFiles} files`,
+                                    increment: (100 / totalFiles)
+                                });
+                            }
+                        } catch (error) {
+                            logger.error(`Error updating file ${filePath}`, error);
+                        }
+                    }
+
+                    // Refresh the provider to rescan all files
+                    progress.report({ message: 'Rescanning workspace...' });
+                    await codeGroupProvider.processWorkspace();
+
+                    // Update favorites if the old name was a favorite
+                    if (codeGroupProvider.isFavorite(oldName)) {
+                        await codeGroupProvider.toggleFavorite(oldName); // Remove old
+                        await codeGroupProvider.toggleFavorite(newName); // Add new
+                    }
+
+                    vscode.window.showInformationMessage(
+                        `Successfully renamed "${oldName}" to "${newName}" in ${filesUpdated} file(s)`
+                    );
+                } catch (error) {
+                    logger.error('Error renaming group', error);
+                    vscode.window.showErrorMessage(`Failed to rename group: ${error}`);
+                }
+            });
         }),
 
         // Set preferred AI model command

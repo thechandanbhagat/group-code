@@ -5,6 +5,62 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-01-17
+
+### Added
+- **AI Model Management**
+  - Extended model cache duration from 5 minutes to 24 hours
+  - Implemented persistent disk cache for AI models at `~/.groupcode/models-cache.json`
+  - Models cached globally in user's home directory, survives VS Code restarts
+  - Automatic background refresh when cache exceeds 12 hours
+  - Manual refresh button in Settings UI for on-demand model updates
+  - Silent refresh does not block UI or interrupt workflow
+- **Development Configuration**
+  - Added `.vscodeignore` file to exclude unnecessary files from extension package
+  - Excludes source files, tests, and large demo GIFs to reduce package size
+  - Added `.vscode/settings.json` for terminal auto-approval
+  - Updated `.claude/settings.local.json` with additional build commands
+
+### Changed
+- Demo GIF references in README now use GitHub raw URLs for marketplace compatibility
+- Improved settings panel load times with cached models
+- Better offline experience with persistent cache
+
+### Fixed
+- Fixed malformed HTML in settings webview
+- Corrected JavaScript event listener placement for clear all groups button
+- Improved error handling for cache operations
+- Better fallback mechanisms for missing or corrupt cache files
+
+### Improved
+- Reduced network requests for model fetching
+- Better logging for cache operations
+- Graceful fallback to default models if fetch fails
+
+## [1.5.1] - 2026-01-15
+
+### Added
+- **Package & Distribution**
+  - Added browser field to support web-based VS Code environments
+  - Added extensionKind configuration (UI and workspace modes)
+  - Better compatibility across VS Code Desktop, Web, and Remote scenarios
+- **Documentation**
+  - Added comprehensive CHANGELOG.md tracking version history from v1.0.0
+  - Follows Keep a Changelog format and Semantic Versioning guidelines
+  - Added visual demos with GIF animations for navigation and Copilot generation
+  - Added `resources/groupcode.gif` (navigation demo)
+  - Added `resources/groupcode1.gif` (Copilot generation demo)
+- **Code Quality & Maintainability**
+  - Added 260 new @group annotations across entire codebase
+  - All major modules now have hierarchical functionality tags
+  - Updated functionalities.json to track 260 total functionalities
+  - Complete hierarchical structure with parent-child relationships
+  - Detailed metadata including hierarchy levels (1-3 deep), group counts, and file type associations
+
+### Changed
+- Simplified README changelog section to reference CHANGELOG.md
+- Improved documentation structure and readability
+
 ## [1.5.0] - 2026-01-11
 
 ### Added

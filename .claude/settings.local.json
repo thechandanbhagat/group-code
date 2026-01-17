@@ -4,7 +4,8 @@
       "Bash(npm run build:*)",
       "Bash(claude --version:*)",
       "Bash(npm run compile:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(code:*)"
     ]
   }
 }

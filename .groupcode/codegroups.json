@@ -1056,5 +1056,37 @@
       "filePath": "src/extension.ts",
       "lineNumbers": "1107-1111"
     }
+  ],
+  "js": [
+    {
+      "functionality": "extension > core > initialization",
+      "description": "Main extension activation and setup logic",
+      "filePath": "test-groupcode-colors.js",
+      "lineNumbers": "3-7"
+    },
+    {
+      "functionality": "utils > helpers > string",
+      "description": "String manipulation utilities",
+      "filePath": "test-groupcode-colors.js",
+      "lineNumbers": "8-12"
+    },
+    {
+      "functionality": "ui > components > button",
+      "description": "Interactive button component with event handlers",
+      "filePath": "test-groupcode-colors.js",
+      "lineNumbers": "15-17"
+    },
+    {
+      "functionality": "ui > components > button > events",
+      "description": "Click event handler logic",
+      "filePath": "test-groupcode-colors.js",
+      "lineNumbers": "21-24"
+    },
+    {
+      "functionality": "api > services > auth",
+      "description": "Authentication service with token management",
+      "filePath": "test-groupcode-colors.js",
+      "lineNumbers": "30-32"
+    }
   ]
 }

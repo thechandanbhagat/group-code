@@ -1,6 +1,6 @@
 {
   "version": "1.3.0",
-  "totalFunctionalities": 261,
+  "totalFunctionalities": 272,
   "functionalities": {
     "${groupname}${description ? '": {
       "level": 1,
@@ -146,6 +146,7 @@
       "level": 1,
       "parent": null,
       "children": [
+        "ui > components",
         "ui > favorites",
         "ui > navigation",
         "ui > prompts",
@@ -933,6 +934,7 @@
       "level": 1,
       "parent": null,
       "children": [
+        "extension > core",
         "extension > prompts"
       ],
       "groupCount": 0,
@@ -2478,6 +2480,107 @@
       "fileTypes": [
         "ts"
       ]
+    },
+    "extension > core > initialization": {
+      "level": 3,
+      "parent": "extension > core",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "js"
+      ]
+    },
+    "extension > core": {
+      "level": 2,
+      "parent": "extension",
+      "children": [
+        "extension > core > initialization"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utils > helpers > string": {
+      "level": 3,
+      "parent": "utils > helpers",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "js"
+      ]
+    },
+    "utils": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "utils > helpers"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "utils > helpers": {
+      "level": 2,
+      "parent": "utils",
+      "children": [
+        "utils > helpers > string"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ui > components > button": {
+      "level": 3,
+      "parent": "ui > components",
+      "children": [
+        "ui > components > button > events"
+      ],
+      "groupCount": 1,
+      "fileTypes": [
+        "js"
+      ]
+    },
+    "ui > components": {
+      "level": 2,
+      "parent": "ui",
+      "children": [
+        "ui > components > button"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "ui > components > button > events": {
+      "level": 4,
+      "parent": "ui > components > button",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "js"
+      ]
+    },
+    "api > services > auth": {
+      "level": 3,
+      "parent": "api > services",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "js"
+      ]
+    },
+    "api": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "api > services"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "api > services": {
+      "level": 2,
+      "parent": "api",
+      "children": [
+        "api > services > auth"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
     }
   }
 }

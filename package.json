@@ -149,6 +149,12 @@
         "title": "Toggle Favorite",
         "category": "Group Code",
         "icon": "$(star)"
+      },
+      {
+        "command": "groupCode.renameGroup",
+        "title": "Rename Group",
+        "category": "Group Code",
+        "icon": "$(edit)"
       }
     ],
     "chatParticipants": [
@@ -215,6 +221,11 @@
         "key": "ctrl+alt+k",
         "mac": "cmd+alt+k",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "groupCode.renameGroup",
+        "key": "f2",
+        "when": "focusedView == groupCodeExplorer || focusedView == groupCodeExplorerView"
       }
     ],
     "menus": {
@@ -257,6 +268,16 @@
           "command": "groupCode.toggleFavorite",
           "when": "view == groupCodeExplorer && viewItem == hierarchyNodeFavorite || view == groupCodeExplorerView && viewItem == hierarchyNodeFavorite",
           "group": "favorites@1"
+        },
+        {
+          "command": "groupCode.renameGroup",
+          "when": "view == groupCodeExplorer && viewItem == hierarchyNode || view == groupCodeExplorerView && viewItem == hierarchyNode",
+          "group": "edit@1"
+        },
+        {
+          "command": "groupCode.renameGroup",
+          "when": "view == groupCodeExplorer && viewItem == hierarchyNodeFavorite || view == groupCodeExplorerView && viewItem == hierarchyNodeFavorite",
+          "group": "edit@1"
         }
       ],
       "view/title": [

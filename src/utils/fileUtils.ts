@@ -1,3 +1,12 @@
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
+import { CodeGroup } from '../groupDefinition';
+import { enrichWithHierarchy } from './hierarchyUtils';
+import { logger } from './logger';
+
 // @group FileSystem > Preferences > Paths: Get user preferences directory path in user profile for GroupCode across platforms
 /**
  * Get the user preferences directory for GroupCode

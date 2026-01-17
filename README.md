@@ -1,10 +1,10 @@
 # Group Code for VS Code
 
 Group Code Navigation    
-![Group Code Demo](resources/groupcode.gif)   
+![Group Code Demo](https://raw.githubusercontent.com/thechandanbhagat/group-code/refs/heads/main/resources/groupcode.gif)   
 
 Generate Groups from github copilot   
-![Group Code Demo](resources/groupcode1.gif)   
+![Group Code Demo](https://raw.githubusercontent.com/thechandanbhagat/group-code/refs/heads/main/resources/groupcode.gif)   
 
 This Visual Studio Code extension helps you navigate and organize your codebase based on functionality rather than just files. Using special comments to tag related code sections across multiple files and languages, it creates a unified view that makes it easier to understand and work with your project's different functional components.
 

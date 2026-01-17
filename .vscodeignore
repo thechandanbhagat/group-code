@@ -1,0 +1,45 @@
+# Git files
+.git/**
+.gitignore
+.gitattributes
+.gitmodules
+
+# Build files
+.vscode/**
+.vscode-test/**
+src/**
+tsconfig.json
+out/**/*.map
+
+# Documentation and development files
+exclude/**
+excluded/**
+tmpclaude-*
+
+# IDE settings
+.idea/**
+*.swp
+*.swo
+*~
+
+# Node modules (if any)
+node_modules/**
+.npm/**
+
+# Testing
+.vscode-test-web/**
+test/**
+*.test.ts
+*.spec.ts
+
+# Misc
+.DS_Store
+*.log
+.eslintrc.json
+.prettierrc
+
+# exclude groupcode.gif and groupcode1.gif file
+resources/groupcode.gif
+resources/groupcode1.gif
+
+.groupcode/*

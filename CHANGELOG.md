@@ -5,6 +5,25 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-01-19
+
+### Added
+- **Rename Code Groups Feature**
+  - Rename existing code groups directly from the tree view
+  - Keyboard shortcut: Press **F2** when focused on a group
+  - Context menu option: Right-click any group and select "Rename Group"
+  - Input validation to prevent duplicate or invalid group names
+  - Progress notifications during rename operations
+  - Automatically updates all occurrences across the codebase
+- **Syntax Highlighting Improvements**
+  - Enhanced syntax highlighting for @group comments across all supported languages
+  - Better grammar support in tmLanguage configuration
+  - Improved visual distinction for code group annotations
+
+### Changed
+- Updated grammar support for multiple programming languages in syntax configuration
+- Enhanced internal code groups tracking for better organization
+
 ## [1.6.0] - 2026-01-17
 
 ### Added

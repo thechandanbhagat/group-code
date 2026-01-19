@@ -10,6 +10,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 ## Features
 
+- **Rename Code Groups**: Rename groups directly from the tree view with F2 keyboard shortcut
 - **Favorites System**: Mark important code groups as favorites with star icons for quick access
 - **User Profile Storage**: Personal preferences stored per-user in OS profile, preventing Git conflicts
 - **Tree State Persistence**: Tree expansion/collapse state automatically saved and restored
@@ -28,6 +29,25 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Inline Documentation**: See where each code group is used while typing
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
+
+## What's New in Version 1.6.1
+
+### Rename Code Groups
+Easily rename your code groups to better reflect their purpose!
+
+- **Keyboard Shortcut**: Press **F2** when a group is selected in the tree view
+- **Context Menu**: Right-click any group and select "Rename Group"
+- **Smart Validation**: Prevents duplicate names and validates input
+- **Automatic Updates**: Renames all occurrences across your entire codebase
+- **Progress Feedback**: Visual notifications show rename progress
+- **Undo Support**: Standard VS Code undo functionality works with renames
+
+### Enhanced Syntax Highlighting
+Improved visual appearance for @group comments!
+
+- **Better Grammar Support**: Enhanced tmLanguage configuration for clearer syntax highlighting
+- **Multi-Language Support**: Consistent highlighting across 40+ programming languages
+- **Improved Readability**: Better visual distinction for code group annotations in your editor
 
 ## What's New in Version 1.5.0
 

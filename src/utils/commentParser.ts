@@ -208,6 +208,8 @@ function getLanguageInfoForDocument(document: vscode.TextDocument): LanguageInfo
     
     const config = loadLanguageConfig();
     
+    logger.debug(`Getting language info for document: languageId="${languageId}", fileType="${fileType}", path="${filePath}"`);
+    
     // First try exact language ID match
     let langInfo = config.languages.find(lang => 
         lang.fileTypes.some(type => type.toLowerCase() === languageId.toLowerCase())
@@ -220,9 +222,39 @@ function getLanguageInfoForDocument(document: vscode.TextDocument): LanguageInfo
         );
     }
     
-    // Use default if nothing found
+    // If still not found, return a basic config based on common patterns
     if (!langInfo) {
+        logger.warn(`No language configuration found for languageId="${languageId}", fileType="${fileType}". Using heuristic fallback.`);
+        
+        // Smart fallback based on file extension or language ID
+        const lowerLangId = languageId.toLowerCase();
+        const lowerFileType = fileType ? fileType.toLowerCase() : '';
+        
+        // Shell script family
+        if (lowerLangId.includes('shell') || lowerLangId === 'sh' || lowerLangId === 'bash' || 
+            lowerFileType === 'sh' || lowerFileType === 'bash') {
+            return {
+                name: "Shell Script (fallback)",
+                fileTypes: [languageId, fileType || ''].filter(x => x),
+                commentMarkers: { line: "#" }
+            };
+        }
+        
+        // Python
+        if (lowerLangId === 'python' || lowerFileType === 'py') {
+            return {
+                name: "Python (fallback)",
+                fileTypes: [languageId],
+                commentMarkers: { line: "#" }
+            };
+        }
+        
+        // Default to JavaScript/TypeScript for unknown languages
         langInfo = config.languages.find(lang => lang.name === "JavaScript/TypeScript");
+    }
+    
+    if (langInfo) {
+        logger.debug(`Using language config: ${langInfo.name}, comment marker: ${langInfo.commentMarkers.line || langInfo.commentMarkers.blockStart}`);
     }
     
     return langInfo;

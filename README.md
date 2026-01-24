@@ -30,24 +30,35 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
-## What's New in Version 1.6.1
+## What's New in Version 1.6.3
 
-### Rename Code Groups
-Easily rename your code groups to better reflect their purpose!
+### Shell Script Comment Support
+Fixed comment detection for shell scripts and other hash-comment languages!
 
-- **Keyboard Shortcut**: Press **F2** when a group is selected in the tree view
-- **Context Menu**: Right-click any group and select "Rename Group"
-- **Smart Validation**: Prevents duplicate names and validates input
-- **Automatic Updates**: Renames all occurrences across your entire codebase
-- **Progress Feedback**: Visual notifications show rename progress
-- **Undo Support**: Standard VS Code undo functionality works with renames
+- **Proper Shell Detection**: Shell scripts (.sh files) now correctly use `#` comments instead of `//`
+- **Smart Fallback Logic**: Improved language detection with intelligent fallbacks for unrecognized file types
+- **Better Heuristics**: Enhanced detection for shell, bash, Python, and other hash-comment languages
+- **Comprehensive Fix**: Works across all extension features, not just AI generation
+- **Debug Logging**: Added detailed logging to help diagnose language detection issues
 
-### Enhanced Syntax Highlighting
-Improved visual appearance for @group comments!
+### Previous Updates (Version 1.6.0 - 1.6.2)
 
-- **Better Grammar Support**: Enhanced tmLanguage configuration for clearer syntax highlighting
-- **Multi-Language Support**: Consistent highlighting across 40+ programming languages
-- **Improved Readability**: Better visual distinction for code group annotations in your editor
+#### Rename Code Groups (v1.6.1)
+- Keyboard shortcut: Press **F2** to rename groups in tree view
+- Context menu support for renaming
+- Automatic updates across entire codebase
+- Input validation and progress feedback
+
+#### Enhanced Syntax Highlighting (v1.6.1)
+- Improved visual appearance for @group comments
+- Better grammar support across 40+ languages
+- Enhanced tmLanguage configuration
+
+#### AI Model Management (v1.6.0)
+- Extended model cache duration to 24 hours
+- Persistent disk cache for AI models
+- Manual refresh button in Settings UI
+- Background refresh without blocking UI
 
 ## What's New in Version 1.5.0
 
@@ -80,71 +91,27 @@ The tree view now remembers which nodes you've expanded or collapsed!
 - **Auto-Save**: Changes are automatically saved (debounced to reduce I/O)
 - **Better User Experience**: No more re-expanding nodes after restarting VS Code
 
-### Previous Updates (Version 1.4.3)
+## Core Features
 
-#### Bug Fixes
-- **Fixed Model Loading Issue**: Resolved infinite loading when fetching available AI models in settings panel
-- **Improved API Stability**: Removed problematic parameters that caused model selection to hang
+### Hierarchical Grouping & Organization
+- Multi-level nested group hierarchies using `>` separator (e.g., `@group Auth > Login > Validation`)
+- Smart tree view with collapsible nodes, folder icons, and group counts
+- Hierarchy autocomplete with intelligent path suggestions
+- Real-time sidebar refresh when editing @group comments
+- Breadcrumb navigation in chat responses
 
-### Previous Updates (Version 1.4.0 - 1.4.1)
+### AI-Powered Code Organization
+- Automatic code group generation using GitHub Copilot integration
+- Workspace-wide or single-file processing
+- Smart format detection and correction
+- Semantic similarity detection for consistent naming
+- Duplicate detection with consolidation suggestions
 
-#### Settings UI Panel
-- Visual settings editor with intuitive controls
-- Quick access via toolbar settings icon
-- Real-time configuration updates
-- Direct `.groupcode/settings.json` editing option
-
-#### Improved .gitignore Support
-- Full .gitignore pattern conversion to VS Code globs
-- Proper directory exclusion (`.venv`, `node_modules`, `__pycache__`)
-- Correct file pattern handling (`*.pyc`, `*.log`)
-
-#### Model Selection & Configuration
-- Use your preferred AI model from Copilot Chat
-- Configurable model settings in `.groupcode/settings.json`
-- New command: `Group Code: Set Preferred AI Model`
-
-#### Enhanced User Experience
-- Clickable group references in chat output
-- Jump to location with single click
-- Centralized file extension support
-- Removed markdown file support for cleaner code-only organization
-
-## What's New in Version 1.3.0
-
-### Hierarchical Grouping
-
-- **Multi-level Organization**: Create nested group hierarchies using `>` separator (e.g., `@group Auth > Login > Validation`)
-- **Flexible Depth**: Support for unlimited nesting levels
-- **Smart Tree View**: Hierarchies displayed with folder icons, collapsible nodes, and group counts
-- **Breadcrumb Navigation**: Chat responses show hierarchy breadcrumbs for easy navigation
-- **Hierarchy Autocomplete**: Intelligent suggestions for existing hierarchy paths when typing
-
-### Live Updates & Enhanced Scanning
-
-- **Real-time Sidebar Refresh**: Tree view updates automatically when you add or edit @group comments - no manual refresh needed
-- **Scan Current File**: Use `@groupcode /scan` to scan only the current file
-- **Scan Workspace**: Use `@groupcode /scan workspace` to scan the entire project
-
-### Two-Mode Generation
-
-- **Safe Mode**: Only adds missing @group comments, preserving existing ones
+### Scanning & Generation Modes
+- **Safe Mode**: Preserves existing groups, adds only missing ones
 - **Update Mode**: Regenerates all groups with confirmation prompt
-- **Smart Confirmation**: Prompts before overwriting to prevent accidental changes
-
-### Improved Duplicate Detection
-
-- **Enhanced Similarity Detection**: Catches similar group names like "user validation" vs "validate user"
-- **Word Order Variations**: Detects reordered words in group names
-- **Consolidation Suggestions**: Recommends merging similar groups for consistency
-
-### AI-Powered Features
-
-- **Automatic Code Group Generation**: Use AI to automatically analyze your code and generate appropriate @group comments
-- **GitHub Copilot Chat Integration**: Interact with your code groups using natural language through @groupcode chat participant
-- **Workspace-Wide Generation**: Process entire workspaces or individual files with a single command
-- **Smart Format Detection**: Automatically detects and fixes incorrect group comment formats
-- **Semantic Duplicate Detection**: AI-powered detection of semantically similar group names to maintain naming consistency
+- **Smart Scanning**: Scan current file (`@groupcode /scan`) or entire workspace (`@groupcode /scan workspace`)
+- **Git-Aware**: Respects .gitignore patterns and common ignore rules
 
 ### Chat Participant Commands
 

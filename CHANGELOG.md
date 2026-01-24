@@ -5,6 +5,16 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-01-24
+
+### Fixed
+- **Comment Detection for Shell Scripts**
+  - Fixed general Group Code operations to use `#` comments for shell scripts instead of defaulting to `//`
+  - Improved fallback logic in comment parser to detect shell script file types correctly
+  - Added smart heuristic detection for shell, bash, and other hash-comment languages
+  - Enhanced debug logging to track language detection issues
+  - Now properly handles .sh files throughout the extension, not just in AI generation
+
 ## [1.6.2] - 2026-01-24
 
 ### Fixed

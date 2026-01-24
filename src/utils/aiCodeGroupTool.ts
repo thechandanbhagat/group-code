@@ -361,6 +361,9 @@ Return the code with HIERARCHICAL @group comments (use > for hierarchy, : before
      * Get comment style for language
      */
     private getCommentStyle(language: string): string {
+        // Log for debugging
+        logger.debug(`Getting comment style for language: "${language}"`);
+        
         const styles: { [key: string]: string } = {
             'javascript': '//',
             'typescript': '//',
@@ -388,7 +391,11 @@ Return the code with HIERARCHICAL @group comments (use > for hierarchy, : before
             'css': '/*',
             'sql': '--'
         };
-        return styles[language.toLowerCase()] || '//';
+        
+        const commentStyle = styles[language.toLowerCase()] || '//';
+        logger.debug(`Comment style for "${language}": "${commentStyle}"`);
+        
+        return commentStyle;
     }
 
     /**

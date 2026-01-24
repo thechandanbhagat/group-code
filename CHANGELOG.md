@@ -1,4 +1,18 @@
-# Changelog
+## Version 1.6.3 - Shell Script Comment Detection Fix & Package Optimization
+
+### Fixed
+- **Comment Detection for Shell Scripts**
+  - Fixed general Group Code operations to use `#` comments for shell scripts instead of defaulting to `//`
+  - Improved fallback logic in comment parser to detect shell script file types correctly
+  - Added smart heuristic detection for shell, bash, and other hash-comment languages
+  - Enhanced debug logging to track language detection issues
+  - Now properly handles .sh files throughout the extension, not just in AI generation
+
+### Improved
+- **Extension Package Size**
+  - Optimized icon file: Reduced from 1.35 MB to 5.54 KB (99.6% reduction)
+  - Total package size reduced from 1.45 MB to 113.98 KB (92% smaller)
+  - Faster installation and updates# Changelog
 
 All notable changes to the "Group Code" extension will be documented in this file.
 

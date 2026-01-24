@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced debug logging to track language detection issues
   - Now properly handles .sh files throughout the extension, not just in AI generation
 
+### Improved
+- **Extension Package Size**
+  - Optimized icon file: Reduced from 1.35 MB to 5.54 KB (99.6% reduction)
+  - Total package size reduced from 1.45 MB to 113.98 KB (92% smaller)
+  - Faster installation and updates
+
 ## [1.6.2] - 2026-01-24
 
 ### Fixed

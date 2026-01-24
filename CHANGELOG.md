@@ -19,6 +19,32 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-01-24
+
+### Added
+- **File-Based View ("By File")**
+  - New tree view that organizes code groups by file location
+  - Shows all files containing groups at the top level
+  - Groups nested under their respective files, sorted by line number
+  - Quick navigation by clicking on files or groups
+  - Provides an alternative view to the hierarchical organization
+  - Collapsed by default to keep the UI clean
+
+- **Enhanced Filter UI**
+  - Filter buttons added to both "Group Code" and "By File" view title bars
+  - Search icon button to open filter input
+  - Clear filter icon button for quick filter removal
+  - Real-time filter status displayed in view message (e.g., "Filtered: auth")
+  - Synchronized filtering across all views
+  - Type-to-filter functionality continues to work in all views
+
+### Improved
+- **View Organization**
+  - "Group Code" view now visible/expanded by default
+  - "By File" view collapsed by default for cleaner interface
+  - Better visual hierarchy with clear filter indicators
+  - Workspace-relative file paths for better readability
+
 ## [1.6.3] - 2026-01-24
 
 ### Fixed

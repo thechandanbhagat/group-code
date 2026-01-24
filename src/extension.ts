@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvider';
+import { FileGroupTreeProvider } from './fileGroupTreeProvider';
 import { CodeGroup } from './groupDefinition';
 import { GroupCompletionProvider } from './utils/completionProvider';
 import { RatingPromptManager } from './utils/ratingPrompt';
@@ -42,12 +43,17 @@ export function activate(context: vscode.ExtensionContext) {
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider);
     logger.info('Tree data provider created');
 
+    // Create the file-based tree data provider
+    const fileGroupTreeProvider = new FileGroupTreeProvider(codeGroupProvider);
+    logger.info('File-based tree data provider created');
+
     // Subscribe to code group updates to auto-refresh the tree view
     // IMPORTANT: Register this event listener BEFORE loading groups
     context.subscriptions.push(
         codeGroupProvider.onDidUpdateGroups(() => {
             logger.info('Code groups updated, refreshing tree view...');
             codeGroupTreeProvider.refresh();
+            fileGroupTreeProvider.refresh();
         })
     );
     
@@ -64,6 +70,16 @@ export function activate(context: vscode.ExtensionContext) {
     const explorerTreeView = vscode.window.createTreeView('groupCodeExplorerView', viewOptions);
     codeGroupTreeProvider.setTreeView(explorerTreeView, 'groupCodeExplorerView');
     logger.info('Created tree view for groupCodeExplorerView');
+
+    // Create the file-based tree view
+    const fileViewOptions = {
+        treeDataProvider: fileGroupTreeProvider,
+        showCollapseAll: true
+    };
+    
+    const fileTreeView = vscode.window.createTreeView('groupCodeFileView', fileViewOptions);
+    fileGroupTreeProvider.setTreeView(fileTreeView);
+    logger.info('Created tree view for groupCodeFileView');
 
     // Initialize GitHub Copilot Chat Participant
     try {
@@ -99,11 +115,26 @@ export function activate(context: vscode.ExtensionContext) {
                 // Force refresh when tree becomes visible
                 codeGroupTreeProvider.refresh();
             }
+        }),
+        fileTreeView.onDidChangeVisibility(e => {
+            logger.debug(`File tree view visibility changed to: ${e.visible}`);
+            if (e.visible) {
+                // Force refresh when tree becomes visible
+                fileGroupTreeProvider.refresh();
+            }
         })
     );    // Register the filter command to show a search box
     context.subscriptions.push(
         vscode.commands.registerCommand('groupCode.filterGroups', async () => {
-            const currentSearch = codeGroupTreeProvider.getCurrentSearch();
+            // Determine which view is currently active
+            const activeView = treeView.visible ? 'hierarchy' : 
+                               explorerTreeView.visible ? 'hierarchy' : 
+                               fileTreeView.visible ? 'file' : 'hierarchy';
+            
+            const currentSearch = activeView === 'file' 
+                ? fileGroupTreeProvider.getCurrentSearch()
+                : codeGroupTreeProvider.getCurrentSearch();
+            
             const query = await vscode.window.showInputBox({
                 placeHolder: 'Search code groups...',
                 prompt: 'Type to filter groups by name, file type, or description',
@@ -111,7 +142,9 @@ export function activate(context: vscode.ExtensionContext) {
             });
             
             if (query !== undefined) { // Only update if user didn't cancel
+                // Update all views with the same search query
                 codeGroupTreeProvider.updateSearch(query);
+                fileGroupTreeProvider.updateSearch(query);
             }
         })
     );
@@ -134,7 +167,30 @@ export function activate(context: vscode.ExtensionContext) {
                     const currentSearch = codeGroupTreeProvider.getCurrentSearch();
                     codeGroupTreeProvider.updateSearch(currentSearch + args.key);
                 }
+            } else if (args.treeId === 'groupCodeFileView' && args.key) {
+                // Handle backspace for file view
+                if (args.key === 'Backspace') {
+                    const currentSearch = fileGroupTreeProvider.getCurrentSearch();
+                    if (currentSearch.length > 0) {
+                        fileGroupTreeProvider.updateSearch(currentSearch.slice(0, -1));
+                    }
+                    return;
+                }
+                
+                // Handle single character input for file view
+                if (args.key.length === 1) {
+                    const currentSearch = fileGroupTreeProvider.getCurrentSearch();
+                    fileGroupTreeProvider.updateSearch(currentSearch + args.key);
+                }
             }
+        })
+    );
+
+    // Register the clear filter command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('groupCode.clearFilter', () => {
+            codeGroupTreeProvider.updateSearch('');
+            fileGroupTreeProvider.updateSearch('');
         })
     );
 

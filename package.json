@@ -2,7 +2,7 @@
   "name": "groupcode",
   "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "icon": "resources/compass-icon.png",
   "publisher": "thechandanbhagat",
   "repository": "https://github.com/thechandanbhagat/group-code",
@@ -34,7 +34,14 @@
         {
           "id": "groupCodeExplorer",
           "name": "Group Code",
-          "type": "tree"
+          "type": "tree",
+          "visibility": "visible"
+        },
+        {
+          "id": "groupCodeFileView",
+          "name": "By File",
+          "type": "tree",
+          "visibility": "collapsed"
         }
       ],
       "explorer": [
@@ -53,6 +60,10 @@
       {
         "view": "groupCodeExplorerView",
         "contents": "Filter code groups by typing in the search box above.\n[Search Groups](command:groupCode.filterGroups)"
+      },
+      {
+        "view": "groupCodeFileView",
+        "contents": "Groups organized by file location.\n[Search Groups](command:groupCode.filterGroups)"
       }
     ],
     "commands": [
@@ -61,7 +72,14 @@
         "title": "Search Groups",
         "category": "Group Code",
         "icon": "$(search)",
-        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView"
+        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView || view == groupCodeFileView"
+      },
+      {
+        "command": "groupCode.clearFilter",
+        "title": "Clear Filter",
+        "category": "Group Code",
+        "icon": "$(clear-all)",
+        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView || view == groupCodeFileView"
       },
       {
         "command": "groupCode.groupCode",
@@ -318,6 +336,11 @@
           "group": "navigation@0"
         },
         {
+          "command": "groupCode.clearFilter",
+          "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
+          "group": "navigation@0"
+        },
+        {
           "command": "groupCode.refreshTreeView",
           "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
           "group": "navigation@1"
@@ -325,6 +348,26 @@
         {
           "command": "groupCode.openSettings",
           "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "groupCode.filterGroups",
+          "when": "view == groupCodeFileView",
+          "group": "navigation@0"
+        },
+        {
+          "command": "groupCode.clearFilter",
+          "when": "view == groupCodeFileView",
+          "group": "navigation@0"
+        },
+        {
+          "command": "groupCode.refreshTreeView",
+          "when": "view == groupCodeFileView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "groupCode.openSettings",
+          "when": "view == groupCodeFileView",
           "group": "navigation@2"
         }
       ]

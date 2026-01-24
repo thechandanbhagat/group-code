@@ -30,66 +30,32 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 
-## What's New in Version 1.6.3
+## What's New in Version 1.7.0
 
-### Shell Script Comment Support
-Fixed comment detection for shell scripts and other hash-comment languages!
+### File-Based View
+A new way to browse your code groups organized by file location!
 
-- **Proper Shell Detection**: Shell scripts (.sh files) now correctly use `#` comments instead of `//`
-- **Smart Fallback Logic**: Improved language detection with intelligent fallbacks for unrecognized file types
-- **Better Heuristics**: Enhanced detection for shell, bash, Python, and other hash-comment languages
-- **Comprehensive Fix**: Works across all extension features, not just AI generation
-- **Debug Logging**: Added detailed logging to help diagnose language detection issues
+- **"By File" View**: Alternative tree view that groups code by file instead of hierarchy
+- **Quick File Navigation**: See all files containing groups at the top level
+- **Sorted by Line Number**: Groups under each file are ordered by their location in the code
+- **Click to Navigate**: Jump directly to files or specific groups with one click
+- **Workspace-Relative Paths**: Clean, readable file paths relative to your workspace
+- **Collapsed by Default**: Keeps your sidebar uncluttered while remaining easily accessible
 
-### Previous Updates (Version 1.6.0 - 1.6.2)
+### Enhanced Filter UI
+Powerful filtering now with visual controls and real-time feedback!
 
-#### Rename Code Groups (v1.6.1)
-- Keyboard shortcut: Press **F2** to rename groups in tree view
-- Context menu support for renaming
-- Automatic updates across entire codebase
-- Input validation and progress feedback
+- **Filter Buttons**: Search and clear filter buttons in view title bars
+- **Visual Filter Status**: See your active filter displayed in the view message (e.g., "Filtered: auth")
+- **Quick Clear**: One-click button to remove active filters
+- **Synchronized Filtering**: Filters apply across both "Group Code" and "By File" views
+- **Type-to-Filter**: Continue typing directly in views for instant filtering
+- **Keyboard Support**: Backspace to remove filter characters
 
-#### Enhanced Syntax Highlighting (v1.6.1)
-- Improved visual appearance for @group comments
-- Better grammar support across 40+ languages
-- Enhanced tmLanguage configuration
-
-#### AI Model Management (v1.6.0)
-- Extended model cache duration to 24 hours
-- Persistent disk cache for AI models
-- Manual refresh button in Settings UI
-- Background refresh without blocking UI
-
-## What's New in Version 1.5.0
-
-### Favorites System
-Mark your most important code groups as favorites for quick access and better organization!
-
-- **Toggle Favorites**: Click the star icon on any group to mark/unmark it as a favorite
-- **Dedicated Favorites Section**: All favorite groups appear in a special section at the top of the tree view
-- **Hierarchical Favorites**: Favorite a parent node to automatically favorite all its children
-- **Visual Indicators**: Star icons clearly identify favorite groups throughout the tree
-- **Context Menu**: Right-click any group and select "Toggle Favorite"
-- **Persistent Across Sessions**: Your favorites are saved and restored when you reopen VS Code
-
-### User Profile Storage
-Your personal preferences are now stored in your OS user profile, separate from the workspace!
-
-- **Per-User Preferences**: Each developer can have their own favorites without conflicts
-- **Git-Safe**: Favorites don't clutter your workspace or create merge conflicts
-- **Persistent Storage**: Favorites survive workspace deletions or moves
-- **Multi-Workspace Support**: Different favorites for each project you work on
-- **Storage Location**: 
-  - Windows: `%USERPROFILE%\.groupcode\<workspace-hash>\`
-  - macOS/Linux: `~/.groupcode/<workspace-hash>/`
-
-### Tree View State Persistence
-The tree view now remembers which nodes you've expanded or collapsed!
-
-- **Expansion Memory**: Automatically restores your last expansion state
-- **Per-Workspace**: Each workspace maintains its own tree state
-- **Auto-Save**: Changes are automatically saved (debounced to reduce I/O)
-- **Better User Experience**: No more re-expanding nodes after restarting VS Code
+### Improved View Organization
+- **Smart Defaults**: "Group Code" view expanded by default, "By File" collapsed
+- **Better Layout**: Cleaner interface with thoughtful default visibility
+- **Flexible Viewing**: Easy to switch between hierarchical and file-based views
 
 ## Core Features
 

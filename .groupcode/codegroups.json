@@ -1027,34 +1027,106 @@
       "lineNumbers": "921-944"
     },
     {
-      "functionality": "name",
-      "description": "description",
-      "filePath": "src/extension.ts",
-      "lineNumbers": "680"
+      "functionality": "${groupname}${description ? '",
+      "description": "' + description : ''}`",
+      "filePath": "src/utils/aiCodeGroupTool.ts",
+      "lineNumbers": "206"
+    },
+    {
+      "functionality": "models > tree items",
+      "description": "Enumerations for tree item types used in file-based explorer",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "11-19"
+    },
+    {
+      "functionality": "ui > tree item > renderer",
+      "description": "Represents tree items for file-based view",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "20-30"
+    },
+    {
+      "functionality": "providers > tree provider > file groups",
+      "description": "Provides file-based tree data for alternative group view",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "81-87"
+    },
+    {
+      "functionality": "providers > tree provider > initialization",
+      "description": "Initialize file-based provider",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "88-92"
+    },
+    {
+      "functionality": "providers > tree provider > view management",
+      "description": "Attach tree view",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "93-98"
+    },
+    {
+      "functionality": "providers > tree provider > refresh",
+      "description": "Trigger tree view refresh",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "99-104"
+    },
+    {
+      "functionality": "providers > tree provider > search",
+      "description": "Update search filter and refresh view",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "105-113"
+    },
+    {
+      "functionality": "providers > tree provider > search",
+      "description": "Get current search query",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "114-118"
+    },
+    {
+      "functionality": "providers > tree provider > tree structure",
+      "description": "Get tree item representation",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "119-123"
+    },
+    {
+      "functionality": "providers > tree provider > tree structure",
+      "description": "Get children for tree node",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "124-126"
+    },
+    {
+      "functionality": "providers > tree provider > data retrieval",
+      "description": "Get all files that contain groups",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "137-140"
+    },
+    {
+      "functionality": "providers > tree provider > data retrieval",
+      "description": "Get all groups in a specific file",
+      "filePath": "src/fileGroupTreeProvider.ts",
+      "lineNumbers": "211-214"
     },
     {
       "functionality": "name",
       "description": "description",
       "filePath": "src/extension.ts",
-      "lineNumbers": "682"
+      "lineNumbers": "736"
+    },
+    {
+      "functionality": "name",
+      "description": "description",
+      "filePath": "src/extension.ts",
+      "lineNumbers": "738"
     },
     {
       "functionality": "name",
       "description": "description */",
       "filePath": "src/extension.ts",
-      "lineNumbers": "684"
+      "lineNumbers": "740"
     },
     {
       "functionality": "comment - match until",
       "description": "or end of line (case-insensitive)",
       "filePath": "src/extension.ts",
-      "lineNumbers": "1107-1111"
-    },
-    {
-      "functionality": "${groupname}${description ? '",
-      "description": "' + description : ''}`",
-      "filePath": "src/utils/aiCodeGroupTool.ts",
-      "lineNumbers": "206"
+      "lineNumbers": "1163-1167"
     }
   ],
   "js": [

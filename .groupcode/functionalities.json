@@ -2,15 +2,6 @@
   "version": "1.3.0",
   "totalFunctionalities": 272,
   "functionalities": {
-    "${groupname}${description ? '": {
-      "level": 1,
-      "parent": null,
-      "children": [],
-      "groupCount": 1,
-      "fileTypes": [
-        "ts"
-      ]
-    },
     "data > models > groupdefinition": {
       "level": 3,
       "parent": "data > models",
@@ -2473,6 +2464,15 @@
       ]
     },
     "comment - match until": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "${groupname}${description ? '": {
       "level": 1,
       "parent": null,
       "children": [],

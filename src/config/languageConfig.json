@@ -81,7 +81,7 @@
     },
     {
       "name": "Shell/Bash",
-      "fileTypes": ["sh", "bash"],
+      "fileTypes": ["sh", "bash", "shellscript", "zsh"],
       "commentMarkers": {
         "line": "#"
       }

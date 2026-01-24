@@ -1,12 +1,6 @@
 {
   "ts": [
     {
-      "functionality": "${groupname}${description ? '",
-      "description": "' + description : ''}`",
-      "filePath": "src/utils/aiCodeGroupTool.ts",
-      "lineNumbers": "206"
-    },
-    {
       "functionality": "data > models > groupdefinition",
       "description": "Represents persisted group metadata including file types and line numbers",
       "filePath": "src/groupDefinition.ts",
@@ -1055,6 +1049,12 @@
       "description": "or end of line (case-insensitive)",
       "filePath": "src/extension.ts",
       "lineNumbers": "1107-1111"
+    },
+    {
+      "functionality": "${groupname}${description ? '",
+      "description": "' + description : ''}`",
+      "filePath": "src/utils/aiCodeGroupTool.ts",
+      "lineNumbers": "206"
     }
   ],
   "js": [

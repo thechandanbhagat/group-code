@@ -5,6 +5,15 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-01-24
+
+### Fixed
+- **Shell Script Comment Support**
+  - Fixed AI code generation to use `#` comments for shell scripts (.sh files) instead of `//`
+  - Added support for `shellscript`, `zsh`, `powershell`, `dockerfile`, and `makefile` language IDs
+  - Updated language configuration to properly detect shell script file types
+  - Copilot now generates correct comment syntax for all shell-based languages
+
 ## [1.6.1] - 2026-01-19
 
 ### Added

@@ -9,6 +9,7 @@ import { copilotIntegration } from './utils/copilotIntegration';
 import { GroupCodeChatParticipant } from './utils/chatParticipant';
 import { AICodeGroupTool, aiCodeGroupToolMetadata } from './utils/aiCodeGroupTool';
 import { SettingsViewProvider } from './settingsViewProvider';
+import { QuickAddGroupUtility } from './utils/quickAddGroup';
 import logger from './utils/logger';
 
 let codeGroupProvider: CodeGroupProvider;
@@ -681,6 +682,23 @@ export function activate(context: vscode.ExtensionContext) {
                 
                 vscode.window.showInformationMessage(`Added AI-suggested code group: ${groupName}`);
             });
+        }),
+
+        // Quick Add Group - Context Menu
+        vscode.commands.registerCommand('groupCode.quickAddGroup', async () => {
+            logger.info('Executing command: quickAddGroup');
+            
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor found. Please open a file first.');
+                return;
+            }
+            
+            await QuickAddGroupUtility.quickAddGroup(editor, codeGroupProvider);
+            
+            // Refresh the tree views
+            codeGroupTreeProvider.refresh();
+            fileGroupTreeProvider.refresh();
         }),
 
         // Remove All Group Comments

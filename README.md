@@ -29,6 +29,29 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Inline Documentation**: See where each code group is used while typing
 - **Block Comment Support**: Improved detection of groups in block comments across all languages
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
+- **Quick Add Group**: Quickly add code groups to selected code via right-click context menu
+- **AI-Assisted Group Creation**: Get AI-powered suggestions for group names and descriptions
+
+## What's New in Version 1.7.1
+
+### Quick Add Group Feature
+Faster way to add code groups with manual or AI assistance!
+
+- **Context Menu Integration**: Right-click on selected code to add groups instantly
+- **Manual Entry Mode**: Quick workflow to enter group name, description, and tags
+- **AI-Powered Mode**: Let GitHub Copilot analyze code and suggest appropriate group details
+- **Existing Group Suggestions**: When adding manually view and select from existing groups
+- **Hierarchy Support**: Full support for hierarchical group names (Parent > Child)
+- **Smart Comment Syntax**: Automatically uses correct comment format based on file type
+- **Selection Wrapping**: Group comments placed above selected code automatically
+- **Real-time Refresh**: Tree views update immediately after adding groups
+
+### Enhanced Workflow
+- **"Add to Group..." Command**: Available in editor context menu when text is selected
+- **Flexible Input**: Choose between manual entry or AI-powered suggestions
+- **Review and Edit**: AI suggestions can be reviewed and modified before inserting
+- **Validation**: Input validation ensures group names are properly formatted
+- **Multi-language Support**: Works with all supported programming languages
 
 ## What's New in Version 1.7.0
 

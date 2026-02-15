@@ -19,6 +19,31 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-02-15
+
+### Added
+- **Quick Add Group Feature**
+  - New context menu command "Add to Group..." for quickly adding groups to selected code
+  - Two modes: Manual Entry and AI-Powered suggestions
+  - Manual mode allows selection from existing groups or creation of new ones
+  - AI mode uses GitHub Copilot to analyze code and suggest group names and descriptions
+  - Support for hierarchical group names with auto-completion
+  - Smart comment syntax detection based on file type
+  - Automatic tree view refresh after adding groups
+  
+### Improved
+- **Context Menu Organization**
+  - Reorganized editor context menu items under "Group Code" group
+  - Better visual separation and ordering of group-related commands
+  - Added icons for better visual recognition
+  
+### Enhanced
+- **User Experience**
+  - Input validation for group names
+  - Review and edit capability for AI suggestions
+  - Selection wrapping - comments placed above selected code
+  - Real-time feedback with success messages
+
 ## [1.7.0] - 2026-01-24
 
 ### Added

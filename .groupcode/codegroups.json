@@ -1108,25 +1108,43 @@
       "functionality": "name",
       "description": "description",
       "filePath": "src/extension.ts",
-      "lineNumbers": "736"
+      "lineNumbers": "754"
     },
     {
       "functionality": "name",
       "description": "description",
       "filePath": "src/extension.ts",
-      "lineNumbers": "738"
+      "lineNumbers": "756"
     },
     {
       "functionality": "name",
       "description": "description */",
       "filePath": "src/extension.ts",
-      "lineNumbers": "740"
+      "lineNumbers": "758"
     },
     {
       "functionality": "comment - match until",
       "description": "or end of line (case-insensitive)",
       "filePath": "src/extension.ts",
-      "lineNumbers": "1163-1167"
+      "lineNumbers": "1181-1185"
+    },
+    {
+      "functionality": "', suffix",
+      "description": "'' };",
+      "filePath": "src/utils/quickAddGroup.ts",
+      "lineNumbers": "35"
+    },
+    {
+      "functionality": "', suffix",
+      "description": "'' };",
+      "filePath": "src/utils/quickAddGroup.ts",
+      "lineNumbers": "63"
+    },
+    {
+      "functionality": "', suffix",
+      "description": "'' };",
+      "filePath": "src/utils/quickAddGroup.ts",
+      "lineNumbers": "66"
     }
   ],
   "js": [

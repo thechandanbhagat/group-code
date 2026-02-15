@@ -2,7 +2,7 @@
   "name": "groupcode",
   "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "icon": "resources/compass-icon.png",
   "publisher": "thechandanbhagat",
   "repository": "https://github.com/thechandanbhagat/group-code",
@@ -173,6 +173,13 @@
         "title": "Rename Group",
         "category": "Group Code",
         "icon": "$(edit)"
+      },
+      {
+        "command": "groupCode.quickAddGroup",
+        "title": "Add to Group...",
+        "category": "Group Code",
+        "icon": "$(add)",
+        "enablement": "editorHasSelection || editorTextFocus"
       }
     ],
     "chatParticipants": [
@@ -280,20 +287,25 @@
     "menus": {
       "editor/context": [
         {
+          "command": "groupCode.quickAddGroup",
+          "group": "1_groupcode@1",
+          "when": "editorHasSelection || editorTextFocus"
+        },
+        {
           "command": "groupCode.groupCode",
-          "group": "navigation"
+          "group": "1_groupcode@2"
         },
         {
           "command": "groupCode.showGroups",
-          "group": "navigation"
+          "group": "1_groupcode@3"
         },
         {
           "command": "groupCode.addCodeGroupDialog",
-          "group": "navigation"
+          "group": "1_groupcode@4"
         },
         {
           "command": "groupCode.suggestGroupWithAI",
-          "group": "navigation"
+          "group": "1_groupcode@5"
         }
       ],
       "explorer/context": [],

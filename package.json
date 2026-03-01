@@ -387,13 +387,20 @@
   },
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
+    "build:tests": "tsc -p ./tests/tsconfig.test.json && node -e \"const fs=require('fs'),p=require('path');const d=p.join('out','tests','node_modules','vscode');fs.mkdirSync(d,{recursive:true});fs.writeFileSync(p.join(d,'index.js'),'module.exports=require(\\'../../tests/mocks/vscode\\');')\"",
+    "pretest": "npm run build && npm run build:tests",
+    "test": "mocha --config tests/.mocharc.yml",
     "watch": "tsc -watch -p ./tsconfig.json",
     "prepublish": "npm run build",
     "start": "code --extensionDevelopmentPath='$PWD'"
   },
   "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^16.11.6",
     "@types/vscode": "^1.90.0",
+    "glob": "^13.0.6",
+    "mocha": "^11.7.5",
     "ts-loader": "^9.2.6",
     "typescript": "^4.4.3",
     "vscode": "^1.1.34"

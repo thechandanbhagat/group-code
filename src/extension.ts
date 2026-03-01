@@ -4,6 +4,7 @@ import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvide
 import { FileGroupTreeProvider } from './fileGroupTreeProvider';
 import { CodeGroup } from './groupDefinition';
 import { GroupCompletionProvider } from './utils/completionProvider';
+import { GroupHoverProvider } from './utils/hoverProvider';
 import { RatingPromptManager } from './utils/ratingPrompt';
 import { copilotIntegration } from './utils/copilotIntegration';
 import { GroupCodeChatParticipant } from './utils/chatParticipant';
@@ -37,6 +38,15 @@ export function activate(context: vscode.ExtensionContext) {
             completionProvider,
             '@', // Trigger on @ character
             ' '  // And on space character
+        )
+    );
+
+    // Create and register the hover provider
+    const hoverProvider = new GroupHoverProvider(codeGroupProvider);
+    context.subscriptions.push(
+        vscode.languages.registerHoverProvider(
+            { pattern: '**/*.*' }, // Register for all files
+            hoverProvider
         )
     );
 

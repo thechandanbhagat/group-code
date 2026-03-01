@@ -58,7 +58,8 @@ export class MockTextDocument {
         return this._lines.length;
     }
 
-    lineAt(lineIndex: number): { text: string; lineNumber: number } {
+    lineAt(lineOrPosition: number | { line: number }): { text: string; lineNumber: number } {
+        const lineIndex = typeof lineOrPosition === 'number' ? lineOrPosition : lineOrPosition.line;
         return {
             text: this._lines[lineIndex] || '',
             lineNumber: lineIndex
@@ -261,6 +262,7 @@ export class Disposable {
 export const languages = {
     registerCompletionItemProvider: () => ({ dispose: () => {} }),
     registerCodeLensProvider: () => ({ dispose: () => {} }),
+    registerHoverProvider: () => ({ dispose: () => {} }),
 };
 
 export const extensions = {
@@ -301,6 +303,8 @@ export enum CompletionItemKind {
 
 export class MarkdownString {
     value: string;
+    isTrusted?: boolean;
+    supportHtml?: boolean;
     constructor(value?: string) {
         this.value = value || '';
     }
@@ -311,6 +315,16 @@ export class MarkdownString {
     appendText(value: string): this {
         this.value += value;
         return this;
+    }
+}
+
+// @group TestMocks > VSCode > Hover : Mock Hover for hover provider tests
+export class Hover {
+    contents: MarkdownString[];
+    range?: Range;
+    constructor(contents: MarkdownString | MarkdownString[], range?: Range) {
+        this.contents = Array.isArray(contents) ? contents : [contents];
+        this.range = range;
     }
 }
 

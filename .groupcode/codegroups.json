@@ -1145,6 +1145,432 @@
       "description": "'' };",
       "filePath": "src/utils/quickAddGroup.ts",
       "lineNumbers": "66"
+    },
+    {
+      "functionality": "testmocks > vscode",
+      "description": "Mock implementation of the VS Code API for unit testing",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "1-7"
+    },
+    {
+      "functionality": "testmocks > vscode > uri",
+      "description": "Mock URI class for file and path operations",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "8-38"
+    },
+    {
+      "functionality": "testmocks > vscode > textdocument",
+      "description": "Mock TextDocument for parsing tests",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "39-78"
+    },
+    {
+      "functionality": "testmocks > vscode > outputchannel",
+      "description": "Mock output channel that captures log messages",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "90-119"
+    },
+    {
+      "functionality": "testmocks > vscode > window",
+      "description": "Mock window namespace with output channel creation",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "120-131"
+    },
+    {
+      "functionality": "testmocks > vscode > workspace",
+      "description": "Mock workspace namespace",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "132-150"
+    },
+    {
+      "functionality": "testmocks > vscode > env",
+      "description": "Mock environment namespace",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "151-156"
+    },
+    {
+      "functionality": "testmocks > vscode > commands",
+      "description": "Mock commands namespace",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "157-162"
+    },
+    {
+      "functionality": "testmocks > vscode > enums",
+      "description": "Mock VS Code enumerations",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "163-177"
+    },
+    {
+      "functionality": "testmocks > vscode > classes",
+      "description": "Mock VS Code classes",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "178-232"
+    },
+    {
+      "functionality": "testmocks > vscode > lm",
+      "description": "Mock language model namespace",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "233-237"
+    },
+    {
+      "functionality": "testmocks > vscode > chat",
+      "description": "Mock chat namespace",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "238-245"
+    },
+    {
+      "functionality": "testmocks > vscode > misc",
+      "description": "Other mock exports",
+      "filePath": "tests/mocks/vscode.ts",
+      "lineNumbers": "246-258"
+    },
+    {
+      "functionality": "unittests > hierarchyutils",
+      "description": "Tests for hierarchy parsing, enrichment, tree building, and validation",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "1-18"
+    },
+    {
+      "functionality": "testhelpers",
+      "description": "Factory functions for creating test data",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "19-30"
+    },
+    {
+      "functionality": "unittests > parsehierarchy",
+      "description": "Tests for parseHierarchy function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "31-77"
+    },
+    {
+      "functionality": "unittests > enrichwithhierarchy",
+      "description": "Tests for enrichWithHierarchy function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "91-142"
+    },
+    {
+      "functionality": "unittests > enrichgroupsbatch",
+      "description": "Tests for enrichGroupsWithHierarchy function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "143-164"
+    },
+    {
+      "functionality": "unittests > buildhierarchytree",
+      "description": "Tests for buildHierarchyTree function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "165-215"
+    },
+    {
+      "functionality": "unittests > getancestorpaths",
+      "description": "Tests for getAncestorPaths function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "216-233"
+    },
+    {
+      "functionality": "unittests > isdescendantof",
+      "description": "Tests for isDescendantOf function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "234-261"
+    },
+    {
+      "functionality": "unittests > getparent",
+      "description": "Tests for getParent function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "262-280"
+    },
+    {
+      "functionality": "unittests > getfunctionalitiesatlevel",
+      "description": "Tests for getFunctionalitiesAtLevel function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "281-313"
+    },
+    {
+      "functionality": "unittests > isvalidhierarchy",
+      "description": "Tests for isValidHierarchy validation function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "314-349"
+    },
+    {
+      "functionality": "unittests > formathierarchypath",
+      "description": "Tests for formatHierarchyPath function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "350-367"
+    },
+    {
+      "functionality": "unittests > gethierarchydepth",
+      "description": "Tests for getHierarchyDepth function",
+      "filePath": "tests/unit/hierarchyUtils.test.ts",
+      "lineNumbers": "368-387"
+    },
+    {
+      "functionality": "unittests > fileutils",
+      "description": "Tests for file utility functions - type detection, name parsing, line ranges",
+      "filePath": "tests/unit/fileUtils.test.ts",
+      "lineNumbers": "1-7"
+    },
+    {
+      "functionality": "unittests > getfiletype",
+      "description": "Tests for getFileType function",
+      "filePath": "tests/unit/fileUtils.test.ts",
+      "lineNumbers": "8-22"
+    },
+    {
+      "functionality": "unittests > getfilename",
+      "description": "Tests for getFileName function",
+      "filePath": "tests/unit/fileUtils.test.ts",
+      "lineNumbers": "49-75"
+    },
+    {
+      "functionality": "unittests > supportedextensions",
+      "description": "Tests for supported file type functions",
+      "filePath": "tests/unit/fileUtils.test.ts",
+      "lineNumbers": "83-118"
+    },
+    {
+      "functionality": "unittests > issupportedfiletype",
+      "description": "Tests for isSupportedFileType function",
+      "filePath": "tests/unit/fileUtils.test.ts",
+      "lineNumbers": "119-148"
+    },
+    {
+      "functionality": "unittests > globpattern",
+      "description": "Tests for getSupportedFilesGlobPattern function",
+      "filePath": "tests/unit/fileUtils.test.ts",
+      "lineNumbers": "149-166"
+    },
+    {
+      "functionality": "unittests > groupdefinition",
+      "description": "Tests for the GroupManager class",
+      "filePath": "tests/unit/groupDefinition.test.ts",
+      "lineNumbers": "1-7"
+    },
+    {
+      "functionality": "unittests > groupmanager",
+      "description": "Tests for GroupManager CRUD operations",
+      "filePath": "tests/unit/groupDefinition.test.ts",
+      "lineNumbers": "8-105"
+    },
+    {
+      "functionality": "unittests > patternanalyzer",
+      "description": "Tests for pattern analysis, similarity detection, and hierarchy suggestions",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "1-6"
+    },
+    {
+      "functionality": "testhelpers",
+      "description": "Factory functions for creating test data",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "7-23"
+    },
+    {
+      "functionality": "unittests > singleton",
+      "description": "Tests for singleton instance",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "24-30"
+    },
+    {
+      "functionality": "unittests > similarity",
+      "description": "Tests for similarity and normalization",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "31-59"
+    },
+    {
+      "functionality": "unittests > normalization",
+      "description": "Tests for name normalization",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "60-91"
+    },
+    {
+      "functionality": "unittests > findsimilargroups",
+      "description": "Tests for finding similar group names",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "92-136"
+    },
+    {
+      "functionality": "unittests > findmatchinggroup",
+      "description": "Tests for findMatchingGroup function",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "137-144"
+    },
+    {
+      "functionality": "unittests > suggesthierarchies",
+      "description": "Tests for hierarchy suggestion",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "164-172"
+    },
+    {
+      "functionality": "unittests > analyzepatterns",
+      "description": "Tests for comprehensive pattern analysis",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "202-230"
+    },
+    {
+      "functionality": "unittests > generatereport",
+      "description": "Tests for report generation",
+      "filePath": "tests/unit/patternAnalyzer.test.ts",
+      "lineNumbers": "231-247"
+    },
+    {
+      "functionality": "testsetup",
+      "description": "Test environment setup and VS Code module mock registration",
+      "filePath": "tests/setup.ts",
+      "lineNumbers": "1-8"
+    },
+    {
+      "functionality": "unittests > groupingutils",
+      "description": "Tests for code group merging and organization utilities",
+      "filePath": "tests/unit/groupingUtils.test.ts",
+      "lineNumbers": "1-6"
+    },
+    {
+      "functionality": "testhelpers",
+      "description": "Factory functions for creating test data",
+      "filePath": "tests/unit/groupingUtils.test.ts",
+      "lineNumbers": "7-18"
+    },
+    {
+      "functionality": "unittests > groupbyfunctionality",
+      "description": "Tests for groupCodeByFunctionality function",
+      "filePath": "tests/unit/groupingUtils.test.ts",
+      "lineNumbers": "19-47"
+    },
+    {
+      "functionality": "unittests > mergegroups",
+      "description": "Tests for mergeGroups function",
+      "filePath": "tests/unit/groupingUtils.test.ts",
+      "lineNumbers": "48-104"
+    },
+    {
+      "functionality": "unittests > commentparser",
+      "description": "Tests for comment parsing across different language types",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "1-8"
+    },
+    {
+      "functionality": "unittests > javascriptparsing",
+      "description": "Tests for JavaScript/TypeScript comment parsing",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "9-87"
+    },
+    {
+      "functionality": "authentication",
+      "description": "User login process\\nfunction login() {}',",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "13"
+    },
+    {
+      "functionality": "auth",
+      "description": "Authentication logic',",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "26"
+    },
+    {
+      "functionality": "database",
+      "description": "Data access layer',",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "29"
+    },
+    {
+      "functionality": "security",
+      "description": "API authentication';",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "42"
+    },
+    {
+      "functionality": "validation",
+      "description": "Input validation\\nfunction validate() {}';",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "51"
+    },
+    {
+      "functionality": "unittests > hierarchicalparsing",
+      "description": "Tests for hierarchical group comment parsing",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "88-111"
+    },
+    {
+      "functionality": "auth > login > validation",
+      "description": "Email validation';",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "91"
+    },
+    {
+      "functionality": "auth > login",
+      "description": "Login logic';",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "103"
+    },
+    {
+      "functionality": "unittests > pythonparsing",
+      "description": "Tests for Python comment parsing",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "112-132"
+    },
+    {
+      "functionality": "unittests > htmlparsing",
+      "description": "Tests for HTML block comment parsing",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "133-144"
+    },
+    {
+      "functionality": "unittests > cssparsing",
+      "description": "Tests for CSS block comment parsing",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "145-156"
+    },
+    {
+      "functionality": "unittests > codeblockcapture",
+      "description": "Tests for code block line number capture",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "157-170"
+    },
+    {
+      "functionality": "auth",
+      "description": "Login',",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "161"
+    },
+    {
+      "functionality": "config",
+      "description": "Setting value',",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "177"
+    },
+    {
+      "functionality": "unittests > edgecases",
+      "description": "Edge case and boundary tests",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "191-222"
+    },
+    {
+      "functionality": "authentication",
+      "description": "';",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "194"
+    },
+    {
+      "functionality": "auth",
+      "description": "Line comment group',",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "205"
+    },
+    {
+      "functionality": "authentication",
+      "description": "Mixed case';",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "219"
+    },
+    {
+      "functionality": "test",
+      "description": "Test group';",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "228"
+    },
+    {
+      "functionality": "test",
+      "description": "On line 3'",
+      "filePath": "tests/unit/commentParser.test.ts",
+      "lineNumbers": "242"
     }
   ],
   "js": [
@@ -1177,6 +1603,18 @@
       "description": "Authentication service with token management",
       "filePath": "test-groupcode-colors.js",
       "lineNumbers": "30-32"
+    },
+    {
+      "functionality": "testsetup > moduleloader",
+      "description": "CJS preload script that intercepts vscode module resolution",
+      "filePath": "tests/setup-loader.js",
+      "lineNumbers": "1-12"
+    },
+    {
+      "functionality": "testmocks > vscode > entry",
+      "description": "Node module entry point that re-exports the compiled vscode mock",
+      "filePath": "tests/mock-modules/vscode/index.js",
+      "lineNumbers": "1-3"
     }
   ]
 }

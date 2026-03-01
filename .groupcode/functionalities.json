@@ -1,6 +1,6 @@
 {
   "version": "1.3.0",
-  "totalFunctionalities": 277,
+  "totalFunctionalities": 344,
   "functionalities": {
     "data > models > groupdefinition": {
       "level": 3,
@@ -1595,8 +1595,10 @@
       "children": [
         "validation > hierarchy"
       ],
-      "groupCount": 0,
-      "fileTypes": []
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
     },
     "validation > hierarchy": {
       "level": 2,
@@ -2530,6 +2532,650 @@
         "ts"
       ]
     },
+    "testmocks > vscode": {
+      "level": 2,
+      "parent": "testmocks",
+      "children": [
+        "testmocks > vscode > chat",
+        "testmocks > vscode > classes",
+        "testmocks > vscode > commands",
+        "testmocks > vscode > entry",
+        "testmocks > vscode > enums",
+        "testmocks > vscode > env",
+        "testmocks > vscode > lm",
+        "testmocks > vscode > misc",
+        "testmocks > vscode > outputchannel",
+        "testmocks > vscode > textdocument",
+        "testmocks > vscode > uri",
+        "testmocks > vscode > window",
+        "testmocks > vscode > workspace"
+      ],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "testmocks > vscode"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "testmocks > vscode > uri": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > textdocument": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > outputchannel": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > window": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > workspace": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > env": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > commands": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > enums": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > classes": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > lm": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > chat": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testmocks > vscode > misc": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > hierarchyutils": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "unittests > analyzepatterns",
+        "unittests > buildhierarchytree",
+        "unittests > codeblockcapture",
+        "unittests > commentparser",
+        "unittests > cssparsing",
+        "unittests > edgecases",
+        "unittests > enrichgroupsbatch",
+        "unittests > enrichwithhierarchy",
+        "unittests > fileutils",
+        "unittests > findmatchinggroup",
+        "unittests > findsimilargroups",
+        "unittests > formathierarchypath",
+        "unittests > generatereport",
+        "unittests > getancestorpaths",
+        "unittests > getfilename",
+        "unittests > getfiletype",
+        "unittests > getfunctionalitiesatlevel",
+        "unittests > gethierarchydepth",
+        "unittests > getparent",
+        "unittests > globpattern",
+        "unittests > groupbyfunctionality",
+        "unittests > groupdefinition",
+        "unittests > groupingutils",
+        "unittests > groupmanager",
+        "unittests > hierarchicalparsing",
+        "unittests > hierarchyutils",
+        "unittests > htmlparsing",
+        "unittests > isdescendantof",
+        "unittests > issupportedfiletype",
+        "unittests > isvalidhierarchy",
+        "unittests > javascriptparsing",
+        "unittests > mergegroups",
+        "unittests > normalization",
+        "unittests > parsehierarchy",
+        "unittests > patternanalyzer",
+        "unittests > pythonparsing",
+        "unittests > similarity",
+        "unittests > singleton",
+        "unittests > suggesthierarchies",
+        "unittests > supportedextensions"
+      ],
+      "groupCount": 0,
+      "fileTypes": []
+    },
+    "testhelpers": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 3,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > parsehierarchy": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > enrichwithhierarchy": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > enrichgroupsbatch": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > buildhierarchytree": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > getancestorpaths": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > isdescendantof": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > getparent": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > getfunctionalitiesatlevel": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > isvalidhierarchy": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > formathierarchypath": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > gethierarchydepth": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > fileutils": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > getfiletype": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > getfilename": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > supportedextensions": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > issupportedfiletype": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > globpattern": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > groupdefinition": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > groupmanager": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > patternanalyzer": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > singleton": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > similarity": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > normalization": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > findsimilargroups": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > findmatchinggroup": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > suggesthierarchies": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > analyzepatterns": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > generatereport": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "testsetup": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "testsetup > moduleloader"
+      ],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > groupingutils": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > groupbyfunctionality": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > mergegroups": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > commentparser": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > javascriptparsing": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "authentication": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 3,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "auth": {
+      "level": 1,
+      "parent": null,
+      "children": [
+        "auth > login"
+      ],
+      "groupCount": 3,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "database": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "security": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > hierarchicalparsing": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "auth > login > validation": {
+      "level": 3,
+      "parent": "auth > login",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "auth > login": {
+      "level": 2,
+      "parent": "auth",
+      "children": [
+        "auth > login > validation"
+      ],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > pythonparsing": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > htmlparsing": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > cssparsing": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > codeblockcapture": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "config": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "unittests > edgecases": {
+      "level": 2,
+      "parent": "unittests",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "ts"
+      ]
+    },
+    "test": {
+      "level": 1,
+      "parent": null,
+      "children": [],
+      "groupCount": 2,
+      "fileTypes": [
+        "ts"
+      ]
+    },
     "extension > core > initialization": {
       "level": 3,
       "parent": "extension > core",
@@ -2630,6 +3276,24 @@
       ],
       "groupCount": 0,
       "fileTypes": []
+    },
+    "testsetup > moduleloader": {
+      "level": 2,
+      "parent": "testsetup",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "js"
+      ]
+    },
+    "testmocks > vscode > entry": {
+      "level": 3,
+      "parent": "testmocks > vscode",
+      "children": [],
+      "groupCount": 1,
+      "fileTypes": [
+        "js"
+      ]
     }
   }
 }

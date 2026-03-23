@@ -118,10 +118,23 @@ class MockOutputChannel {
     }
 }
 
+// @group TestMocks > VSCode > StatusBarItem : Mock status bar item
+class MockStatusBarItem {
+    text = '';
+    tooltip = '';
+    command = '';
+    show(): void {}
+    hide(): void {}
+    dispose(): void {}
+}
+
 // @group TestMocks > VSCode > Window : Mock window namespace with output channel creation
 export const window = {
     createOutputChannel(name: string): MockOutputChannel {
         return new MockOutputChannel(name);
+    },
+    createStatusBarItem(): MockStatusBarItem {
+        return new MockStatusBarItem();
     },
     showInformationMessage: (..._args: any[]) => Promise.resolve(undefined),
     showWarningMessage: (..._args: any[]) => Promise.resolve(undefined),
@@ -270,7 +283,22 @@ export const extensions = {
 };
 
 export class CompletionItem {
-    constructor(public label: string) {}
+    insertText?: string;
+    detail?: string;
+    documentation?: MarkdownString | string;
+    filterText?: string;
+    sortText?: string;
+    kind?: CompletionItemKind;
+
+    constructor(public label: string, kind?: CompletionItemKind) {
+        this.kind = kind;
+    }
+}
+
+export enum CompletionTriggerKind {
+    Invoke = 0,
+    TriggerCharacter = 1,
+    TriggerForIncompleteCompletions = 2,
 }
 
 export enum CompletionItemKind {

@@ -1,19 +1,26 @@
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from '../codeGroupProvider';
+import { CodeGroup } from '../groupDefinition';
 import * as path from 'path';
 import * as fs from 'fs';
 import logger from './logger';
 import { parseHierarchy, getAncestorPaths, enrichWithHierarchy } from './hierarchyUtils';
-import { loadFunctionalities, getSuggestedChildren, getSimilarFunctionalities, getFunctionalityStats } from './fileUtils';
+import { loadFunctionalities, getSuggestedChildren, getSimilarFunctionalities, getFunctionalityStats, FunctionalitiesData } from './fileUtils';
 import { patternAnalyzer } from './patternAnalyzer';
+import { LanguageConfig, LanguageInfo } from './commentParser';
 
 export class GroupCompletionProvider implements vscode.CompletionItemProvider {
     private readonly triggerCharacters = ['@', ' ', '>'];
     private codeGroupProvider: CodeGroupProvider;
-    private languageConfig: any;
-    private functionalitiesCache: any = null;
+    private languageConfig: LanguageConfig | null = null;
+    private functionalitiesCache: FunctionalitiesData | null = null;
     private lastCacheUpdate: number = 0;
     private readonly cacheExpiryMs = 5000; // 5 seconds
+
+    // @group Caching > Pattern Analysis : Cache pattern analysis results to avoid O(n²) recompute on every keystroke
+    private patternAnalysisCache: { result: ReturnType<typeof patternAnalyzer.analyzePatterns>; groupsSignature: string } | null = null;
+    private readonly patternAnalysisCacheExpiryMs = 30_000; // 30 seconds - patterns change infrequently
+    private patternAnalysisCacheTime: number = 0;
 
     constructor(codeGroupProvider: CodeGroupProvider) {
         this.codeGroupProvider = codeGroupProvider;
@@ -30,7 +37,30 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
         }
     }
 
-    private async getFunctionalitiesData(): Promise<any | null> {
+    // @group Caching > Pattern Analysis : Return cached pattern analysis or recompute when stale or groups changed
+    private getCachedPatternAnalysis(groups: CodeGroup[]): ReturnType<typeof patternAnalyzer.analyzePatterns> {
+        const now = Date.now();
+        // Use group count + first/last functionality as a cheap signature
+        const signature = `${groups.length}:${groups[0]?.functionality ?? ''}:${groups[groups.length - 1]?.functionality ?? ''}`;
+        if (
+            this.patternAnalysisCache &&
+            (now - this.patternAnalysisCacheTime) < this.patternAnalysisCacheExpiryMs &&
+            this.patternAnalysisCache.groupsSignature === signature
+        ) {
+            return this.patternAnalysisCache.result;
+        }
+        const result = patternAnalyzer.analyzePatterns(groups);
+        this.patternAnalysisCache = { result, groupsSignature: signature };
+        this.patternAnalysisCacheTime = now;
+        return result;
+    }
+
+    // @group Caching > Invalidation : Clear pattern analysis cache when groups are externally updated
+    public invalidatePatternCache(): void {
+        this.patternAnalysisCache = null;
+    }
+
+    private async getFunctionalitiesData(): Promise<FunctionalitiesData | null> {
         const now = Date.now();
         
         // Return cached data if still fresh
@@ -85,8 +115,8 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
 
             const suggestions: vscode.CompletionItem[] = [];
             
-            // Run pattern analysis to find ALL hierarchy suggestions
-            const analysis = patternAnalyzer.analyzePatterns(groups);
+            // Run pattern analysis to find ALL hierarchy suggestions (cached — avoids O(n²) on every keystroke)
+            const analysis = this.getCachedPatternAnalysis(groups);
 
             // Add AI-powered similar group suggestions (TOP PRIORITY)
             // This catches semantic similarities like "datetime normalize" vs "datetime normalization"
@@ -220,7 +250,7 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
         return [];
     }
 
-    private createCompletionItem(funcPath: string, functionalitiesData: any): vscode.CompletionItem {
+    private createCompletionItem(funcPath: string, functionalitiesData: FunctionalitiesData): vscode.CompletionItem {
         const stats = getFunctionalityStats(functionalitiesData, funcPath);
         const hierarchy = parseHierarchy(funcPath);
         
@@ -279,16 +309,14 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
 
     private isInComment(document: vscode.TextDocument, position: vscode.Position): boolean {
         if (!this.languageConfig) {
-            // Fallback to basic comment detection if config not loaded
             return this.isInBasicComment(document, position);
         }
 
         const line = document.lineAt(position).text;
-        const linePrefix = line.substring(0, position.character);
-        const fileExtension = document.fileName.split('.').pop()?.toLowerCase();
+        const fileExtension = document.fileName.split('.').pop()?.toLowerCase() ?? '';
 
         // Find language config for this file type
-        const langInfo = this.languageConfig.languages.find((lang: any) => 
+        const langInfo = this.languageConfig.languages.find((lang: LanguageInfo) =>
             lang.fileTypes && lang.fileTypes.includes(fileExtension)
         );
 
@@ -312,22 +340,18 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
             }
         }
 
-        // Check for block comments
+        // Check for block comments — read document text once and reuse for the scan
         if (commentMarkers.blockStart && commentMarkers.blockEnd) {
-            const text = document.getText();
             const offset = document.offsetAt(position);
-
+            const text = document.getText();
             let searchStart = 0;
             while (true) {
                 const blockStart = text.indexOf(commentMarkers.blockStart, searchStart);
-                if (blockStart === -1 || blockStart > offset) break;
-
+                if (blockStart === -1 || blockStart > offset) { break; }
                 const blockEnd = text.indexOf(commentMarkers.blockEnd, blockStart + commentMarkers.blockStart.length);
                 if (blockEnd === -1 || offset <= blockEnd) {
-                    // We're in a block comment
                     return true;
                 }
-
                 searchStart = blockEnd + commentMarkers.blockEnd.length;
             }
         }
@@ -337,30 +361,31 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
 
     private isInBasicComment(document: vscode.TextDocument, position: vscode.Position): boolean {
         const line = document.lineAt(position).text;
-        const linePrefix = line.substring(0, position.character);
 
-        // Basic line comment check
-        if (line.trimStart().startsWith('//') || 
-            line.trimStart().startsWith('#') || 
+        // Line comment check — fast path, no full document read needed
+        if (line.trimStart().startsWith('//') ||
+            line.trimStart().startsWith('#') ||
             line.trimStart().startsWith('--') ||
             line.trimStart().startsWith(';')) {
             return true;
         }
 
-        // Basic block comment check
-        const blockCommentStart = document.getText().lastIndexOf('/*', document.offsetAt(position));
+        // Block / HTML comment check — read document text only once
+        const offset = document.offsetAt(position);
+        const text = document.getText();
+
+        const blockCommentStart = text.lastIndexOf('/*', offset);
         if (blockCommentStart !== -1) {
-            const blockCommentEnd = document.getText().indexOf('*/', blockCommentStart);
-            if (blockCommentEnd === -1 || document.offsetAt(position) < blockCommentEnd) {
+            const blockCommentEnd = text.indexOf('*/', blockCommentStart);
+            if (blockCommentEnd === -1 || offset < blockCommentEnd) {
                 return true;
             }
         }
 
-        // Basic HTML comment check
-        const htmlCommentStart = document.getText().lastIndexOf('<!--', document.offsetAt(position));
+        const htmlCommentStart = text.lastIndexOf('<!--', offset);
         if (htmlCommentStart !== -1) {
-            const htmlCommentEnd = document.getText().indexOf('-->', htmlCommentStart);
-            if (htmlCommentEnd === -1 || document.offsetAt(position) < htmlCommentEnd) {
+            const htmlCommentEnd = text.indexOf('-->', htmlCommentStart);
+            if (htmlCommentEnd === -1 || offset < htmlCommentEnd) {
                 return true;
             }
         }

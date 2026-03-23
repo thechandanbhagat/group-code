@@ -198,9 +198,10 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     }
 
     /**
-     * Save tree state to user profile (debounced)
+     * Save tree state to user profile (debounced, race-condition safe)
      */
     private saveTreeStateTimeout?: NodeJS.Timeout;
+    private isSavingTreeState = false;
     // @group Providers > Persistence > Save State: Persist expanded nodes to workspace storage with debounce to reduce writes
     private saveTreeState(): void {
         // Debounce saves to avoid excessive writes
@@ -209,16 +210,25 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
         }
 
         this.saveTreeStateTimeout = setTimeout(async () => {
+            // If a save is already in progress, reschedule rather than overlap
+            if (this.isSavingTreeState) {
+                this.saveTreeState();
+                return;
+            }
+
             const workspaceFolders = getWorkspaceFolders();
             if (workspaceFolders.length === 0) {
                 return;
             }
 
+            this.isSavingTreeState = true;
             try {
                 await saveTreeViewState(workspaceFolders[0], this.expandedNodes);
                 logger.info(`Saved ${this.expandedNodes.size} expanded nodes to tree state`);
             } catch (error) {
                 logger.error('Error saving tree state:', error);
+            } finally {
+                this.isSavingTreeState = false;
             }
         }, 500); // Wait 500ms before saving
     }
@@ -250,10 +260,16 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
             group.filePath.toLowerCase().includes(searchTerm);
     }
 
-    // @group Providers > Tree Provider > Refresh: Trigger tree data refresh event to update views immediately now
+    // @group Providers > Tree Provider > Refresh: Debounced refresh — coalesces rapid successive calls into one UI update
+    private refreshDebounceTimeout?: NodeJS.Timeout;
     refresh(): void {
-        logger.info('Tree view refresh triggered');
-        this._onDidChangeTreeData.fire(null);
+        if (this.refreshDebounceTimeout) {
+            clearTimeout(this.refreshDebounceTimeout);
+        }
+        this.refreshDebounceTimeout = setTimeout(() => {
+            logger.info('Tree view refresh triggered');
+            this._onDidChangeTreeData.fire(null);
+        }, 50);
     }
 
     // @group Providers > Tree Provider > Adapter: Adapter to return the vscode.TreeItem for a given element instance
@@ -264,15 +280,13 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     // @group Providers > Tree Provider > Children: Compute child tree items for element types, build hierarchy and filter results
     async getChildren(element?: CodeGroupTreeItem): Promise<CodeGroupTreeItem[]> {
         try {
+            // @group Performance > Cache : Fetch and enrich groups once per getChildren call — avoids redundant getAllGroups() on children
+            const allGroups = await this.codeGroupProvider.getAllGroups();
+            const filteredGroups = allGroups.filter(g => this.matchesSearch(g));
+            const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
+
             if (!element) {
                 // Root level - show Favorites section and all groups
-                const groups = await this.codeGroupProvider.getAllGroups();
-                const filteredGroups = groups.filter(g => this.matchesSearch(g));
-
-                // Enrich groups with hierarchy information
-                const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
-
-                // Build hierarchy tree
                 const hierarchyTree = buildHierarchyTree(enrichedGroups);
 
                 // Convert root nodes to tree items
@@ -317,10 +331,6 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
                     return a.label.localeCompare(b.label);
                 });
             }
-
-            const allGroups = await this.codeGroupProvider.getAllGroups();
-            const filteredGroups = allGroups.filter(g => this.matchesSearch(g));
-            const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
 
             switch (element.type) {
                 case CodeGroupTreeItemType.FavoritesRoot: {

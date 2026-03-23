@@ -16,11 +16,15 @@ exclude/**
 excluded/**
 tmpclaude-*
 
-# IDE settings
+# IDE / tool settings
 .idea/**
+.claude/**
 *.swp
 *.swo
 *~
+
+# CI
+.github/**
 
 # Node modules (if any)
 node_modules/**
@@ -29,6 +33,8 @@ node_modules/**
 # Testing
 .vscode-test-web/**
 test/**
+tests/**
+out/tests/**
 *.test.ts
 *.spec.ts
 
@@ -43,3 +49,6 @@ resources/groupcode.gif
 resources/groupcode1.gif
 
 .groupcode/*
+
+# Previous release packages
+*.vsix

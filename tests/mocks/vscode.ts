@@ -50,6 +50,10 @@ export class MockTextDocument {
         this.uri = Uri.file(filePath);
     }
 
+    get fileName(): string {
+        return this.uri.fsPath;
+    }
+
     getText(): string {
         return this._text;
     }

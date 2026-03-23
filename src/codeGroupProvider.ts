@@ -526,11 +526,13 @@ export class CodeGroupProvider implements vscode.Disposable {
         return ignorePatterns;
     }
     
+    private static readonly SCAN_TIMEOUT_MS = 30_000;
+
     // Process all documents in the workspace
     // @group Workspace > Scanning > FullScan: Scan workspace files, parse groups, and preserve favorites
     public async processWorkspace(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
+        if (!workspaceFolders || workspaceFolders.length === 0) {
             return;
         }
 
@@ -554,7 +556,27 @@ export class CodeGroupProvider implements vscode.Disposable {
 
             logger.info(`Scanning workspace with ${ignorePatterns.length} ignore patterns`);
 
-            const files = await vscode.workspace.findFiles('**/*.*', excludePattern);
+            let scanTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
+            const timeout = new Promise<never>((_, reject) => {
+                scanTimeoutHandle = setTimeout(() => reject(new Error(`Workspace scan timed out after ${CodeGroupProvider.SCAN_TIMEOUT_MS / 1000}s`)), CodeGroupProvider.SCAN_TIMEOUT_MS);
+            });
+
+            let files: vscode.Uri[];
+            try {
+                files = await Promise.race([
+                    vscode.workspace.findFiles('**/*.*', excludePattern),
+                    timeout
+                ]);
+            } catch (err) {
+                if (err instanceof Error && err.message.includes('timed out')) {
+                    logger.warn(err.message);
+                    vscode.window.showWarningMessage('Workspace scan timed out. Try scanning a smaller folder or adding more patterns to .gitignore.');
+                    return;
+                }
+                throw err;
+            } finally {
+                clearTimeout(scanTimeoutHandle);
+            }
             let processedCount = 0;
 
             for (const file of files) {
@@ -1249,24 +1271,18 @@ export class CodeGroupProvider implements vscode.Disposable {
      */
     // @group Workspace > Retrieval > FavoritesCheck: Check favorite status including descendant matching
     public isFavorite(functionality: string): boolean {
-        let isFav = false;
-
-        this.groups.forEach((groups) => {
-            groups.forEach(group => {
-                // Check if this group matches exactly OR if this group's functionality starts with the given functionality path
-                // For parent nodes like "Auth", this will match "Auth", "Auth > Login", "Auth > Signup", etc.
-                if (group.isFavorite) {
-                    if (group.functionality === functionality) {
-                        isFav = true;
-                    } else if (group.functionality.startsWith(functionality + ' > ')) {
-                        // This is a descendant - check if it's a proper descendant
-                        isFav = true;
-                    }
+        const prefix = functionality + ' > ';
+        for (const groups of this.groups.values()) {
+            for (const group of groups) {
+                if (group.isFavorite && (
+                    group.functionality === functionality ||
+                    group.functionality.startsWith(prefix)
+                )) {
+                    return true;
                 }
-            });
-        });
-
-        return isFav;
+            }
+        }
+        return false;
     }
 
     /**

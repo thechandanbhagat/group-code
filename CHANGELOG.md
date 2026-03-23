@@ -19,6 +19,41 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-03-13
+
+### Added
+- **Hover Cards for @group Annotations**
+  - Rich hover cards appear when hovering over any `@group` comment in the editor
+  - Displays the group hierarchy path with visual breadcrumb formatting (Auth › Login › Validation)
+  - Shows inline description from the comment or the first indexed description for the group
+  - File and occurrence counts — see how many files and locations use this group
+  - Lists filenames where the group appears (up to 6, with overflow count)
+  - Shows direct sub-groups (children) for parent group annotations
+  - Hover is only triggered when the cursor is inside a comment line, avoiding noise
+  - Full support for all 40+ languages via comment syntax detection
+
+- **Comprehensive Unit Test Suite**
+  - 145+ unit tests covering all core modules
+  - Complete VS Code API mock (`tests/mocks/vscode.ts`) enabling tests without a VS Code host
+  - Test coverage for: `commentParser`, `completionProvider`, `fileUtils`, `groupDefinition`, `groupingUtils`, `hierarchyUtils`, `hoverProvider`, `patternAnalyzer`
+  - Mocha test framework with TypeScript support
+
+- **CI/CD Pipeline**
+  - GitHub Actions workflow for automated cross-platform testing
+  - Tests run on Ubuntu, Windows, and macOS on every push and pull request
+  - Ensures consistent quality gate before merges
+
+### Improved
+- **Comment Parser**
+  - Refined language detection heuristics for more accurate comment syntax selection
+  - Better handling of edge cases in multi-line block comment detection
+- **Completion Provider**
+  - Improved trigger logic for `@group` tag autocomplete suggestions
+- **File Utilities**
+  - Enhanced workspace file scanning and gitignore-aware filtering
+- **Code Group Provider**
+  - More robust indexing and update handling for large workspaces
+
 ## [1.7.1] - 2026-02-15
 
 ### Added

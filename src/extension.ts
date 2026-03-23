@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroupTreeProvider, CodeGroupTreeItem } from './codeGroupTreeProvider';
 import { FileGroupTreeProvider } from './fileGroupTreeProvider';
 import { CodeGroup } from './groupDefinition';
 import { GroupCompletionProvider } from './utils/completionProvider';
+import { GroupHoverProvider } from './utils/hoverProvider';
 import { RatingPromptManager } from './utils/ratingPrompt';
 import { copilotIntegration } from './utils/copilotIntegration';
 import { GroupCodeChatParticipant } from './utils/chatParticipant';
@@ -40,6 +43,15 @@ export function activate(context: vscode.ExtensionContext) {
         )
     );
 
+    // Create and register the hover provider
+    const hoverProvider = new GroupHoverProvider(codeGroupProvider);
+    context.subscriptions.push(
+        vscode.languages.registerHoverProvider(
+            { pattern: '**/*.*' }, // Register for all files
+            hoverProvider
+        )
+    );
+
     // Create the tree data provider with explicit logging for debugging
     const codeGroupTreeProvider = new CodeGroupTreeProvider(codeGroupProvider);
     logger.info('Tree data provider created');
@@ -55,6 +67,8 @@ export function activate(context: vscode.ExtensionContext) {
             logger.info('Code groups updated, refreshing tree view...');
             codeGroupTreeProvider.refresh();
             fileGroupTreeProvider.refresh();
+            // Invalidate completion provider's pattern cache so next keystroke recomputes fresh suggestions
+            completionProvider.invalidatePatternCache();
         })
     );
     
@@ -235,18 +249,13 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
     
-    // Save data when workspace is about to close
+    // Save group state when window loses focus
+    // NOTE: File processing on save is handled solely by fileWatcher.onDidChange (below) to avoid
+    // double-processing — onWillSaveTextDocument + fileWatcher would both call processFileOnSave
+    // for every user save, causing redundant work and UI refreshes.
     context.subscriptions.push(
-        vscode.workspace.onWillSaveTextDocument(async (e) => {
-            logger.info(`File will be saved: ${e.document.uri.fsPath}`);
-            // Add a save task to the will-save event
-            e.waitUntil(Promise.resolve([])); // No edits needed, just want to trigger the event
-            await codeGroupProvider.processFileOnSave(e.document);
-        }),
-        
         vscode.window.onDidChangeWindowState(async (e) => {
             if (!e.focused) {
-                // Window lost focus, save state
                 logger.info('Window lost focus, saving state...');
                 await codeGroupProvider.saveGroups();
             }
@@ -322,14 +331,12 @@ export function activate(context: vscode.ExtensionContext) {
                 try {
                     const workspaceFolders = vscode.workspace.workspaceFolders;
                     if (workspaceFolders && workspaceFolders.length > 0) {
-                        const fs = require('fs');
-                        const path = require('path');
                         const rootPath = workspaceFolders[0].uri.fsPath;
                         const groupCodeDir = path.join(rootPath, '.groupcode');
-                        
+
                         if (fs.existsSync(groupCodeDir)) {
                             logger.info(`Deleting existing .groupcode directory: ${groupCodeDir}`);
-                            fs.rmdirSync(groupCodeDir, { recursive: true, force: true });
+                            fs.rmSync(groupCodeDir, { recursive: true, force: true });
                             logger.info('.groupcode directory deleted successfully');
                         }
                     }
@@ -787,13 +794,11 @@ export function activate(context: vscode.ExtensionContext) {
                 try {
                     const workspaceFolders = vscode.workspace.workspaceFolders;
                     if (workspaceFolders && workspaceFolders.length > 0) {
-                        const fs = require('fs');
-                        const path = require('path');
                         const rootPath = workspaceFolders[0].uri.fsPath;
                         const groupCodeDir = path.join(rootPath, '.groupcode');
-                        
+
                         if (fs.existsSync(groupCodeDir)) {
-                            fs.rmdirSync(groupCodeDir, { recursive: true, force: true });
+                            fs.rmSync(groupCodeDir, { recursive: true, force: true });
                         }
                     }
                 } catch (error) {

@@ -1,5 +1,8 @@
 # Group Code for VS Code
 
+[![CI](https://github.com/thechandanbhagat/group-code/actions/workflows/ci.yml/badge.svg)](https://github.com/thechandanbhagat/group-code/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/thechandanbhagat.groupcode?label=VS%20Code%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=thechandanbhagat.groupcode)
+
 Group Code Navigation    
 ![Group Code Demo](https://raw.githubusercontent.com/thechandanbhagat/group-code/refs/heads/main/resources/groupcode.gif)   
 
@@ -31,54 +34,9 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 - **Quick Add Group**: Quickly add code groups to selected code via right-click context menu
 - **AI-Assisted Group Creation**: Get AI-powered suggestions for group names and descriptions
-
-## What's New in Version 1.7.1
-
-### Quick Add Group Feature
-Faster way to add code groups with manual or AI assistance!
-
-- **Context Menu Integration**: Right-click on selected code to add groups instantly
-- **Manual Entry Mode**: Quick workflow to enter group name, description, and tags
-- **AI-Powered Mode**: Let GitHub Copilot analyze code and suggest appropriate group details
-- **Existing Group Suggestions**: When adding manually view and select from existing groups
-- **Hierarchy Support**: Full support for hierarchical group names (Parent > Child)
-- **Smart Comment Syntax**: Automatically uses correct comment format based on file type
-- **Selection Wrapping**: Group comments placed above selected code automatically
-- **Real-time Refresh**: Tree views update immediately after adding groups
-
-### Enhanced Workflow
-- **"Add to Group..." Command**: Available in editor context menu when text is selected
-- **Flexible Input**: Choose between manual entry or AI-powered suggestions
-- **Review and Edit**: AI suggestions can be reviewed and modified before inserting
-- **Validation**: Input validation ensures group names are properly formatted
-- **Multi-language Support**: Works with all supported programming languages
-
-## What's New in Version 1.7.0
-
-### File-Based View
-A new way to browse your code groups organized by file location!
-
-- **"By File" View**: Alternative tree view that groups code by file instead of hierarchy
-- **Quick File Navigation**: See all files containing groups at the top level
-- **Sorted by Line Number**: Groups under each file are ordered by their location in the code
-- **Click to Navigate**: Jump directly to files or specific groups with one click
-- **Workspace-Relative Paths**: Clean, readable file paths relative to your workspace
-- **Collapsed by Default**: Keeps your sidebar uncluttered while remaining easily accessible
-
-### Enhanced Filter UI
-Powerful filtering now with visual controls and real-time feedback!
-
-- **Filter Buttons**: Search and clear filter buttons in view title bars
-- **Visual Filter Status**: See your active filter displayed in the view message (e.g., "Filtered: auth")
-- **Quick Clear**: One-click button to remove active filters
-- **Synchronized Filtering**: Filters apply across both "Group Code" and "By File" views
-- **Type-to-Filter**: Continue typing directly in views for instant filtering
-- **Keyboard Support**: Backspace to remove filter characters
-
-### Improved View Organization
-- **Smart Defaults**: "Group Code" view expanded by default, "By File" collapsed
-- **Better Layout**: Cleaner interface with thoughtful default visibility
-- **Flexible Viewing**: Easy to switch between hierarchical and file-based views
+- **Hover Annotations**: Rich hover cards on `@group` comments showing hierarchy, description, file counts, and sub-groups
+- **File-Based View**: Alternative "By File" tree view that organizes groups by file location, sorted by line number
+- **Advanced Filter UI**: Visual search/clear filter buttons in view title bars with real-time filter status, synchronized across all views
 
 ## Core Features
 
@@ -142,7 +100,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.5.0.vsix` file
+1. Download the `groupcode-1.8.0.vsix` file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 

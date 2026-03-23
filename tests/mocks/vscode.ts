@@ -50,6 +50,10 @@ export class MockTextDocument {
         this.uri = Uri.file(filePath);
     }
 
+    get fileName(): string {
+        return this.uri.fsPath;
+    }
+
     getText(): string {
         return this._text;
     }
@@ -58,7 +62,8 @@ export class MockTextDocument {
         return this._lines.length;
     }
 
-    lineAt(lineIndex: number): { text: string; lineNumber: number } {
+    lineAt(lineOrPosition: number | { line: number }): { text: string; lineNumber: number } {
+        const lineIndex = typeof lineOrPosition === 'number' ? lineOrPosition : lineOrPosition.line;
         return {
             text: this._lines[lineIndex] || '',
             lineNumber: lineIndex
@@ -117,10 +122,23 @@ class MockOutputChannel {
     }
 }
 
+// @group TestMocks > VSCode > StatusBarItem : Mock status bar item
+class MockStatusBarItem {
+    text = '';
+    tooltip = '';
+    command = '';
+    show(): void {}
+    hide(): void {}
+    dispose(): void {}
+}
+
 // @group TestMocks > VSCode > Window : Mock window namespace with output channel creation
 export const window = {
     createOutputChannel(name: string): MockOutputChannel {
         return new MockOutputChannel(name);
+    },
+    createStatusBarItem(): MockStatusBarItem {
+        return new MockStatusBarItem();
     },
     showInformationMessage: (..._args: any[]) => Promise.resolve(undefined),
     showWarningMessage: (..._args: any[]) => Promise.resolve(undefined),
@@ -261,6 +279,7 @@ export class Disposable {
 export const languages = {
     registerCompletionItemProvider: () => ({ dispose: () => {} }),
     registerCodeLensProvider: () => ({ dispose: () => {} }),
+    registerHoverProvider: () => ({ dispose: () => {} }),
 };
 
 export const extensions = {
@@ -268,7 +287,22 @@ export const extensions = {
 };
 
 export class CompletionItem {
-    constructor(public label: string) {}
+    insertText?: string;
+    detail?: string;
+    documentation?: MarkdownString | string;
+    filterText?: string;
+    sortText?: string;
+    kind?: CompletionItemKind;
+
+    constructor(public label: string, kind?: CompletionItemKind) {
+        this.kind = kind;
+    }
+}
+
+export enum CompletionTriggerKind {
+    Invoke = 0,
+    TriggerCharacter = 1,
+    TriggerForIncompleteCompletions = 2,
 }
 
 export enum CompletionItemKind {
@@ -301,6 +335,8 @@ export enum CompletionItemKind {
 
 export class MarkdownString {
     value: string;
+    isTrusted?: boolean;
+    supportHtml?: boolean;
     constructor(value?: string) {
         this.value = value || '';
     }
@@ -311,6 +347,16 @@ export class MarkdownString {
     appendText(value: string): this {
         this.value += value;
         return this;
+    }
+}
+
+// @group TestMocks > VSCode > Hover : Mock Hover for hover provider tests
+export class Hover {
+    contents: MarkdownString[];
+    range?: Range;
+    constructor(contents: MarkdownString | MarkdownString[], range?: Range) {
+        this.contents = Array.isArray(contents) ? contents : [contents];
+        this.range = range;
     }
 }
 

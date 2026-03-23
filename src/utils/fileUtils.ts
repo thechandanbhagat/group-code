@@ -7,6 +7,21 @@ import { CodeGroup } from '../groupDefinition';
 import { enrichWithHierarchy } from './hierarchyUtils';
 import { logger } from './logger';
 
+// @group Types > Functionalities: Type definitions for the functionalities index structure
+export interface FunctionalityMetadata {
+    level: number;
+    parent: string | null;
+    children: string[];
+    groupCount: number;
+    fileTypes: string[];
+}
+
+export interface FunctionalitiesData {
+    version: string;
+    totalFunctionalities: number;
+    functionalities: { [funcPath: string]: FunctionalityMetadata };
+}
+
 // @group FileSystem > Preferences > Paths: Get user preferences directory path in user profile for GroupCode across platforms
 /**
  * Get the user preferences directory for GroupCode
@@ -389,18 +404,7 @@ export async function ensureGroupCodeDir(workspacePath: string): Promise<string>
         throw new Error("Invalid workspace path");
     }
     
-    // Normalize path to use forward slashes - safely
-    let normalizedPath = workspacePath;
-    try {
-        if (workspacePath.replace) {
-            normalizedPath = workspacePath.replace(/\\/g, '/');
-        }
-    } catch (error) {
-        logger.error('Error normalizing path:', error);
-        // Continue with original path
-    }
-    
-    const groupCodeDir = normalizedPath.endsWith('/') ? `${normalizedPath}.groupcode` : `${normalizedPath}/.groupcode`;
+    const groupCodeDir = path.join(workspacePath, '.groupcode');
     
     try {
         // Check if directory exists
@@ -433,9 +437,8 @@ export async function saveCodeGroups(
 
     try {
         const groupCodeDir = await ensureGroupCodeDir(workspacePath);
-        const groupsFilePath = `${groupCodeDir}/codegroups.json`;
-        const path = require('path');
-        
+        const groupsFilePath = path.join(groupCodeDir, 'codegroups.json');
+
         // Convert Map to serializable object with relative paths and compact line ranges
         const serializableGroups: { [key: string]: any[] } = {};
         fileTypeGroups.forEach((groups, fileType) => {
@@ -549,7 +552,7 @@ export async function saveCodeGroups(
             };
         });
         
-        const functionalitiesFilePath = `${groupCodeDir}/functionalities.json`;
+        const functionalitiesFilePath = path.join(groupCodeDir, 'functionalities.json');
         await writeFile(
             functionalitiesFilePath, 
             JSON.stringify(functionalitiesData, null, 2)
@@ -572,9 +575,8 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
     
     try {
         const groupCodeDir = await ensureGroupCodeDir(workspacePath);
-        const groupsFilePath = `${groupCodeDir}/codegroups.json`;
-        const path = require('path');
-        
+        const groupsFilePath = path.join(groupCodeDir, 'codegroups.json');
+
         try {
             await fs.promises.access(groupsFilePath);
         } catch {
@@ -587,37 +589,49 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
         const fileTypeGroups = new Map<string, CodeGroup[]>();
         for (const fileType in serializableGroups) {
             if (serializableGroups[fileType] && Array.isArray(serializableGroups[fileType])) {
-                const validGroups = serializableGroups[fileType].filter((group: any) => 
-                    group && typeof group === 'object' && group.functionality && group.filePath
-                );
+                const validGroups = serializableGroups[fileType].filter((group: unknown) => {
+                    if (!group || typeof group !== 'object') { return false; }
+                    const g = group as Record<string, unknown>;
+                    if (typeof g.functionality !== 'string' || !g.functionality) { return false; }
+                    if (typeof g.filePath !== 'string' || !g.filePath) { return false; }
+                    if (g.description !== undefined && typeof g.description !== 'string') { return false; }
+                    if (g.lineNumbers !== undefined && typeof g.lineNumbers !== 'string' && !Array.isArray(g.lineNumbers)) { return false; }
+                    return true;
+                });
                 
                 // Convert relative paths back to absolute paths and range strings to arrays
-                const groupsWithAbsolutePaths = validGroups.map((group: any) => {
+                const groupsWithAbsolutePaths = validGroups.map((group: Record<string, unknown>) => {
+                    const functionality = group.functionality as string;
+                    const description = typeof group.description === 'string' ? group.description : undefined;
+                    const rawFilePath = group.filePath as string;
+
                     // Handle lineNumbers - could be array (old format) or string (new format)
                     let lineNumbers: number[];
                     if (typeof group.lineNumbers === 'string') {
                         lineNumbers = rangesToLineNumbers(group.lineNumbers);
                     } else if (Array.isArray(group.lineNumbers)) {
-                        lineNumbers = group.lineNumbers; // Backwards compatibility
+                        lineNumbers = (group.lineNumbers as unknown[]).filter(n => typeof n === 'number') as number[];
                     } else {
                         lineNumbers = [];
                     }
 
+                    const resolvedPath = path.isAbsolute(rawFilePath)
+                        ? rawFilePath  // Already absolute (backwards compatibility)
+                        : path.resolve(workspacePath, rawFilePath);  // Convert relative to absolute
+
                     // Note: isFavorite is NOT loaded from shared file - it's loaded from user profile
                     // Any old isFavorite values in codegroups.json are ignored
                     const codeGroup: CodeGroup = {
-                        functionality: group.functionality,
-                        description: group.description,
-                        filePath: path.isAbsolute(group.filePath)
-                            ? group.filePath  // Already absolute (backwards compatibility)
-                            : path.resolve(workspacePath, group.filePath),  // Convert relative to absolute
-                        lineNumbers: lineNumbers,
+                        functionality,
+                        description,
+                        filePath: resolvedPath,
+                        lineNumbers,
                         isFavorite: false  // Will be set from user profile later
                     };
 
                     // Enrich with hierarchy information if functionality contains '>'
                     // The enrichWithHierarchy function will preserve the isFavorite property
-                    if (codeGroup.functionality.includes('>')) {
+                    if (functionality.includes('>')) {
                         return enrichWithHierarchy(codeGroup);
                     }
 
@@ -641,14 +655,14 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
 /**
  * Load functionalities metadata for intelligent suggestions
  */
-export async function loadFunctionalities(workspacePath: string): Promise<any | null> {
+export async function loadFunctionalities(workspacePath: string): Promise<FunctionalitiesData | null> {
     if (!workspacePath || typeof workspacePath !== 'string') {
         return null;
     }
     
     try {
         const groupCodeDir = await ensureGroupCodeDir(workspacePath);
-        const functionalitiesFilePath = `${groupCodeDir}/functionalities.json`;
+        const functionalitiesFilePath = path.join(groupCodeDir, 'functionalities.json');
         
         try {
             await fs.promises.access(functionalitiesFilePath);
@@ -668,7 +682,7 @@ export async function loadFunctionalities(workspacePath: string): Promise<any | 
 /**
  * Get suggested child functionalities for a parent path
  */
-export function getSuggestedChildren(functionalitiesData: any, parentPath: string): string[] {
+export function getSuggestedChildren(functionalitiesData: FunctionalitiesData, parentPath: string): string[] {
     if (!functionalitiesData || !functionalitiesData.functionalities) {
         return [];
     }
@@ -681,14 +695,14 @@ export function getSuggestedChildren(functionalitiesData: any, parentPath: strin
 /**
  * Get all functionalities at a specific level
  */
-export function getFunctionalitiesByLevel(functionalitiesData: any, level: number): string[] {
+export function getFunctionalitiesByLevel(functionalitiesData: FunctionalitiesData, level: number): string[] {
     if (!functionalitiesData || !functionalitiesData.functionalities) {
         return [];
     }
-    
+
     return Object.entries(functionalitiesData.functionalities)
-        .filter(([_, data]: [string, any]) => data.level === level)
-        .map(([path, _]) => path)
+        .filter(([_, data]) => data.level === level)
+        .map(([funcPath, _]) => funcPath)
         .sort();
 }
 
@@ -696,7 +710,7 @@ export function getFunctionalitiesByLevel(functionalitiesData: any, level: numbe
  /**
  * Get top-level functionalities (root nodes)
  */
-export function getRootFunctionalities(functionalitiesData: any): string[] {
+export function getRootFunctionalities(functionalitiesData: FunctionalitiesData): string[] {
     return getFunctionalitiesByLevel(functionalitiesData, 1);
 }
 
@@ -704,7 +718,7 @@ export function getRootFunctionalities(functionalitiesData: any): string[] {
 /**
  * Get similar functionalities based on text similarity
  */
-export function getSimilarFunctionalities(functionalitiesData: any, partial: string): string[] {
+export function getSimilarFunctionalities(functionalitiesData: FunctionalitiesData, partial: string): string[] {
     if (!functionalitiesData || !functionalitiesData.functionalities) {
         return [];
     }
@@ -747,7 +761,7 @@ export function getSimilarFunctionalities(functionalitiesData: any, partial: str
 /**
  * Get functionality statistics
  */
-export function getFunctionalityStats(functionalitiesData: any, path: string): any | null {
+export function getFunctionalityStats(functionalitiesData: FunctionalitiesData, path: string): FunctionalityMetadata | null {
     if (!functionalitiesData || !functionalitiesData.functionalities) {
         return null;
     }

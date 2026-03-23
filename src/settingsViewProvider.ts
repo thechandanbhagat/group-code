@@ -73,7 +73,7 @@ export class SettingsViewProvider {
         }, 100);
     }
 
-    private async saveSettings(settings: any) {
+    private async saveSettings(settings: Record<string, unknown>) {
         try {
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (!workspaceFolders || workspaceFolders.length === 0) {

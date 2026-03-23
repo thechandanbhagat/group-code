@@ -123,20 +123,20 @@ export class FileGroupTreeProvider implements vscode.TreeDataProvider<FileGroupT
 
     // @group Providers > Tree Provider > Tree Structure: Get children for tree node
     async getChildren(element?: FileGroupTreeItem): Promise<FileGroupTreeItem[]> {
+        // @group Performance > Cache : Fetch groups once per getChildren call — shared between file list and group list
+        const allGroups = await this.codeGroupProvider.getAllGroups();
+
         if (!element) {
-            // Root level: return all files that have groups
-            return this.getFilesWithGroups();
+            return this.getFilesWithGroups(allGroups);
         } else if (element.type === FileGroupTreeItemType.File && element.filePath) {
-            // File level: return all groups in this file
-            return this.getGroupsInFile(element.filePath);
+            return this.getGroupsInFile(element.filePath, allGroups);
         }
-        
+
         return [];
     }
 
     // @group Providers > Tree Provider > Data Retrieval: Get all files that contain groups
-    private async getFilesWithGroups(): Promise<FileGroupTreeItem[]> {
-        const allGroups = await this.codeGroupProvider.getAllGroups();
+    private getFilesWithGroups(allGroups: CodeGroup[]): FileGroupTreeItem[] {
         
         // Group by file path
         const fileMap = new Map<string, CodeGroup[]>();
@@ -209,9 +209,7 @@ export class FileGroupTreeProvider implements vscode.TreeDataProvider<FileGroupT
     }
 
     // @group Providers > Tree Provider > Data Retrieval: Get all groups in a specific file
-    private async getGroupsInFile(filePath: string): Promise<FileGroupTreeItem[]> {
-        const allGroups = await this.codeGroupProvider.getAllGroups();
-        
+    private getGroupsInFile(filePath: string, allGroups: CodeGroup[]): FileGroupTreeItem[] {
         // Filter groups for this file
         const fileGroups = allGroups.filter(g => g.filePath === filePath);
         

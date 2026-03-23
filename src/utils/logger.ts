@@ -70,7 +70,7 @@ class Logger {
         this.outputChannel.appendLine(formattedMessage);
 
         // Also log to console in development for easier debugging
-        if (vscode.env.machineId === 'someValue' || process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development') {
             switch (level) {
                 case LogLevel.DEBUG:
                     console.debug(formattedMessage);

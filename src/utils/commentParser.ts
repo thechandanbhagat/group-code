@@ -7,7 +7,7 @@ import { getFileType } from './fileUtils';
 import { enrichWithHierarchy, isValidHierarchy } from './hierarchyUtils';
 
 // Language configuration interface
-interface LanguageConfig {
+export interface LanguageConfig {
     languages: LanguageInfo[];
     commentPattern: {
         pattern: string;
@@ -16,7 +16,7 @@ interface LanguageConfig {
     };
 }
 
-interface LanguageInfo {
+export interface LanguageInfo {
     name: string;
     fileTypes: string[];
     commentMarkers: {
@@ -60,8 +60,8 @@ function loadLanguageConfig(): LanguageConfig {
                     loadedPath = configPath;
                     break;
                 }
-            } catch {
-                // Try next path
+            } catch (err) {
+                logger.debug(`Failed to read config from ${configPath}`, err);
             }
         }
         
@@ -541,72 +541,3 @@ function getIndentation(line: string): number {
     return match ? match[1].length : 0;
 }
 
-/**
- * Parse document for multi-line block comments
- * NOTE: This is currently not used, but kept for future enhancements
- */
-function parseMultiLineBlockComments(document: vscode.TextDocument, langInfo: LanguageInfo): CodeGroup[] {
-    // Only process if blockStart and blockEnd are defined
-    if (!langInfo.commentMarkers.blockStart || !langInfo.commentMarkers.blockEnd) {
-        return [];
-    }
-    
-    const text = document.getText();
-    const filePath = document.uri.fsPath;
-    const codeGroups: CodeGroup[] = [];
-    
-    // Get the comment pattern from configuration
-    const config = loadLanguageConfig();
-    const patternStr = config.commentPattern.pattern;
-    const patternFlags = config.commentPattern.flags;
-    const commentPattern = new RegExp(patternStr, patternFlags);
-    
-    // Look for block comments
-    let startPos = 0;
-    while (startPos < text.length) {
-        const blockStartPos = text.indexOf(langInfo.commentMarkers.blockStart, startPos);
-        if (blockStartPos === -1) break;
-        
-        const blockEndPos = text.indexOf(langInfo.commentMarkers.blockEnd, blockStartPos + langInfo.commentMarkers.blockStart.length);
-        if (blockEndPos === -1) break;
-        
-        // Extract the comment content
-        const commentContent = text.substring(
-            blockStartPos + langInfo.commentMarkers.blockStart.length,
-            blockEndPos
-        );
-        
-        // Find the line numbers for this block comment
-        const blockStartLine = document.positionAt(blockStartPos).line;
-        const blockEndLine = document.positionAt(blockEndPos + langInfo.commentMarkers.blockEnd.length).line;
-        
-        // Check each line in the comment block for the pattern
-        const lines = commentContent.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            const match = lines[i].trim().match(commentPattern);
-            if (match) {
-                const functionality = match[1].trim().toLowerCase();
-                const description = match[2].trim();
-                
-                // Create a code group for this block
-                codeGroups.push({
-                    functionality,
-                    description,
-                    lineNumbers: Array.from(
-                        { length: blockEndLine - blockStartLine + 1 },
-                        (_, idx) => blockStartLine + idx + 1
-                    ),
-                    filePath
-                });
-                
-                // Only use the first match in a block
-                break;
-            }
-        }
-        
-        // Move past this block
-        startPos = blockEndPos + langInfo.commentMarkers.blockEnd.length;
-    }
-    
-    return codeGroups;
-}

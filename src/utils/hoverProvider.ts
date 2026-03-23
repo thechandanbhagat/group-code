@@ -4,11 +4,12 @@ import { CodeGroup } from '../groupDefinition';
 import * as path from 'path';
 import * as fs from 'fs';
 import logger from './logger';
+import { LanguageConfig, LanguageInfo } from './commentParser';
 
 // @group HoverProvider : Hover card provider for @group comment annotations
 export class GroupHoverProvider implements vscode.HoverProvider {
     private codeGroupProvider: CodeGroupProvider;
-    private languageConfig: any;
+    private languageConfig: LanguageConfig | null = null;
 
     // @group HoverProvider > Setup : Constructor and config loading
     constructor(codeGroupProvider: CodeGroupProvider) {
@@ -220,9 +221,9 @@ export class GroupHoverProvider implements vscode.HoverProvider {
         }
 
         const line = document.lineAt(position).text;
-        const fileExtension = document.fileName.split('.').pop()?.toLowerCase();
+        const fileExtension = document.fileName.split('.').pop()?.toLowerCase() ?? '';
 
-        const langInfo = this.languageConfig.languages.find((lang: any) =>
+        const langInfo = this.languageConfig.languages.find((lang: LanguageInfo) =>
             lang.fileTypes && lang.fileTypes.includes(fileExtension)
         );
 
@@ -244,10 +245,10 @@ export class GroupHoverProvider implements vscode.HoverProvider {
             }
         }
 
-        // Block comment check
+        // Block comment check — read document text once and reuse for the scan
         if (commentMarkers.blockStart && commentMarkers.blockEnd) {
-            const text = document.getText();
             const offset = document.offsetAt(position);
+            const text = document.getText();
             let searchStart = 0;
             while (true) {
                 const blockStart = text.indexOf(commentMarkers.blockStart, searchStart);
@@ -266,6 +267,7 @@ export class GroupHoverProvider implements vscode.HoverProvider {
     private isInBasicComment(document: vscode.TextDocument, position: vscode.Position): boolean {
         const line = document.lineAt(position).text;
 
+        // Line comment check — fast path, no full document read needed
         if (line.trimStart().startsWith('//') ||
             line.trimStart().startsWith('#') ||
             line.trimStart().startsWith('--') ||
@@ -273,6 +275,7 @@ export class GroupHoverProvider implements vscode.HoverProvider {
             return true;
         }
 
+        // Block / HTML comment check — read document text only once
         const offset = document.offsetAt(position);
         const text = document.getText();
 

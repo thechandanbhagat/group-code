@@ -133,7 +133,7 @@ dist
 excluded/*
 *.vsix
 website
-exclude
+exclude/
 
 # User preferences (stored in OS user profile instead)
 .groupcode/.userprefs/

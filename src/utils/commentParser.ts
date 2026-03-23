@@ -31,6 +31,15 @@ export interface LanguageInfo {
 let languageConfigCache: LanguageConfig | null = null;
 
 /**
+ * Returns the shared, cached language configuration.
+ * Exported so other providers (hover, completion) can reuse the same
+ * multi-path loader instead of duplicating the resolution logic.
+ */
+export function getLanguageConfig(): LanguageConfig {
+    return loadLanguageConfig();
+}
+
+/**
  * Loads the language configuration from the JSON file
  */
 function loadLanguageConfig(): LanguageConfig {

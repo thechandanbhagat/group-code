@@ -7,7 +7,7 @@ import logger from './logger';
 import { parseHierarchy, getAncestorPaths, enrichWithHierarchy } from './hierarchyUtils';
 import { loadFunctionalities, getSuggestedChildren, getSimilarFunctionalities, getFunctionalityStats, FunctionalitiesData } from './fileUtils';
 import { patternAnalyzer } from './patternAnalyzer';
-import { LanguageConfig, LanguageInfo } from './commentParser';
+import { LanguageConfig, LanguageInfo, getLanguageConfig } from './commentParser';
 
 export class GroupCompletionProvider implements vscode.CompletionItemProvider {
     private readonly triggerCharacters = ['@', ' ', '>'];
@@ -18,46 +18,39 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
     private readonly cacheExpiryMs = 5000; // 5 seconds
 
     // @group Caching > Pattern Analysis : Cache pattern analysis results to avoid O(n²) recompute on every keystroke
-    private patternAnalysisCache: { result: ReturnType<typeof patternAnalyzer.analyzePatterns>; groupsSignature: string } | null = null;
+    private patternAnalysisCache: { result: ReturnType<typeof patternAnalyzer.analyzePatterns>; groupsVersion: number } | null = null;
     private readonly patternAnalysisCacheExpiryMs = 30_000; // 30 seconds - patterns change infrequently
     private patternAnalysisCacheTime: number = 0;
+    // Monotonic version incremented on every external group update — used as the cache key
+    // so mid-array mutations are not missed (unlike a first/last endpoint signature)
+    private patternCacheVersion: number = 0;
 
     constructor(codeGroupProvider: CodeGroupProvider) {
         this.codeGroupProvider = codeGroupProvider;
-        this.loadLanguageConfig();
+        // Reuse commentParser's multi-path cached loader (handles src/, out/, and default fallbacks)
+        this.languageConfig = getLanguageConfig();
     }
 
-    private loadLanguageConfig() {
-        try {
-            const configPath = path.join(__dirname, '..', 'config', 'languageConfig.json');
-            const configContent = fs.readFileSync(configPath, 'utf8');
-            this.languageConfig = JSON.parse(configContent);
-        } catch (error) {
-            logger.error('Error loading language config', error);
-        }
-    }
-
-    // @group Caching > Pattern Analysis : Return cached pattern analysis or recompute when stale or groups changed
+    // @group Caching > Pattern Analysis : Return cached pattern analysis or recompute when stale or version changed
     private getCachedPatternAnalysis(groups: CodeGroup[]): ReturnType<typeof patternAnalyzer.analyzePatterns> {
         const now = Date.now();
-        // Use group count + first/last functionality as a cheap signature
-        const signature = `${groups.length}:${groups[0]?.functionality ?? ''}:${groups[groups.length - 1]?.functionality ?? ''}`;
         if (
             this.patternAnalysisCache &&
             (now - this.patternAnalysisCacheTime) < this.patternAnalysisCacheExpiryMs &&
-            this.patternAnalysisCache.groupsSignature === signature
+            this.patternAnalysisCache.groupsVersion === this.patternCacheVersion
         ) {
             return this.patternAnalysisCache.result;
         }
         const result = patternAnalyzer.analyzePatterns(groups);
-        this.patternAnalysisCache = { result, groupsSignature: signature };
+        this.patternAnalysisCache = { result, groupsVersion: this.patternCacheVersion };
         this.patternAnalysisCacheTime = now;
         return result;
     }
 
-    // @group Caching > Invalidation : Clear pattern analysis cache when groups are externally updated
+    // @group Caching > Invalidation : Increment version so next getCachedPatternAnalysis call recomputes fresh results
     public invalidatePatternCache(): void {
         this.patternAnalysisCache = null;
+        this.patternCacheVersion++;
     }
 
     private async getFunctionalitiesData(): Promise<FunctionalitiesData | null> {

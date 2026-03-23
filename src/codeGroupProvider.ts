@@ -556,9 +556,10 @@ export class CodeGroupProvider implements vscode.Disposable {
 
             logger.info(`Scanning workspace with ${ignorePatterns.length} ignore patterns`);
 
-            const timeout = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error(`Workspace scan timed out after ${CodeGroupProvider.SCAN_TIMEOUT_MS / 1000}s`)), CodeGroupProvider.SCAN_TIMEOUT_MS)
-            );
+            let scanTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
+            const timeout = new Promise<never>((_, reject) => {
+                scanTimeoutHandle = setTimeout(() => reject(new Error(`Workspace scan timed out after ${CodeGroupProvider.SCAN_TIMEOUT_MS / 1000}s`)), CodeGroupProvider.SCAN_TIMEOUT_MS);
+            });
 
             let files: vscode.Uri[];
             try {
@@ -573,6 +574,8 @@ export class CodeGroupProvider implements vscode.Disposable {
                     return;
                 }
                 throw err;
+            } finally {
+                clearTimeout(scanTimeoutHandle);
             }
             let processedCount = 0;
 

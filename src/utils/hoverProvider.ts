@@ -2,9 +2,8 @@ import * as vscode from 'vscode';
 import { CodeGroupProvider } from '../codeGroupProvider';
 import { CodeGroup } from '../groupDefinition';
 import * as path from 'path';
-import * as fs from 'fs';
 import logger from './logger';
-import { LanguageConfig, LanguageInfo } from './commentParser';
+import { LanguageConfig, LanguageInfo, getLanguageConfig } from './commentParser';
 
 // @group HoverProvider : Hover card provider for @group comment annotations
 export class GroupHoverProvider implements vscode.HoverProvider {
@@ -14,17 +13,8 @@ export class GroupHoverProvider implements vscode.HoverProvider {
     // @group HoverProvider > Setup : Constructor and config loading
     constructor(codeGroupProvider: CodeGroupProvider) {
         this.codeGroupProvider = codeGroupProvider;
-        this.loadLanguageConfig();
-    }
-
-    private loadLanguageConfig(): void {
-        try {
-            const configPath = path.join(__dirname, '..', 'config', 'languageConfig.json');
-            const configContent = fs.readFileSync(configPath, 'utf8');
-            this.languageConfig = JSON.parse(configContent);
-        } catch (error) {
-            logger.error('HoverProvider: Error loading language config', error);
-        }
+        // Reuse commentParser's multi-path cached loader (handles src/, out/, and default fallbacks)
+        this.languageConfig = getLanguageConfig();
     }
 
     // @group HoverProvider > Core : Main hover provider implementation
@@ -104,7 +94,6 @@ export class GroupHoverProvider implements vscode.HoverProvider {
         allGroupsMap: Map<string, CodeGroup[]>
     ): vscode.MarkdownString {
         const md = new vscode.MarkdownString();
-        md.isTrusted = true;
         md.supportHtml = false;
 
         // --- Header: hierarchy path ---

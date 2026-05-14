@@ -1,7 +1,7 @@
 // @group UnitTests > FileUtils : Tests for file utility functions - type detection, name parsing, line ranges
 
 import * as assert from 'assert';
-import { getFileType, getFileName, getSupportedExtensions, isSupportedFileType, getSupportedFilesGlobPattern } from '../../src/utils/fileUtils';
+import { getFileType, getFileName, getSupportedExtensions, isSupportedFileType, getSupportedFilesGlobPattern, rangesToLineNumbers } from '../../src/utils/fileUtils';
 
 describe('fileUtils', () => {
 
@@ -163,6 +163,55 @@ describe('fileUtils', () => {
             assert.ok(pattern.includes('js'));
             assert.ok(pattern.includes('ts'));
             assert.ok(pattern.includes('py'));
+        });
+    });
+
+    // @group UnitTests > RangesToLineNumbers : Tests for rangesToLineNumbers parsing and validation
+    describe('rangesToLineNumbers()', () => {
+        it('converts a simple range to line numbers', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('8-11'), [8, 9, 10, 11]);
+        });
+
+        it('converts multiple ranges', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('8-11,15-18'), [8, 9, 10, 11, 15, 16, 17, 18]);
+        });
+
+        it('converts a single line number', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('5'), [5]);
+        });
+
+        it('converts mixed single and range', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('1,3-5,7'), [1, 3, 4, 5, 7]);
+        });
+
+        it('returns empty array for empty string', () => {
+            assert.deepStrictEqual(rangesToLineNumbers(''), []);
+        });
+
+        it('ignores inverted range where start > end', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('11-8'), []);
+        });
+
+        it('ignores zero and negative line numbers', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('0'), []);
+            assert.deepStrictEqual(rangesToLineNumbers('-1'), []);
+        });
+
+        it('ignores malformed range with more than one dash (e.g. "8--11")', () => {
+            // "8--11" splits into ["8", "", "11"] — 3 parts, not 2, so skipped
+            assert.deepStrictEqual(rangesToLineNumbers('8--11'), []);
+        });
+
+        it('ignores range with three parts', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('8-11-14'), []);
+        });
+
+        it('handles whitespace around ranges', () => {
+            assert.deepStrictEqual(rangesToLineNumbers(' 3-5 '), [3, 4, 5]);
+        });
+
+        it('returns empty for non-numeric input', () => {
+            assert.deepStrictEqual(rangesToLineNumbers('abc'), []);
         });
     });
 });

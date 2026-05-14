@@ -141,4 +141,42 @@ describe('GroupCompletionProvider', () => {
             });
         });
     });
+
+    // @group UnitTests > CompletionProvider > BlockCommentBoundary : Block comment closing delimiter detection
+    describe('block comment closing delimiter boundary', () => {
+        it('does not complete outside a closed block comment', async () => {
+            // Cursor is after the closing */ — not in a comment
+            const doc = new MockTextDocument('/* @group */ const x', 'javascript', '/a.js') as any;
+            const pos = new Position(0, 13) as any; // after the space following '*/'
+            const result = await provider.provideCompletionItems(doc, pos, makeCancelToken(), makeContext());
+            assert.deepStrictEqual(result, []);
+        });
+
+        it('completes inside an unclosed block comment', async () => {
+            // Block comment with no closing */ — cursor is inside
+            const doc = new MockTextDocument('/* @', 'javascript', '/a.js') as any;
+            const pos = new Position(0, 4) as any;
+            const result = await provider.provideCompletionItems(doc, pos, makeCancelToken(), makeContext());
+            assert.ok(Array.isArray(result));
+            assert.ok((result as any[]).length > 0, 'Expected completions inside unclosed block comment');
+        });
+
+        it('completes at cursor position on the closing */ delimiter (off-by-one fix)', async () => {
+            // text: "/* @*/" — cursor at offset 4 which is the '*' of '*/'
+            // Old buggy code: offset(4) < blockCommentEnd(4) → false → no completions
+            // Fixed code:     offset(4) <= blockCommentEnd(4)+1 → true → completions shown
+            const doc = new MockTextDocument('/* @*/', 'javascript', '/a.js') as any;
+            const pos = new Position(0, 4) as any; // on the '*' of '*/'
+            const result = await provider.provideCompletionItems(doc, pos, makeCancelToken(), makeContext());
+            assert.ok(Array.isArray(result));
+            assert.ok((result as any[]).length > 0, 'Expected completions at */ closing delimiter');
+        });
+
+        it('does not complete on plain code after a closed block comment', async () => {
+            const doc = new MockTextDocument('/* comment */ x = 1', 'javascript', '/a.js') as any;
+            const pos = new Position(0, 18) as any; // inside "x = 1"
+            const result = await provider.provideCompletionItems(doc, pos, makeCancelToken(), makeContext());
+            assert.deepStrictEqual(result, []);
+        });
+    });
 });

@@ -370,7 +370,8 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
         const blockCommentStart = text.lastIndexOf('/*', offset);
         if (blockCommentStart !== -1) {
             const blockCommentEnd = text.indexOf('*/', blockCommentStart);
-            if (blockCommentEnd === -1 || offset < blockCommentEnd) {
+            // +1 to include the closing '*/' delimiter (2 chars: index and index+1)
+            if (blockCommentEnd === -1 || offset <= blockCommentEnd + 1) {
                 return true;
             }
         }
@@ -378,7 +379,8 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
         const htmlCommentStart = text.lastIndexOf('<!--', offset);
         if (htmlCommentStart !== -1) {
             const htmlCommentEnd = text.indexOf('-->', htmlCommentStart);
-            if (htmlCommentEnd === -1 || offset < htmlCommentEnd) {
+            // +2 to include the closing '-->' delimiter (3 chars: index, index+1, index+2)
+            if (htmlCommentEnd === -1 || offset <= htmlCommentEnd + 2) {
                 return true;
             }
         }

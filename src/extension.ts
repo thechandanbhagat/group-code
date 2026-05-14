@@ -214,9 +214,12 @@ export function activate(context: vscode.ExtensionContext) {
     
     fileWatcher.onDidChange(async (uri) => {
         logger.info(`File changed: ${uri.fsPath}`);
-        // Process the changed file if it might contain code groups
-        const document = await vscode.workspace.openTextDocument(uri);
-        await codeGroupProvider.processFileOnSave(document);
+        try {
+            const document = await vscode.workspace.openTextDocument(uri);
+            await codeGroupProvider.processFileOnSave(document);
+        } catch (err) {
+            logger.error(`Error processing file change for ${uri.fsPath}:`, err);
+        }
     });
 
     // Add real-time document change listener with debouncing for live tree updates

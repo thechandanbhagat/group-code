@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { CodeGroupProvider } from '../codeGroupProvider';
 import { CodeGroupTreeProvider } from '../codeGroupTreeProvider';
+import { CodeGroup } from '../groupDefinition';
 import logger from './logger';
 import { enrichWithHierarchy, parseHierarchy, isDescendantOf } from './hierarchyUtils';
 import { getSupportedFilesGlobPattern } from './fileUtils';
@@ -148,7 +149,7 @@ export class GroupCodeChatParticipant {
             
             if (groups.length > 0) {
                 stream.markdown('**Groups found:**\n');
-                groups.forEach((group: any) => {
+                groups.forEach((group: CodeGroup) => {
                     stream.markdown(`- 📁 **${group.functionality}**${group.description ? ` - ${group.description}` : ''}\n`);
                 });
             } else {
@@ -225,7 +226,7 @@ export class GroupCodeChatParticipant {
 
         // Group by functionality
         const groupedByName = new Map<string, typeof allGroups>();
-        allGroups.forEach((group: any) => {
+        allGroups.forEach((group: CodeGroup) => {
             const existing = groupedByName.get(group.functionality) || [];
             existing.push(group);
             groupedByName.set(group.functionality, existing);
@@ -237,7 +238,7 @@ export class GroupCodeChatParticipant {
                 stream.markdown(`*${groups[0].description}*\n\n`);
             }
             stream.markdown(`Found in **${groups.length}** location(s):\n`);
-            groups.forEach((group: any) => {
+            groups.forEach((group: CodeGroup) => {
                 const fileName = group.filePath.split(/[\\/]/).pop();
                 const startLine = group.lineNumbers && group.lineNumbers.length > 0 ? group.lineNumbers[0] : 0;
                 stream.markdown(`- 📄 \`${fileName}\` (line ${startLine})\n`);
@@ -274,15 +275,14 @@ export class GroupCodeChatParticipant {
         if (isHierarchicalSearch) {
             // Exact hierarchy match or descendant match
             const searchHierarchy = parseHierarchy(searchTerm);
-            matchingGroups = allGroups.filter((g: any) => {
-                const enriched = enrichWithHierarchy(g);
+            matchingGroups = allGroups.filter((g: CodeGroup) => {
                 // Match exact or descendants
                 return g.functionality.toLowerCase() === searchTerm.toLowerCase() ||
                        isDescendantOf(g.functionality, searchTerm);
             });
         } else {
             // Simple text search across all levels
-            matchingGroups = allGroups.filter((g: any) => 
+            matchingGroups = allGroups.filter((g: CodeGroup) =>
                 g.functionality.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
@@ -295,8 +295,8 @@ export class GroupCodeChatParticipant {
         stream.markdown(`### 🔍 Found ${matchingGroups.length} group(s) matching "${searchTerm}"\n\n`);
         
         // Group by hierarchy level for better display
-        const enrichedMatches = matchingGroups.map((g: any) => enrichWithHierarchy(g));
-        enrichedMatches.sort((a: any, b: any) => {
+        const enrichedMatches = matchingGroups.map((g: CodeGroup) => enrichWithHierarchy(g));
+        enrichedMatches.sort((a: CodeGroup, b: CodeGroup) => {
             // Sort by hierarchy path, then by file name
             if (a.functionality !== b.functionality) {
                 return a.functionality.localeCompare(b.functionality);
@@ -305,7 +305,7 @@ export class GroupCodeChatParticipant {
         });
         
         let currentFunc = '';
-        enrichedMatches.forEach((group: any) => {
+        enrichedMatches.forEach((group: CodeGroup) => {
             if (group.functionality !== currentFunc) {
                 if (currentFunc) stream.markdown('\n');
                 currentFunc = group.functionality;
@@ -347,7 +347,7 @@ export class GroupCodeChatParticipant {
 
         const searchTerm = searchMatch[1].trim();
         const allGroups = this.codeGroupProvider.getAllGroups();
-        const matchingGroup = allGroups.find((g: any) => 
+        const matchingGroup = allGroups.find((g: CodeGroup) =>
             g.functionality.toLowerCase() === searchTerm.toLowerCase()
         );
 
@@ -536,7 +536,7 @@ export class GroupCodeChatParticipant {
                     }, token);
 
                     if (result && result.content && result.content.length > 0) {
-                        const firstContent: any = result.content[0];
+                        const firstContent = result.content[0] as vscode.LanguageModelTextPart;
                         const generatedCode = firstContent.value || String(firstContent);
                         
                         // Only apply if there are actual changes
@@ -707,7 +707,7 @@ export class GroupCodeChatParticipant {
             }
 
             // The result contains the generated code
-            const firstContent: any = result.content[0];
+            const firstContent = result.content[0] as vscode.LanguageModelTextPart;
             const generatedCode = firstContent.value || String(firstContent);
             
             if (!generatedCode || generatedCode.trim() === code.trim()) {

@@ -361,10 +361,9 @@ function parseDocumentWithLanguageInfo(document: vscode.TextDocument, langInfo: 
                  trimmedLine.startsWith(langInfo.commentMarkers.blockStart) && 
                  trimmedLine.endsWith(langInfo.commentMarkers.blockEnd)) {
             
-            commentLine = trimmedLine.substring(
-                langInfo.commentMarkers.blockStart.length, 
-                trimmedLine.length - langInfo.commentMarkers.blockEnd.length
-            );
+            const startIdx = langInfo.commentMarkers.blockStart.length;
+            const endIdx = trimmedLine.length - langInfo.commentMarkers.blockEnd.length;
+            commentLine = endIdx > startIdx ? trimmedLine.substring(startIdx, endIdx) : '';
             logger.debug(`Found block comment: "${commentLine}"`);
             isComment = true;
         }

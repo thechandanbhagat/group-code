@@ -183,7 +183,7 @@ function lineNumbersToRanges(lineNumbers: number[]): string {
  * Converts a compact range string back to an array of line numbers
  * Example: "8-11,15-18" -> [8,9,10,11,15,16,17,18]
  */
-function rangesToLineNumbers(rangeString: string): number[] {
+export function rangesToLineNumbers(rangeString: string): number[] {
     if (!rangeString || typeof rangeString !== 'string') {
         return [];
     }
@@ -195,11 +195,14 @@ function rangesToLineNumbers(rangeString: string): number[] {
         const trimmed = range.trim();
         if (trimmed.includes('-')) {
             // It's a range like "8-11"
-            const [startStr, endStr] = trimmed.split('-');
-            const start = parseInt(startStr, 10);
-            const end = parseInt(endStr, 10);
-            
-            if (!isNaN(start) && !isNaN(end)) {
+            const parts = trimmed.split('-');
+            if (parts.length !== 2) {
+                continue;
+            }
+            const start = parseInt(parts[0], 10);
+            const end = parseInt(parts[1], 10);
+
+            if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) {
                 for (let i = start; i <= end; i++) {
                     lineNumbers.push(i);
                 }
@@ -207,7 +210,7 @@ function rangesToLineNumbers(rangeString: string): number[] {
         } else {
             // It's a single number
             const num = parseInt(trimmed, 10);
-            if (!isNaN(num)) {
+            if (!isNaN(num) && num > 0) {
                 lineNumbers.push(num);
             }
         }

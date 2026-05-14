@@ -1,25 +1,11 @@
-## Version 1.6.3 - Shell Script Comment Detection Fix & Package Optimization
-
-### Fixed
-- **Comment Detection for Shell Scripts**
-  - Fixed general Group Code operations to use `#` comments for shell scripts instead of defaulting to `//`
-  - Improved fallback logic in comment parser to detect shell script file types correctly
-  - Added smart heuristic detection for shell, bash, and other hash-comment languages
-  - Enhanced debug logging to track language detection issues
-  - Now properly handles .sh files throughout the extension, not just in AI generation
-
-### Improved
-- **Extension Package Size**
-  - Optimized icon file: Reduced from 1.35 MB to 5.54 KB (99.6% reduction)
-  - Total package size reduced from 1.45 MB to 113.98 KB (92% smaller)
-  - Faster installation and updates# Changelog
+# Changelog
 
 All notable changes to the "Group Code" extension will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.0] - 2026-03-13
+## [1.8.0] - 2026-03-23
 
 ### Added
 - **Hover Cards for @group Annotations**
@@ -30,29 +16,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Lists filenames where the group appears (up to 6, with overflow count)
   - Shows direct sub-groups (children) for parent group annotations
   - Hover is only triggered when the cursor is inside a comment line, avoiding noise
-  - Full support for all 40+ languages via comment syntax detection
+  - Full support for 40+ languages via shared language config with multi-path resolution
 
-- **Comprehensive Unit Test Suite**
-  - 145+ unit tests covering all core modules
+- **Comprehensive Unit Test Suite — 193 tests**
+  - Tests covering all core modules: `commentParser`, `completionProvider`, `fileUtils`, `groupDefinition`, `groupingUtils`, `hierarchyUtils`, `hoverProvider`, `patternAnalyzer`, `codeGroupProvider`
   - Complete VS Code API mock (`tests/mocks/vscode.ts`) enabling tests without a VS Code host
-  - Test coverage for: `commentParser`, `completionProvider`, `fileUtils`, `groupDefinition`, `groupingUtils`, `hierarchyUtils`, `hoverProvider`, `patternAnalyzer`
   - Mocha test framework with TypeScript support
 
 - **CI/CD Pipeline**
-  - GitHub Actions workflow for automated cross-platform testing
-  - Tests run on Ubuntu, Windows, and macOS on every push and pull request
-  - Ensures consistent quality gate before merges
+  - GitHub Actions workflow testing on Ubuntu, Windows, and macOS × Node 18 & 20
+  - `fail-fast: false` across matrix so all OS results are always reported
+  - Spec reporter output and test artifact upload on failure (7-day retention)
 
-### Improved
-- **Comment Parser**
-  - Refined language detection heuristics for more accurate comment syntax selection
-  - Better handling of edge cases in multi-line block comment detection
-- **Completion Provider**
-  - Improved trigger logic for `@group` tag autocomplete suggestions
-- **File Utilities**
-  - Enhanced workspace file scanning and gitignore-aware filtering
-- **Code Group Provider**
-  - More robust indexing and update handling for large workspaces
+### Performance
+- **Workspace Scan Timeout** — 30-second guard via `Promise.race` prevents extension-host hangs on very large repos; user shown a clear warning with guidance
+- **Debounced Tree Refresh** — `CodeGroupTreeProvider.refresh()` coalesces rapid successive calls into a single 50ms-debounced UI update, eliminating flicker
+- **Pattern Analysis Cache** — `patternAnalyzer.analyzePatterns()` results cached for 30 seconds, keyed by a monotonic version counter (incremented on every group update) to avoid O(n²) recomputation on every autocomplete keystroke
+- **Reduced `getAllGroups()` Calls** — both tree providers hoist the fetch to the top of `getChildren()` so it runs once per call instead of once per child branch
+- **Single `document.getText()` per scan** — comment detection now reads the document buffer once and reuses it for all block-comment scans
+
+### Fixed
+- **Double-processing on file save** — removed `onWillSaveTextDocument` handler that duplicated work already done by the file-watcher; every save now triggers exactly one `processFileOnSave` call
+- **Concurrent tree-state save guard** — `isSavingTreeState` flag prevents overlapping async `saveTreeViewState` calls that could corrupt persisted state
+- **Deprecated `fs.rmdirSync`** — replaced with `fs.rmSync` (two call sites)
+- **Dead logger condition** — removed hardcoded `machineId === 'someValue'` magic string from console logging guard
+
+### Improved (Type Safety & Code Quality)
+- **Exported interfaces** — `FunctionalityMetadata`, `FunctionalitiesData` from `fileUtils.ts`; `LanguageConfig`, `LanguageInfo` from `commentParser.ts`
+- **Shared language-config loader** — `commentParser.getLanguageConfig()` exported and reused by both `hoverProvider` and `completionProvider`, replacing duplicated single-path loaders; correctly resolves config in `src/`, `out/`, and falls back to embedded defaults
+- **Removed `any` types** — `completionProvider`, `hoverProvider`, `settingsViewProvider`, and `fileUtils` now use proper interfaces throughout
+- **Stronger deserialization** — `loadCodeGroups` validates each field type explicitly before constructing `CodeGroup` objects
+- **Cross-platform paths** — all file path construction uses `path.join()` instead of string concatenation
+- **Security** — removed `md.isTrusted = true` from hover card builder; `rawFunctionality` is user-supplied content from repo comments and must not be rendered in a trusted markdown context
+- **Removed dead code** — deleted unused `parseMultiLineBlockComments` function
 
 ## [1.7.1] - 2026-02-15
 

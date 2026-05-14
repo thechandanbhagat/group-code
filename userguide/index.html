@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Group Code — User Guide</title>
+  <style>
+    /* @group Styles > Base : Root variables and reset */
+    :root {
+      --color-bg: #0d1117;
+      --color-surface: #161b22;
+      --color-surface-2: #21262d;
+      --color-border: #30363d;
+      --color-text: #e6edf3;
+      --color-muted: #8b949e;
+      --color-accent: #58a6ff;
+      --color-accent-hover: #79c0ff;
+      --color-green: #3fb950;
+      --color-yellow: #d29922;
+      --color-purple: #bc8cff;
+      --color-orange: #f0883e;
+      --color-red: #f85149;
+      --radius: 8px;
+      --radius-sm: 4px;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --sidebar-width: 280px;
+      --header-height: 60px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.7;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* @group Styles > Header */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-height);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--color-text);
+      text-decoration: none;
+    }
+
+    header .logo img {
+      width: 28px;
+      height: 28px;
+    }
+
+    header .badge {
+      font-size: 11px;
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      color: var(--color-muted);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    header nav {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    header nav a {
+      color: var(--color-muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      transition: color 0.15s, background 0.15s;
+    }
+
+    header nav a:hover {
+      color: var(--color-text);
+      background: var(--color-surface-2);
+    }
+
+    /* @group Styles > Layout */
+    .page-wrapper {
+      display: flex;
+      margin-top: var(--header-height);
+      flex: 1;
+    }
+
+    /* @group Styles > Sidebar */
+    aside.sidebar {
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      position: fixed;
+      top: var(--header-height);
+      bottom: 0;
+      overflow-y: auto;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      padding: 24px 0;
+    }
+
+    aside.sidebar::-webkit-scrollbar { width: 4px; }
+    aside.sidebar::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+
+    .sidebar-section { margin-bottom: 24px; }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      padding: 0 20px 8px;
+    }
+
+    .sidebar-section a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 20px;
+      font-size: 13px;
+      color: var(--color-muted);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+
+    .sidebar-section a:hover,
+    .sidebar-section a.active {
+      color: var(--color-text);
+      background: var(--color-surface-2);
+      border-left-color: var(--color-accent);
+    }
+
+    .sidebar-section a .icon {
+      font-size: 14px;
+      width: 18px;
+      flex-shrink: 0;
+    }
+
+    /* @group Styles > Content */
+    main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 48px 56px 80px;
+      max-width: 960px;
+    }
+
+    /* @group Styles > Typography */
+    h1 {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      color: var(--color-text);
+    }
+
+    h2 {
+      font-size: 26px;
+      font-weight: 600;
+      margin-top: 64px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      scroll-margin-top: calc(var(--header-height) + 16px);
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      color: var(--color-text);
+      scroll-margin-top: calc(var(--header-height) + 16px);
+    }
+
+    h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      color: var(--color-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    p { margin-bottom: 14px; color: var(--color-text); }
+
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; color: var(--color-accent-hover); }
+
+    strong { font-weight: 600; color: var(--color-text); }
+
+    ul, ol {
+      padding-left: 24px;
+      margin-bottom: 16px;
+    }
+
+    li { margin-bottom: 6px; color: var(--color-text); }
+
+    /* @group Styles > Code */
+    code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 2px 6px;
+      color: var(--color-orange);
+    }
+
+    pre {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 13px;
+      color: var(--color-text);
+    }
+
+    /* Syntax highlight classes */
+    pre .c { color: var(--color-muted); font-style: italic; } /* comment */
+    pre .k { color: var(--color-purple); } /* keyword */
+    pre .s { color: var(--color-green); }  /* string */
+    pre .a { color: var(--color-accent); } /* @group annotation */
+    pre .d { color: var(--color-orange); } /* description */
+
+    /* @group Styles > Components > Callout */
+    .callout {
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      border: 1px solid;
+    }
+
+    .callout .callout-icon { font-size: 16px; flex-shrink: 0; padding-top: 1px; }
+    .callout .callout-body { flex: 1; }
+    .callout .callout-body p:last-child { margin-bottom: 0; }
+
+    .callout.tip    { background: rgba(63,185,80,0.08);  border-color: rgba(63,185,80,0.3);  }
+    .callout.info   { background: rgba(88,166,255,0.08); border-color: rgba(88,166,255,0.3); }
+    .callout.warn   { background: rgba(210,153,34,0.10); border-color: rgba(210,153,34,0.35);}
+    .callout.note   { background: rgba(188,140,255,0.08);border-color: rgba(188,140,255,0.3);}
+
+    /* @group Styles > Components > Kbd */
+    kbd {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 2px 7px;
+      color: var(--color-text);
+      vertical-align: middle;
+    }
+
+    /* @group Styles > Components > Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--color-surface-2);
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-muted);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* @group Styles > Components > Feature Card */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .feature-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+
+    .feature-card:hover { border-color: var(--color-accent); }
+
+    .feature-card .fc-icon {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .feature-card .fc-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .feature-card .fc-desc {
+      font-size: 13px;
+      color: var(--color-muted);
+      line-height: 1.6;
+    }
+
+    /* @group Styles > Components > Step */
+    .steps { counter-reset: step-counter; list-style: none; padding: 0; margin-bottom: 20px; }
+
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      background: var(--color-accent);
+      color: #0d1117;
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .steps li .step-body { flex: 1; }
+    .steps li .step-body strong { display: block; margin-bottom: 4px; font-size: 15px; }
+    .steps li .step-body p { margin-bottom: 0; font-size: 14px; color: var(--color-muted); }
+
+    /* @group Styles > Components > Command List */
+    .command-list { list-style: none; padding: 0; }
+
+    .command-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+    }
+
+    .command-list li code {
+      flex-shrink: 0;
+      font-size: 12px;
+      background: var(--color-surface-2);
+    }
+
+    .command-list li .cmd-desc {
+      font-size: 13px;
+      color: var(--color-muted);
+    }
+
+    /* @group Styles > Components > Screenshot placeholder */
+    .screenshot-ref {
+      background: var(--color-surface);
+      border: 2px dashed var(--color-border);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      text-align: center;
+      margin-bottom: 24px;
+      color: var(--color-muted);
+      font-size: 14px;
+    }
+
+    .screenshot-ref .sc-title {
+      display: block;
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 6px;
+      color: var(--color-text);
+    }
+
+    .screenshot-ref .sc-caption {
+      display: block;
+      font-size: 12px;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* @group Styles > Tokens */
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+      margin-right: 4px;
+    }
+
+    .tag-ai      { background: rgba(188,140,255,0.15); color: var(--color-purple); border: 1px solid rgba(188,140,255,0.3); }
+    .tag-new     { background: rgba(63,185,80,0.12);  color: var(--color-green);  border: 1px solid rgba(63,185,80,0.3); }
+    .tag-kb      { background: rgba(88,166,255,0.12); color: var(--color-accent); border: 1px solid rgba(88,166,255,0.3); }
+
+    /* @group Styles > Hero */
+    .hero {
+      background: linear-gradient(135deg, rgba(88,166,255,0.06) 0%, rgba(188,140,255,0.06) 100%);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 40px 40px 32px;
+      margin-bottom: 48px;
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--color-muted);
+      max-width: 680px;
+      margin-bottom: 24px;
+    }
+
+    .hero-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: var(--color-muted);
+    }
+
+    .hero-pill span { color: var(--color-accent); font-size: 14px; }
+
+    /* @group Styles > TOC */
+    .toc-box {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 48px;
+    }
+
+    .toc-box h4 { margin-top: 0; margin-bottom: 12px; color: var(--color-muted); }
+
+    .toc-box ol { margin: 0; }
+
+    .toc-box li { font-size: 13px; margin-bottom: 5px; }
+
+    /* @group Styles > Divider */
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 48px 0;
+    }
+
+    /* @group Styles > Responsive */
+    @media (max-width: 900px) {
+      aside.sidebar { display: none; }
+      main { margin-left: 0; padding: 32px 24px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- @group Header : Top navigation bar -->
+<header>
+  <a class="logo" href="#top">
+    <img src="../resources/compass-icon.png" alt="Group Code icon" />
+    Group Code
+  </a>
+  <span class="badge">v1.8.0</span>
+  <nav>
+    <a href="https://marketplace.visualstudio.com/items?itemName=thechandanbhagat.groupcode" target="_blank">Marketplace</a>
+    <a href="https://github.com/thechandanbhagat/group-code" target="_blank">GitHub</a>
+  </nav>
+</header>
+
+<!-- @group Sidebar : Left navigation -->
+<div class="page-wrapper">
+<aside class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Getting Started</div>
+    <a href="#overview"><span class="icon">&#9632;</span> Overview</a>
+    <a href="#installation"><span class="icon">&#9632;</span> Installation</a>
+    <a href="#quick-start"><span class="icon">&#9632;</span> Quick Start</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Core Features</div>
+    <a href="#comment-syntax"><span class="icon">&#9632;</span> Comment Syntax</a>
+    <a href="#hierarchical-groups"><span class="icon">&#9632;</span> Hierarchical Groups</a>
+    <a href="#tree-views"><span class="icon">&#9632;</span> Tree Views</a>
+    <a href="#navigation"><span class="icon">&#9632;</span> Navigation</a>
+    <a href="#favorites"><span class="icon">&#9632;</span> Favorites</a>
+    <a href="#rename"><span class="icon">&#9632;</span> Rename Groups</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Editing Tools</div>
+    <a href="#quick-add"><span class="icon">&#9632;</span> Quick Add Group</a>
+    <a href="#autocomplete"><span class="icon">&#9632;</span> Smart Autocomplete</a>
+    <a href="#hover-cards"><span class="icon">&#9632;</span> Hover Cards</a>
+    <a href="#filter-search"><span class="icon">&#9632;</span> Filter &amp; Search</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">AI Features</div>
+    <a href="#chat-participant"><span class="icon">&#9632;</span> Chat Participant</a>
+    <a href="#ai-generate"><span class="icon">&#9632;</span> AI Generate Groups</a>
+    <a href="#ai-suggest"><span class="icon">&#9632;</span> AI Suggest</a>
+    <a href="#ai-tool"><span class="icon">&#9632;</span> Language Model Tool</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Workspace Tools</div>
+    <a href="#scanning"><span class="icon">&#9632;</span> Scanning</a>
+    <a href="#analysis"><span class="icon">&#9632;</span> Analysis Tools</a>
+    <a href="#settings"><span class="icon">&#9632;</span> Settings</a>
+    <a href="#status-bar"><span class="icon">&#9632;</span> Status Bar</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Reference</div>
+    <a href="#keyboard-shortcuts"><span class="icon">&#9632;</span> Keyboard Shortcuts</a>
+    <a href="#language-support"><span class="icon">&#9632;</span> Language Support</a>
+    <a href="#screenshots"><span class="icon">&#9632;</span> Screenshots Guide</a>
+  </div>
+</aside>
+
+<!-- @group Content : Main content area -->
+<main id="top">
+
+  <!-- ===== HERO ===== -->
+  <div class="hero">
+    <h1>Group Code User Guide</h1>
+    <p>
+      Navigate and organize your codebase by functionality across files and languages.
+      Tag related code sections with special comments and browse them through a unified
+      tree view — without changing any file structure.
+    </p>
+    <div class="hero-pills">
+      <div class="hero-pill"><span>&#10003;</span> 40+ languages</div>
+      <div class="hero-pill"><span>&#10003;</span> GitHub Copilot integration</div>
+      <div class="hero-pill"><span>&#10003;</span> Hierarchical groups</div>
+      <div class="hero-pill"><span>&#10003;</span> Zero config required</div>
+    </div>
+  </div>
+
+  <!-- ===== TABLE OF CONTENTS ===== -->
+  <div class="toc-box">
+    <h4>Table of Contents</h4>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#installation">Installation</a></li>
+      <li><a href="#quick-start">Quick Start</a></li>
+      <li><a href="#comment-syntax">Comment Syntax</a></li>
+      <li><a href="#hierarchical-groups">Hierarchical Groups</a></li>
+      <li><a href="#tree-views">Tree Views</a></li>
+      <li><a href="#navigation">Navigation</a></li>
+      <li><a href="#favorites">Favorites</a></li>
+      <li><a href="#rename">Rename Groups</a></li>
+      <li><a href="#quick-add">Quick Add Group</a></li>
+      <li><a href="#autocomplete">Smart Autocomplete</a></li>
+      <li><a href="#hover-cards">Hover Cards</a></li>
+      <li><a href="#filter-search">Filter &amp; Search</a></li>
+      <li><a href="#chat-participant">Chat Participant (@groupcode)</a></li>
+      <li><a href="#ai-generate">AI Generate Groups</a></li>
+      <li><a href="#ai-suggest">AI Suggest</a></li>
+      <li><a href="#ai-tool">Language Model Tool</a></li>
+      <li><a href="#scanning">Workspace Scanning</a></li>
+      <li><a href="#analysis">Analysis Tools</a></li>
+      <li><a href="#settings">Settings</a></li>
+      <li><a href="#status-bar">Status Bar</a></li>
+      <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+      <li><a href="#language-support">Language Support</a></li>
+      <li><a href="#screenshots">Screenshots Guide</a></li>
+    </ol>
+  </div>
+
+  <!-- ===== OVERVIEW ===== -->
+  <h2 id="overview">Overview</h2>
+  <p>
+    <strong>Group Code</strong> is a VS Code extension that lets you annotate code sections
+    with <code>@group</code> comments, then instantly browse and jump to all annotated sections
+    from a dedicated sidebar. It creates a logical map of your entire codebase organized by
+    feature or functionality — not by file or folder structure.
+  </p>
+  <p>
+    Instead of hunting through dozens of files to find all code related to "Authentication",
+    you tag each piece with <code>// @group Authentication</code>, and the extension surfaces
+    them all in one tree view. Click any entry to jump directly to that line.
+  </p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="fc-icon">&#128447;</div>
+      <div class="fc-title">Cross-File Organization</div>
+      <div class="fc-desc">Tag code across any number of files under a shared group name.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#128200;</div>
+      <div class="fc-title">Hierarchical Grouping</div>
+      <div class="fc-desc">Nest groups with <code>Parent &gt; Child &gt; Grandchild</code> syntax up to any depth.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#10024;</div>
+      <div class="fc-title">AI-Powered</div>
+      <div class="fc-desc">Generate group comments across your entire workspace with one command via GitHub Copilot.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#128269;</div>
+      <div class="fc-title">Smart Search</div>
+      <div class="fc-desc">Filter all groups in real time across the tree view with instant results.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#128196;</div>
+      <div class="fc-title">40+ Languages</div>
+      <div class="fc-desc">Works with TypeScript, Python, C#, Java, Go, Rust, HTML, CSS, and many more.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#127775;</div>
+      <div class="fc-title">Favorites</div>
+      <div class="fc-desc">Star important groups for quick access. Favorites persist across sessions.</div>
+    </div>
+  </div>
+
+  <!-- ===== INSTALLATION ===== -->
+  <h2 id="installation">Installation</h2>
+
+  <h3>From the VS Code Marketplace</h3>
+  <ol class="steps">
+    <li>
+      <div class="step-body">
+        <strong>Open Extensions</strong>
+        <p>Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> (Windows/Linux) or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> (Mac) to open the Extensions sidebar.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Search for Group Code</strong>
+        <p>Type <code>Group Code</code> in the search box. Look for the publisher <code>thechandanbhagat</code>.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Install</strong>
+        <p>Click the <strong>Install</strong> button. The extension activates immediately — no restart required.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Open a workspace</strong>
+        <p>Open any folder in VS Code. The Group Code icon (compass) appears in the Activity Bar on the left.</p>
+      </div>
+    </li>
+  </ol>
+
+  <h3>From Open VSX Registry</h3>
+  <p>
+    Visit <a href="https://open-vsx.org/extension/thechandanbhagat/groupcode" target="_blank">open-vsx.org</a>
+    to install on VSCodium or any Open VSX-compatible editor.
+  </p>
+
+  <div class="callout info">
+    <div class="callout-icon">&#8505;</div>
+    <div class="callout-body">
+      <p><strong>Requirements:</strong> VS Code 1.90.0 or higher. AI features additionally require the GitHub Copilot extension with an active subscription.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Extensions Marketplace search</span>
+    Show the VS Code Extensions panel with "Group Code" search result, the install button, and the publisher name visible.
+    <span class="sc-caption">Path: Extensions sidebar (Ctrl+Shift+X) &gt; search "Group Code"</span>
+  </div>
+
+  <!-- ===== QUICK START ===== -->
+  <h2 id="quick-start">Quick Start</h2>
+  <p>Get up and running in under two minutes.</p>
+
+  <ol class="steps">
+    <li>
+      <div class="step-body">
+        <strong>Open a code file</strong>
+        <p>Open any source file in your workspace (e.g., a TypeScript, Python, or JavaScript file).</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Add your first @group comment</strong>
+        <p>Above any function or block, type a comment using the <code>@group</code> syntax (see <a href="#comment-syntax">Comment Syntax</a> for all formats).</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Watch the sidebar update</strong>
+        <p>The Group Code Explorer in the Activity Bar updates automatically within half a second of your edit — no manual refresh needed.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Click to navigate</strong>
+        <p>Click any item in the tree view to jump to that code location in the editor.</p>
+      </div>
+    </li>
+  </ol>
+
+  <pre><code><span class="c">// A basic @group comment in TypeScript</span>
+<span class="a">// @group Authentication : Handles user login and token validation</span>
+export function login(email: string, password: string) {
+  <span class="c">// ...</span>
+}
+
+<span class="a">// @group Authentication</span>
+export function validateToken(token: string) {
+  <span class="c">// ...</span>
+}</code></pre>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Activity Bar and tree view</span>
+    Show the VS Code Activity Bar on the left with the Group Code compass icon highlighted, the sidebar expanded with a sample group tree (e.g., "Authentication" with two entries).
+    <span class="sc-caption">Activity Bar &gt; Group Code icon &gt; Group Code Explorer panel</span>
+  </div>
+
+  <!-- ===== COMMENT SYNTAX ===== -->
+  <h2 id="comment-syntax">Comment Syntax</h2>
+  <p>
+    Group Code detects <code>@group</code> annotations inside comments. The extension
+    automatically picks the right comment style for each file type.
+  </p>
+
+  <h3>Format</h3>
+  <pre><code>&lt;comment-prefix&gt; @group &lt;GroupName&gt; : &lt;description&gt;</code></pre>
+
+  <p>The description is optional. Both parts are used in hover cards and tree labels.</p>
+
+  <h3>Examples by Language</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Language(s)</th>
+        <th>Comment Format</th>
+        <th>Example</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>JS / TS / Java / C# / C++ / Go / Rust / Swift / Kotlin</td>
+        <td><code>//</code></td>
+        <td><code>// @group Auth : Login handler</code></td>
+      </tr>
+      <tr>
+        <td>Python / Ruby / Shell / YAML / Makefile</td>
+        <td><code>#</code></td>
+        <td><code># @group DatabaseOps : Query builder</code></td>
+      </tr>
+      <tr>
+        <td>HTML / XML / SVG</td>
+        <td><code>&lt;!-- --&gt;</code></td>
+        <td><code>&lt;!-- @group Layout : Header section --&gt;</code></td>
+      </tr>
+      <tr>
+        <td>CSS / SCSS / Less</td>
+        <td><code>/*  */</code> or <code>//</code></td>
+        <td><code>// @group Theme : Color variables</code></td>
+      </tr>
+      <tr>
+        <td>SQL</td>
+        <td><code>--</code></td>
+        <td><code>-- @group Reporting : Monthly summary</code></td>
+      </tr>
+      <tr>
+        <td>PHP</td>
+        <td><code>//</code></td>
+        <td><code>// @group API : User endpoint</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>With Tags</h3>
+  <p>Append optional hashtag-style tags after the description for additional categorization:</p>
+  <pre><code><span class="a">// @group Authentication : User login handler</span> <span class="s">#auth #security #api</span></code></pre>
+
+  <div class="callout tip">
+    <div class="callout-icon">&#10003;</div>
+    <div class="callout-body">
+      <p><strong>Tip:</strong> Place the <code>@group</code> comment on the line immediately above the function, class, or block it belongs to. This makes hover cards and tree entries as precise as possible.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: @group comment in editor with syntax highlighting</span>
+    Show the VS Code editor with a TypeScript file open. The @group comment line should be visible with distinct syntax highlighting applied by the extension's grammar injection (the "@group" keyword and the description should appear in different colors).
+    <span class="sc-caption">Editor view with a .ts file containing @group annotations</span>
+  </div>
+
+  <!-- ===== HIERARCHICAL GROUPS ===== -->
+  <h2 id="hierarchical-groups">Hierarchical Groups</h2>
+  <p>
+    Use the <code>&gt;</code> separator to create nested group hierarchies of any depth.
+    The tree view displays these as folders with collapsible children.
+  </p>
+
+  <h3>Syntax</h3>
+  <pre><code><span class="a">// @group Parent &gt; Child &gt; Grandchild : Description</span></code></pre>
+
+  <h3>Examples</h3>
+  <pre><code><span class="c">// Two-level</span>
+<span class="a">// @group Auth &gt; Login : Handles credential validation</span>
+
+<span class="c">// Three-level</span>
+<span class="a">// @group Auth &gt; Login &gt; Validation : Email and password checks</span>
+<span class="a">// @group Auth &gt; Login &gt; API : Login API call</span>
+
+<span class="c">// Four-level</span>
+<span class="a">// @group Features &gt; Dashboard &gt; Widgets &gt; Charts : Sales chart</span></code></pre>
+
+  <h3>How the Tree Looks</h3>
+  <p>The tree view renders the hierarchy with folder icons for parent nodes and file icons for leaf nodes:</p>
+  <pre><code>&#128193; Auth
+  &#128193; Login
+    &#128196; Validation  (3 groups)
+      &#128196; ts
+        validateEmail.ts
+        validatePassword.ts
+    &#128196; API  (2 groups)
+      &#128196; ts
+        loginUser.ts
+  &#128193; Signup
+    &#128196; Form Handling  (1 group)</code></pre>
+
+  <h3>Best Practices</h3>
+  <ul>
+    <li>Use <strong>consistent casing</strong> — <code>Auth &gt; Login</code> and <code>auth &gt; login</code> are treated as the same group.</li>
+    <li>Keep hierarchy levels to <strong>3–4 max</strong> for readability.</li>
+    <li>Use <strong>noun phrases</strong> for parent nodes (<code>Auth</code>, <code>Database</code>) and <strong>verb/action phrases</strong> for leaves (<code>Validation</code>, <code>Query</code>).</li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <p><strong>Avoid mixed separators:</strong> Use only <code>&gt;</code> as the hierarchy separator. Underscores or dashes in group names are treated as part of the name, not as hierarchy dividers.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Hierarchical tree view</span>
+    Show the Group Code Explorer sidebar with a 3-level hierarchy expanded — parent folder, child folder, and leaf nodes with file entries. The folder icons and collapse arrows should be clearly visible.
+    <span class="sc-caption">Group Code Explorer &gt; expand a multi-level group</span>
+  </div>
+
+  <!-- ===== TREE VIEWS ===== -->
+  <h2 id="tree-views">Tree Views</h2>
+  <p>Group Code provides three tree views. All views are kept in sync — a filter applied in one applies to all.</p>
+
+  <table>
+    <thead>
+      <tr><th>View</th><th>Location</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Group Code</strong></td>
+        <td>Group Code Activity Bar panel</td>
+        <td>Primary view. Groups organized by hierarchy. This is the main navigation view.</td>
+      </tr>
+      <tr>
+        <td><strong>By File</strong></td>
+        <td>Group Code Activity Bar panel (collapsed by default)</td>
+        <td>Groups organized by the file they appear in, sorted by line number.</td>
+      </tr>
+      <tr>
+        <td><strong>Group Code (Explorer)</strong></td>
+        <td>VS Code Explorer sidebar panel</td>
+        <td>Mirror of the main Group Code view, embedded in the standard Explorer.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Switching Views</h3>
+  <p>
+    Click the <strong>Group Code icon</strong> (compass) in the Activity Bar to open the dedicated panel.
+    Expand the <strong>By File</strong> section at the bottom to switch to the file-based view.
+    The Explorer panel appears at the bottom of the standard VS Code Explorer.
+  </p>
+
+  <h3>Tree View Toolbar</h3>
+  <p>Each tree view has a toolbar with the following buttons:</p>
+  <table>
+    <thead>
+      <tr><th>Button</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Search (magnifier icon)</td><td>Open the filter input box to search groups by name</td></tr>
+      <tr><td>Clear filter (X icon)</td><td>Clear the active filter and show all groups</td></tr>
+      <tr><td>Refresh (circular arrows)</td><td>Rescan the workspace and rebuild the tree</td></tr>
+      <tr><td>Settings (gear icon)</td><td>Open the Group Code Settings panel</td></tr>
+    </tbody>
+  </table>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Both views (Group Code and By File)</span>
+    Show the Activity Bar panel with two sections visible — the "Group Code" hierarchy view on top and the "By File" view below it. Show the toolbar icons (search, clear, refresh, settings) at the top of each view.
+    <span class="sc-caption">Group Code Activity Bar panel with both tree views</span>
+  </div>
+
+  <!-- ===== NAVIGATION ===== -->
+  <h2 id="navigation">Navigation</h2>
+  <p>Clicking any group entry in the tree view opens the corresponding file and scrolls to that exact line number.</p>
+
+  <h3>Single-Click Navigation</h3>
+  <p>Click any leaf node (file entry) in the tree view. VS Code opens the file and positions the cursor at the <code>@group</code> comment line.</p>
+
+  <h3>Keyboard Navigation</h3>
+  <p>Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> (or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> on Mac) to open a quick-pick list of all groups. Type to filter and press <kbd>Enter</kbd> to jump.</p>
+
+  <h3>Command Palette</h3>
+  <p>Open the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) and run:</p>
+  <ul class="command-list">
+    <li><code>Group Code: Show Code Groups</code><span class="cmd-desc"> — opens the quick-pick navigator</span></li>
+    <li><code>Group Code: Navigate to Code Group</code><span class="cmd-desc"> — same as above, via command alias</span></li>
+  </ul>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Quick-pick group navigator</span>
+    Show the VS Code quick-pick dropdown (triggered by Ctrl+Shift+G) with a list of group names, the current filter text, and a highlighted selection.
+    <span class="sc-caption">Press Ctrl+Shift+G to open the group navigator</span>
+  </div>
+
+  <!-- ===== FAVORITES ===== -->
+  <h2 id="favorites">Favorites</h2>
+  <p>
+    Mark any group as a favorite to distinguish it visually and keep frequently-used groups
+    easily identifiable. Favorites persist across VS Code sessions in your OS user profile
+    (not in the workspace), so they never cause Git conflicts.
+  </p>
+
+  <h3>How to Favorite a Group</h3>
+  <ul>
+    <li><strong>Hover</strong> over a group node in the tree view — a star icon appears inline.</li>
+    <li><strong>Click the star icon</strong> to toggle the favorite state.</li>
+    <li>Or <strong>right-click</strong> the group and choose <strong>Toggle Favorite</strong> from the context menu.</li>
+  </ul>
+
+  <h3>Visual Indicator</h3>
+  <p>Favorite groups show a filled star icon next to their name in the tree view. Un-favoriting a group removes the star.</p>
+
+  <div class="callout note">
+    <div class="callout-icon">&#128204;</div>
+    <div class="callout-body">
+      <p>Favorites are stored per-user in the OS profile directory (<code>~/.groupcode/</code>), not inside the workspace folder. This means they are personal and never committed to Git.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Favorite star icon on a tree item</span>
+    Show the Group Code tree with one group item hovered, displaying the inline star icon. Also show another item that is already favorited with a filled star icon.
+    <span class="sc-caption">Hover over a group in the tree view to reveal the star icon</span>
+  </div>
+
+  <!-- ===== RENAME ===== -->
+  <h2 id="rename">Rename Groups</h2>
+  <p>
+    Rename a group directly from the tree view. The rename updates all <code>@group</code> comments
+    across every file in the workspace that references that group name.
+  </p>
+
+  <h3>How to Rename</h3>
+  <ul>
+    <li>In the tree view, <strong>select a group node</strong> and press <kbd>F2</kbd>.</li>
+    <li>Or <strong>right-click</strong> the group and choose <strong>Rename Group</strong>.</li>
+    <li>Type the new name in the inline input and press <kbd>Enter</kbd> to confirm or <kbd>Escape</kbd> to cancel.</li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <p>Rename performs a workspace-wide text replacement of the group name inside <code>@group</code> comments. This modifies files on disk. Make sure your changes are committed before renaming.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Inline rename input in tree view</span>
+    Show the Group Code Explorer with a group node in rename mode — the inline text input field is active with the current group name editable.
+    <span class="sc-caption">Select a group, press F2, edit name inline</span>
+  </div>
+
+  <!-- ===== QUICK ADD ===== -->
+  <h2 id="quick-add">Quick Add Group</h2>
+  <p>
+    The <strong>Quick Add Group</strong> feature lets you annotate any code selection with a
+    <code>@group</code> comment through a guided UI — without manually typing the comment syntax.
+  </p>
+
+  <h3>How to Use</h3>
+  <ol class="steps">
+    <li>
+      <div class="step-body">
+        <strong>Select code in the editor</strong>
+        <p>Highlight any function, class, block, or line you want to tag.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Right-click and choose "Add to Group..."</strong>
+        <p>The option appears near the top of the context menu under "Group Code".</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Choose Manual or AI-powered mode</strong>
+        <p>Select <strong>Manual</strong> to type the group name yourself, or <strong>AI-powered</strong> to let GitHub Copilot analyze the selected code and suggest a name and description.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Fill in the details</strong>
+        <p>Enter the group name (or pick an existing one from the list), an optional description, and optional tags. Click OK. The comment is inserted above your selection automatically.</p>
+      </div>
+    </li>
+  </ol>
+
+  <h3>Manual Flow</h3>
+  <p>The manual mode walks you through three prompts:</p>
+  <ol>
+    <li><strong>Group name</strong> — Choose an existing group from the quick-pick list or create a new one. Hierarchy is supported: type <code>Parent &gt; Child</code>.</li>
+    <li><strong>Description</strong> (optional) — A short description appended after the colon.</li>
+    <li><strong>Tags</strong> (optional) — Space-separated tags appended as <code>#tag1 #tag2</code>.</li>
+  </ol>
+
+  <h3>AI-Powered Flow</h3>
+  <p>Requires GitHub Copilot. The extension sends the selected code to the language model and proposes a group name and description. You can review and edit both before confirming.</p>
+
+  <h3>Keyboard Shortcut</h3>
+  <p>You can also trigger Quick Add Group with <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd> (or <kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd> on Mac) when the editor is focused.</p>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Right-click context menu with "Add to Group..."</span>
+    Show the VS Code editor with a code selection active, the right-click context menu open, and "Add to Group..." highlighted at the top of the Group Code menu section.
+    <span class="sc-caption">Select code &gt; Right-click &gt; Add to Group...</span>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Group name quick-pick list</span>
+    Show the VS Code quick-pick dropdown listing existing group names with a "Create New Group" option at the top, and the folder icon next to each existing group.
+    <span class="sc-caption">Quick Add Group &gt; step 1: select or create group name</span>
+  </div>
+
+  <!-- ===== AUTOCOMPLETE ===== -->
+  <h2 id="autocomplete">Smart Autocomplete</h2>
+  <p>
+    The extension registers a completion provider that triggers inside comment lines.
+    As you type <code>@group</code>, VS Code shows intelligent suggestions.
+  </p>
+
+  <h3>Trigger Characters</h3>
+  <table>
+    <thead>
+      <tr><th>Trigger</th><th>What Appears</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>@</code></td>
+        <td>Suggests the <code>group</code> keyword to complete to <code>@group </code></td>
+      </tr>
+      <tr>
+        <td>After <code>@group </code></td>
+        <td>Lists all existing group names from the workspace, sorted by usage frequency</td>
+      </tr>
+      <tr>
+        <td>After <code>&gt;</code> in a group name</td>
+        <td>Suggests valid child nodes based on existing hierarchy paths</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Hierarchy Autocomplete</h3>
+  <p>When continuing a hierarchy path, the completion provider shows only the children of the already-typed parent, preventing typos and ensuring consistency.</p>
+
+  <pre><code><span class="c">// Type: // @group Auth &gt;</span>
+<span class="c">// Completions show: Login, Signup, OAuth ...</span>
+
+<span class="a">// @group Auth &gt; Login &gt;</span>
+<span class="c">// Completions show: Validation, API, Session ...</span></code></pre>
+
+  <div class="callout info">
+    <div class="callout-icon">&#8505;</div>
+    <div class="callout-body">
+      <p>Autocomplete only activates inside comment lines. It will <strong>not</strong> fire inside string literals or regular code, preventing false triggers.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: @group autocomplete dropdown</span>
+    Show the VS Code editor with a comment line being typed, the IntelliSense dropdown open showing group name suggestions with hierarchy indicators, and the current typed text highlighted in the suggestion.
+    <span class="sc-caption">Type "// @group" in a comment to trigger autocomplete</span>
+  </div>
+
+  <!-- ===== HOVER CARDS ===== -->
+  <h2 id="hover-cards">Hover Cards <span class="tag tag-new">New in v1.8.0</span></h2>
+  <p>
+    Hovering over any <code>@group</code> annotation shows a rich floating card with
+    detailed information about the group — without leaving the current file.
+  </p>
+
+  <h3>What is Shown</h3>
+  <ul>
+    <li><strong>Hierarchy Breadcrumb</strong> — The full path like <code>Auth › Login › Validation</code></li>
+    <li><strong>Description</strong> — The inline description from the comment, or the first indexed description</li>
+    <li><strong>Usage Statistics</strong> — Number of files and total occurrences in the workspace</li>
+    <li><strong>File Listing</strong> — Up to 6 filenames where this group appears (with overflow count)</li>
+    <li><strong>Sub-groups</strong> — Direct child groups listed for parent-level annotations</li>
+  </ul>
+
+  <h3>How to Trigger</h3>
+  <p>Move your cursor over the <code>@group</code> keyword on any comment line. The hover card appears automatically. It only activates on comment lines — not on regular code.</p>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Hover card on a @group annotation</span>
+    Show the VS Code editor with the cursor hovering over a @group comment line. The hover card popup should be visible with: breadcrumb path, description, file count, file list, and sub-groups section.
+    <span class="sc-caption">Hover over a @group comment to see the details card</span>
+  </div>
+
+  <!-- ===== FILTER & SEARCH ===== -->
+  <h2 id="filter-search">Filter &amp; Search</h2>
+  <p>
+    All three tree views share a synchronized filter. Filtering one view filters all views simultaneously.
+  </p>
+
+  <h3>Using the Filter</h3>
+  <ol class="steps">
+    <li>
+      <div class="step-body">
+        <strong>Click the Search (magnifier) icon</strong>
+        <p>In the tree view toolbar, click the magnifier icon to open the search input box.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Type your filter text</strong>
+        <p>The tree view updates in real time as you type. Matches are case-insensitive and search across group names, file types, and descriptions.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Clear the filter</strong>
+        <p>Click the Clear Filter (X) icon in the toolbar to reset and show all groups.</p>
+      </div>
+    </li>
+  </ol>
+
+  <h3>What Gets Searched</h3>
+  <ul>
+    <li>Group name (including hierarchy path)</li>
+    <li>File extension / language type</li>
+    <li>Description text</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon">&#10003;</div>
+    <div class="callout-body">
+      <p>You can also open the filter by running the command <code>Group Code: Search Groups</code> from the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>).</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Active filter in tree view</span>
+    Show the Group Code Explorer with the filter input box open at the top, a filter query typed (e.g., "auth"), and the tree showing only matching results. The clear-filter button should also be visible.
+    <span class="sc-caption">Group Code Explorer &gt; click search icon &gt; type filter text</span>
+  </div>
+
+  <!-- ===== CHAT PARTICIPANT ===== -->
+  <h2 id="chat-participant">Chat Participant — @groupcode</h2>
+  <p>
+    <span class="tag tag-ai">AI</span>
+    Group Code registers a GitHub Copilot Chat participant named <code>@groupcode</code>.
+    Open any Copilot Chat window and prefix your message with <code>@groupcode</code> to
+    interact with your code groups using natural language.
+  </p>
+
+  <div class="callout info">
+    <div class="callout-icon">&#8505;</div>
+    <div class="callout-body">
+      <p>Requires GitHub Copilot with Chat support. The participant is <strong>sticky</strong> — once selected in chat, it remains active for subsequent messages.</p>
+    </div>
+  </div>
+
+  <h3>Available Commands</h3>
+  <ul class="command-list">
+    <li><code>@groupcode /generate</code><span class="cmd-desc"> — Generate @group comments for the current file (adds missing ones; preserves existing)</span></li>
+    <li><code>@groupcode /generate update</code><span class="cmd-desc"> — Regenerate all groups in the current file (replaces existing; prompts for confirmation)</span></li>
+    <li><code>@groupcode /generate workspace</code><span class="cmd-desc"> — Generate groups for all files in the entire workspace</span></li>
+    <li><code>@groupcode /scan</code><span class="cmd-desc"> — Scan the active file and return a summary of groups found</span></li>
+    <li><code>@groupcode /scan workspace</code><span class="cmd-desc"> — Scan all workspace files and return a full group summary</span></li>
+    <li><code>@groupcode /suggest</code><span class="cmd-desc"> — Analyze selected code and suggest a group name + description</span></li>
+    <li><code>@groupcode /list</code><span class="cmd-desc"> — List all code groups in the workspace</span></li>
+    <li><code>@groupcode /find &lt;name&gt;</code><span class="cmd-desc"> — Search for groups matching a name (supports hierarchy queries like <code>Auth &gt; Login</code>)</span></li>
+    <li><code>@groupcode /navigate &lt;name&gt;</code><span class="cmd-desc"> — Jump to a specific group in the editor</span></li>
+    <li><code>@groupcode /refresh</code><span class="cmd-desc"> — Rescan all files and refresh the tree view</span></li>
+    <li><code>@groupcode /refactor</code><span class="cmd-desc"> — Analyze groups for refactoring opportunities</span></li>
+    <li><code>@groupcode /duplicates</code><span class="cmd-desc"> — Find duplicate or semantically similar group names</span></li>
+    <li><code>@groupcode /orphaned</code><span class="cmd-desc"> — Find groups that may be outdated or unused</span></li>
+    <li><code>@groupcode help</code><span class="cmd-desc"> — Show a summary of all available commands</span></li>
+  </ul>
+
+  <h3>Natural Language</h3>
+  <p>You can also use plain English. The participant understands intent without slash commands:</p>
+  <pre><code>@groupcode show me all groups in this workspace
+@groupcode find anything related to authentication
+@groupcode generate comment groups for this file
+@groupcode analyze my groups for duplicates</code></pre>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: @groupcode in Copilot Chat</span>
+    Show the GitHub Copilot Chat panel with @groupcode typed in the input, a command like "/list" selected, and a response from the participant showing a formatted list of groups with file references and hierarchy paths.
+    <span class="sc-caption">Copilot Chat &gt; type "@groupcode" &gt; select a command</span>
+  </div>
+
+  <!-- ===== AI GENERATE ===== -->
+  <h2 id="ai-generate">AI Generate Groups</h2>
+  <p>
+    <span class="tag tag-ai">AI</span>
+    The <strong>Generate</strong> feature analyzes your code with GitHub Copilot and automatically
+    inserts <code>@group</code> comments where none exist. It runs in two modes:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Mode</th><th>Behavior</th><th>How to Run</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Safe Mode</strong></td>
+        <td>Adds missing groups only. Never modifies or removes existing @group comments.</td>
+        <td><code>@groupcode /generate</code> or right-click &gt; <em>Group Code in Current File</em></td>
+      </tr>
+      <tr>
+        <td><strong>Update Mode</strong></td>
+        <td>Regenerates all groups — replaces existing ones. Asks for confirmation first.</td>
+        <td><code>@groupcode /generate update</code></td>
+      </tr>
+      <tr>
+        <td><strong>Workspace</strong></td>
+        <td>Runs safe-mode generation on every file in the workspace.</td>
+        <td><code>@groupcode /generate workspace</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>What the AI Does</h3>
+  <ol>
+    <li>Reads the entire file content and identifies logical code sections (functions, classes, blocks).</li>
+    <li>Infers a meaningful group name and short description for each section.</li>
+    <li>Inserts a correctly formatted <code>@group</code> comment above each section.</li>
+    <li>Respects the file's comment syntax (e.g., <code>#</code> for Python, <code>//</code> for TypeScript).</li>
+  </ol>
+
+  <div class="callout tip">
+    <div class="callout-icon">&#10003;</div>
+    <div class="callout-body">
+      <p>Run <code>@groupcode /generate</code> on a new file to instantly document its structure. Then refine the generated group names to match your project's naming conventions.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: AI-generated @group comments in a file</span>
+    Show a TypeScript or Python file where multiple @group comments have been automatically inserted by the AI above different functions. The comments should show varied group names with descriptions.
+    <span class="sc-caption">Before/after: open a file, run @groupcode /generate, see the comments inserted</span>
+  </div>
+
+  <!-- ===== AI SUGGEST ===== -->
+  <h2 id="ai-suggest">AI Suggest</h2>
+  <p>
+    <span class="tag tag-ai">AI</span>
+    Unlike Generate (which processes an entire file), <strong>Suggest</strong> focuses on your
+    currently selected code and returns a targeted group recommendation.
+  </p>
+
+  <h3>How to Use</h3>
+  <ol class="steps">
+    <li>
+      <div class="step-body">
+        <strong>Select code in the editor</strong>
+        <p>Highlight any code section you want to tag.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Right-click and choose "Suggest Code Group with AI"</strong>
+        <p>Or run the command <code>Group Code: Suggest Code Group with AI</code> from the Command Palette. You can also use <code>@groupcode /suggest</code> in the Chat panel.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Review the suggestion</strong>
+        <p>The AI returns a proposed group name and description. Accept, edit, or dismiss it.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <strong>Comment is inserted</strong>
+        <p>If accepted, the <code>@group</code> comment is automatically placed above the selection.</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: AI Suggest result notification or dialog</span>
+    Show the VS Code interface after running "Suggest Code Group with AI" — either a notification popup with the suggested group name, or the Quick Add dialog pre-filled with the AI suggestion.
+    <span class="sc-caption">Right-click selected code &gt; Suggest Code Group with AI</span>
+  </div>
+
+  <!-- ===== AI TOOL ===== -->
+  <h2 id="ai-tool">Language Model Tool</h2>
+  <p>
+    <span class="tag tag-ai">AI</span>
+    Group Code registers a <strong>Language Model Tool</strong> named <code>groupcode_generate</code>.
+    This tool is available to GitHub Copilot Edit and any agent that supports VS Code's language
+    model tools API.
+  </p>
+  <p>
+    When Copilot invokes this tool, it can:
+  </p>
+  <ul>
+    <li><strong>Analyze</strong> code structure and identify logical groupings</li>
+    <li><strong>Generate</strong> complete code with <code>@group</code> comments inserted at the right positions</li>
+    <li><strong>Suggest</strong> group names and descriptions for specific code snippets</li>
+  </ul>
+  <p>
+    You do not need to call this tool manually — Copilot uses it automatically when you open a
+    file and ask Copilot to help organize or annotate your code.
+  </p>
+
+  <div class="callout note">
+    <div class="callout-icon">&#128204;</div>
+    <div class="callout-body">
+      <p>The language model tool requires VS Code with language model API support (1.90.0+) and GitHub Copilot installed.</p>
+    </div>
+  </div>
+
+  <!-- ===== SCANNING ===== -->
+  <h2 id="scanning">Workspace Scanning</h2>
+  <p>
+    Group Code scans your workspace files to build and maintain the group index. Scanning
+    happens automatically on startup and after file changes, but you can also trigger it manually.
+  </p>
+
+  <h3>Automatic Scanning</h3>
+  <ul>
+    <li>On extension activation — scans the entire workspace.</li>
+    <li>On file save — re-scans the saved file only.</li>
+    <li>On document change (debounced 500ms) — updates live when you type <code>@group</code> in any comment.</li>
+  </ul>
+
+  <h3>Manual Scanning</h3>
+  <table>
+    <thead>
+      <tr><th>Action</th><th>How</th><th>What it does</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Refresh</strong></td>
+        <td>Click Refresh button in tree view toolbar, or run <code>Group Code: Refresh Code Groups</code></td>
+        <td>Re-scans the entire workspace and rebuilds the tree</td>
+      </tr>
+      <tr>
+        <td><strong>Rescan Workspace</strong></td>
+        <td>Run <code>Group Code: Rescan Entire Workspace</code> from the Command Palette</td>
+        <td>Clears all cached data (including the <code>.groupcode/</code> directory) and performs a full cold scan. Asks for confirmation first.</td>
+      </tr>
+      <tr>
+        <td><strong>Scan via Chat</strong></td>
+        <td><code>@groupcode /scan</code> (current file) or <code>@groupcode /scan workspace</code></td>
+        <td>Scans and returns a summary in the Chat window</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Git-Aware Filtering</h3>
+  <p>
+    The scanner respects <code>.gitignore</code> patterns and automatically skips common directories
+    such as <code>node_modules</code>, <code>dist</code>, <code>out</code>, <code>.git</code>,
+    <code>build</code>, and <code>coverage</code>. This keeps the scan fast and focused on source files.
+  </p>
+
+  <h3>Cache Location</h3>
+  <p>
+    Group data is persisted in a <code>.groupcode/</code> directory at the root of the workspace.
+    This directory is managed automatically and does not need to be edited manually.
+    Add it to your <code>.gitignore</code> if you do not want to commit it.
+  </p>
+
+  <!-- ===== ANALYSIS TOOLS ===== -->
+  <h2 id="analysis">Analysis Tools</h2>
+  <p>
+    Several advanced commands help you maintain group quality across large codebases.
+    Run them from the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>).
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Command</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>Group Code: Analyze Group Naming Patterns</code></td>
+        <td>Reports naming inconsistencies — detects mixed casing, abbreviation styles, and divergent naming conventions across your groups.</td>
+      </tr>
+      <tr>
+        <td><code>Group Code: Find Duplicate/Similar Groups</code></td>
+        <td>Scans for semantically similar group names (e.g., "Auth" vs "Authentication") and consolidation suggestions.</td>
+      </tr>
+      <tr>
+        <td><code>Group Code: Find Orphaned Groups</code></td>
+        <td>Identifies group names referenced in comments but no longer present in the live codebase, or groups in deleted files.</td>
+      </tr>
+      <tr>
+        <td><code>Group Code: Analyze Code Group Refactoring</code></td>
+        <td>Provides restructuring suggestions — groups that could be merged, split, or reorganized into better hierarchies.</td>
+      </tr>
+      <tr>
+        <td><code>Group Code: Convert Flat Groups to Hierarchies</code></td>
+        <td>Analyzes flat group names and suggests equivalent hierarchical representations. Applies the conversions if you confirm.</td>
+      </tr>
+      <tr>
+        <td><code>Group Code: Remove All Code Group Comments</code></td>
+        <td>Strips all <code>@group</code> comments from workspace files. Use with caution — this modifies files on disk. A confirmation prompt is shown.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <p><strong>Remove All Groups</strong> is a destructive operation. Always commit or stash your changes before running it.</p>
+    </div>
+  </div>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Analysis command result in notification or output panel</span>
+    Show the result of running "Find Duplicate/Similar Groups" — either a VS Code notification popup listing duplicate candidates, or the output shown in the Copilot Chat panel via @groupcode /duplicates.
+    <span class="sc-caption">Command Palette &gt; "Group Code: Find Duplicate/Similar Groups"</span>
+  </div>
+
+  <!-- ===== SETTINGS ===== -->
+  <h2 id="settings">Settings</h2>
+  <p>
+    Open the Group Code Settings panel with the gear icon in the tree view toolbar, or run
+    <code>Group Code: Open Settings</code> from the Command Palette.
+  </p>
+
+  <h3>Settings Panel Options</h3>
+  <table>
+    <thead>
+      <tr><th>Setting</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Preferred AI Model</strong></td>
+        <td>Select which GitHub Copilot language model to use for generation and suggestions. The list is populated from the models available in your Copilot subscription.</td>
+      </tr>
+      <tr>
+        <td><strong>Refresh Models</strong></td>
+        <td>Reload the available model list from Copilot. The list is cached for 24 hours to improve performance.</td>
+      </tr>
+      <tr>
+        <td><strong>Open Settings File</strong></td>
+        <td>Open the raw <code>.groupcode/settings.json</code> file for manual editing.</td>
+      </tr>
+      <tr>
+        <td><strong>Clear All Groups</strong></td>
+        <td>Remove all <code>@group</code> comments from the workspace. Equivalent to the <em>Remove All Code Group Comments</em> command.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Settings Storage</h3>
+  <p>Settings are stored in <code>&lt;workspace-root&gt;/.groupcode/settings.json</code>. This is a workspace-scoped file — different settings per project are fully supported.</p>
+
+  <h3>Set Preferred AI Model (Quick)</h3>
+  <p>Run <code>Group Code: Set Preferred AI Model</code> from the Command Palette to pick a model without opening the full settings panel.</p>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Group Code Settings panel (webview)</span>
+    Show the Group Code Settings webview panel with the AI model selector dropdown, Refresh Models button, and Clear All Groups button visible.
+    <span class="sc-caption">Gear icon in tree view toolbar &gt; Group Code Settings panel</span>
+  </div>
+
+  <!-- ===== STATUS BAR ===== -->
+  <h2 id="status-bar">Status Bar Integration</h2>
+  <p>
+    A Group Code item appears in the VS Code status bar at the bottom of the window.
+    Clicking it opens the quick-pick group navigator — the same as pressing
+    <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd>.
+  </p>
+  <p>
+    The status bar item shows the total number of code groups found in the workspace, giving
+    you a quick at-a-glance count.
+  </p>
+
+  <div class="screenshot-ref">
+    <span class="sc-title">Screenshot: Status bar item</span>
+    Show the VS Code status bar at the bottom with the Group Code item visible, displaying a group count (e.g., "$(compass) 42 groups"), highlighted or hovered.
+    <span class="sc-caption">Bottom status bar &gt; Group Code item</span>
+  </div>
+
+  <!-- ===== KEYBOARD SHORTCUTS ===== -->
+  <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+
+  <table>
+    <thead>
+      <tr><th>Shortcut</th><th>Mac</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td>
+        <td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td>
+        <td>Show Code Groups (quick-pick navigator)</td>
+      </tr>
+      <tr>
+        <td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd></td>
+        <td><kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd></td>
+        <td>Add Code Group Dialog (opens the Add Group dialog for the current cursor position)</td>
+      </tr>
+      <tr>
+        <td><kbd>F2</kbd></td>
+        <td><kbd>F2</kbd></td>
+        <td>Rename Group (when a group node is focused in the tree view)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-icon">&#10003;</div>
+    <div class="callout-body">
+      <p>You can rebind any of these shortcuts from <strong>File &gt; Preferences &gt; Keyboard Shortcuts</strong> by searching for "Group Code".</p>
+    </div>
+  </div>
+
+  <!-- ===== LANGUAGE SUPPORT ===== -->
+  <h2 id="language-support">Language Support</h2>
+  <p>Group Code works with 40+ languages. The <code>@group</code> syntax is injected into the grammar of all supported file types, providing syntax highlighting in the editor.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="fc-icon">&#128196;</div>
+      <div class="fc-title">Web &amp; Frontend</div>
+      <div class="fc-desc">JavaScript, TypeScript, JSX, TSX, HTML, CSS, SCSS, Less</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#128196;</div>
+      <div class="fc-title">Backend &amp; Systems</div>
+      <div class="fc-desc">Python, Java, C#, C, C++, Go, Rust, PHP, Ruby, Perl</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#128196;</div>
+      <div class="fc-title">Mobile &amp; Multi-platform</div>
+      <div class="fc-desc">Swift, Kotlin, Dart, Scala</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">&#128196;</div>
+      <div class="fc-title">Config &amp; Infra</div>
+      <div class="fc-desc">YAML, JSON, XML, SVG, SQL, Bash, Shell, Makefile, Dockerfile</div>
+    </div>
+  </div>
+
+  <p>
+    Even for unsupported file types, the extension still detects <code>@group</code> comments
+    and indexes them — it falls back to <code>// @group</code> style comment detection.
+  </p>
+
+  <!-- ===== SCREENSHOTS GUIDE ===== -->
+  <h2 id="screenshots">Screenshots Guide</h2>
+  <p>
+    This section lists all screenshots referenced throughout this guide. Use it as a checklist
+    when capturing screenshots for documentation, marketing, or the VS Code Marketplace listing.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Screenshot Title</th><th>What to Capture</th><th>Section</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Extensions Marketplace search</td>
+        <td>Extensions sidebar with "Group Code" search result and install button</td>
+        <td><a href="#installation">Installation</a></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Activity Bar and tree view</td>
+        <td>Activity Bar compass icon highlighted, sidebar with sample group tree</td>
+        <td><a href="#quick-start">Quick Start</a></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>@group comment in editor with syntax highlighting</td>
+        <td>TypeScript file with @group annotations showing grammar injection colors</td>
+        <td><a href="#comment-syntax">Comment Syntax</a></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Hierarchical tree view</td>
+        <td>3-level hierarchy in the explorer sidebar with folder/file icons</td>
+        <td><a href="#hierarchical-groups">Hierarchical Groups</a></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Both views (Group Code and By File)</td>
+        <td>Activity Bar panel showing both tree view sections with toolbar buttons</td>
+        <td><a href="#tree-views">Tree Views</a></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Quick-pick group navigator</td>
+        <td>Quick-pick dropdown opened by Ctrl+Shift+G with group list</td>
+        <td><a href="#navigation">Navigation</a></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>Favorite star on tree item</td>
+        <td>Tree item with inline star icon visible on hover and filled star on favorited item</td>
+        <td><a href="#favorites">Favorites</a></td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>Inline rename input in tree view</td>
+        <td>Group node in rename mode with editable text input</td>
+        <td><a href="#rename">Rename Groups</a></td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>Right-click context menu</td>
+        <td>Context menu open with "Add to Group..." highlighted</td>
+        <td><a href="#quick-add">Quick Add Group</a></td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>Group name quick-pick list</td>
+        <td>Quick-pick with "Create New Group" option + existing group list</td>
+        <td><a href="#quick-add">Quick Add Group</a></td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td>@group autocomplete dropdown</td>
+        <td>IntelliSense dropdown in a comment line showing group name suggestions</td>
+        <td><a href="#autocomplete">Smart Autocomplete</a></td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td>Hover card on @group annotation</td>
+        <td>Rich hover popup showing breadcrumb, description, file list, sub-groups</td>
+        <td><a href="#hover-cards">Hover Cards</a></td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td>Active filter in tree view</td>
+        <td>Search input open with a query typed and filtered results shown</td>
+        <td><a href="#filter-search">Filter &amp; Search</a></td>
+      </tr>
+      <tr>
+        <td>14</td>
+        <td>@groupcode in Copilot Chat</td>
+        <td>Copilot Chat panel with @groupcode participant response listing groups</td>
+        <td><a href="#chat-participant">Chat Participant</a></td>
+      </tr>
+      <tr>
+        <td>15</td>
+        <td>AI-generated @group comments in a file</td>
+        <td>File with AI-inserted @group comments above multiple functions</td>
+        <td><a href="#ai-generate">AI Generate Groups</a></td>
+      </tr>
+      <tr>
+        <td>16</td>
+        <td>AI Suggest result</td>
+        <td>Notification or dialog showing the AI's suggested group name for selected code</td>
+        <td><a href="#ai-suggest">AI Suggest</a></td>
+      </tr>
+      <tr>
+        <td>17</td>
+        <td>Analysis command result</td>
+        <td>Duplicate/similar groups result shown in notification or chat response</td>
+        <td><a href="#analysis">Analysis Tools</a></td>
+      </tr>
+      <tr>
+        <td>18</td>
+        <td>Group Code Settings panel</td>
+        <td>Webview settings panel with AI model selector and action buttons</td>
+        <td><a href="#settings">Settings</a></td>
+      </tr>
+      <tr>
+        <td>19</td>
+        <td>Status bar item</td>
+        <td>VS Code status bar showing the Group Code group count item</td>
+        <td><a href="#status-bar">Status Bar</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr />
+
+  <p style="color: var(--color-muted); font-size: 13px; text-align: center;">
+    Group Code v1.8.0 &mdash; Published by
+    <a href="https://marketplace.visualstudio.com/publishers/thechandanbhagat" target="_blank">thechandanbhagat</a>
+    &mdash; <a href="https://github.com/thechandanbhagat/group-code" target="_blank">View on GitHub</a>
+  </p>
+
+</main>
+</div>
+
+<script>
+  // @group Scripts > TOC Highlight : Highlight active sidebar link based on scroll position
+  (function () {
+    const sidebarLinks = document.querySelectorAll('.sidebar-section a');
+    const sections = Array.from(sidebarLinks)
+      .map(a => document.querySelector(a.getAttribute('href')))
+      .filter(Boolean);
+
+    function onScroll() {
+      const scrollY = window.scrollY + 80;
+      let current = sections[0];
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top + window.scrollY <= scrollY) {
+          current = section;
+        }
+      }
+      sidebarLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current?.id);
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+
+</body>
+</html>

@@ -5,6 +5,25 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-09-15
+
+### Fixed
+- Restore production compilation with supported VS Code typings and require VS Code 1.99.1 or newer.
+- Bundle the full language registry and register the language-model tool in the manifest.
+- Preserve source and line endings during annotation removal, Quick Add, hierarchy conversion, and parent/EOF renames.
+- Ignore annotation-like text inside strings and support inline/multiline comments and common mixed-language regions.
+- Generate AI annotations as validated structured data; reject failed, cancelled, or stale requests and honor model preferences.
+- Reconcile full scans, debounce documents independently, handle file lifecycle events, and persist the latest index with serialized atomic writes.
+- Apply root-specific ignore rules and settings; preserve settings during rescans and read legacy personal preferences during storage migration.
+- Give explicit slash commands precedence over prompt keywords.
+
+### Changed
+- Source edits remain in the editor for review, Undo, and normal saving.
+- Disable unsupported browser/virtual-workspace operation and prefer the workspace extension host.
+- Remove the ineffective hierarchy toggle; wire remaining settings to runtime behavior.
+- Add regression, VSIX, and real extension-host validation with a supported Node CI matrix.
+
+
 ## [1.8.0] - 2026-03-23
 
 ### Added

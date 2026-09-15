@@ -517,7 +517,7 @@
     <img src="../resources/compass-icon.png" alt="Group Code icon" />
     Group Code
   </a>
-  <span class="badge">v1.8.0</span>
+  <span class="badge">v1.9.0</span>
   <nav>
     <a href="https://marketplace.visualstudio.com/items?itemName=thechandanbhagat.groupcode" target="_blank">Marketplace</a>
     <a href="https://github.com/thechandanbhagat/group-code" target="_blank">GitHub</a>
@@ -708,7 +708,7 @@
   <div class="callout info">
     <div class="callout-icon">&#8505;</div>
     <div class="callout-body">
-      <p><strong>Requirements:</strong> VS Code 1.90.0 or higher. AI features additionally require the GitHub Copilot extension with an active subscription.</p>
+      <p><strong>Requirements:</strong> VS Code 1.99.1 or higher with a filesystem workspace. Browser-only and virtual workspaces are unsupported. AI features additionally require an available language model, such as GitHub Copilot with an active subscription.</p>
     </div>
   </div>
 
@@ -1276,7 +1276,7 @@ export function validateToken(token: string) {
       <tr>
         <td><strong>Safe Mode</strong></td>
         <td>Adds missing groups only. Never modifies or removes existing @group comments.</td>
-        <td><code>@groupcode /generate</code> or right-click &gt; <em>Group Code in Current File</em></td>
+        <td><code>@groupcode /generate</code></td>
       </tr>
       <tr>
         <td><strong>Update Mode</strong></td>
@@ -1292,6 +1292,7 @@ export function validateToken(token: string) {
   </table>
 
   <h3>What the AI Does</h3>
+  <p>Generated changes remain in edited documents for review and Undo. Save the documents to keep them. Requests that fail, are cancelled, or refer to a changed document cannot replace its source.</p>
   <ol>
     <li>Reads the entire file content and identifies logical code sections (functions, classes, blocks).</li>
     <li>Infers a meaningful group name and short description for each section.</li>
@@ -1378,7 +1379,7 @@ export function validateToken(token: string) {
   <div class="callout note">
     <div class="callout-icon">&#128204;</div>
     <div class="callout-body">
-      <p>The language model tool requires VS Code with language model API support (1.90.0+) and GitHub Copilot installed.</p>
+      <p>The language model tool requires VS Code 1.99.1 or newer and an available language model.</p>
     </div>
   </div>
 
@@ -1745,7 +1746,7 @@ export function validateToken(token: string) {
   <hr />
 
   <p style="color: var(--color-muted); font-size: 13px; text-align: center;">
-    Group Code v1.8.0 &mdash; Published by
+    Group Code v1.9.0 &mdash; Published by
     <a href="https://marketplace.visualstudio.com/publishers/thechandanbhagat" target="_blank">thechandanbhagat</a>
     &mdash; <a href="https://github.com/thechandanbhagat/group-code" target="_blank">View on GitHub</a>
   </p>

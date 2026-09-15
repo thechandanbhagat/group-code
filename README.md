@@ -15,7 +15,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 
 - **Rename Code Groups**: Rename groups directly from the tree view with F2 keyboard shortcut
 - **Favorites System**: Mark important code groups as favorites with star icons for quick access
-- **User Profile Storage**: Personal preferences stored per-user in OS profile, preventing Git conflicts
+- **User Profile Storage**: Personal preferences use VS Code extension storage, with existing profile preferences read during migration
 - **Tree State Persistence**: Tree expansion/collapse state automatically saved and restored
 - **Cross-File Code Organization**: Group related code blocks from different file types under a common functionality
 - **Unified View**: Access all related code sections through the dedicated Group Code Explorer
@@ -100,7 +100,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.8.0.vsix` file
+1. Download the `groupcode-1.9.0.vsix` file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
@@ -108,7 +108,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 To use the AI-powered features, you need:
 
-- **VS Code**: Version 1.90.0 or higher
+- **VS Code**: Version 1.99.1 or higher
 - **GitHub Copilot**: Installed and active
 - **GitHub Copilot Subscription**: Active subscription required
 
@@ -261,8 +261,7 @@ Open GitHub Copilot Chat and use:
 Access these commands through the Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
 
 - **Group Code in Current File**: Scan only the active file for code groups
-- **Group Code in Workspace**: Scan all supported files in the workspace
-- **Scan External Project Folder**: Scan code in a folder outside your workspace
+- **Multiple workspace folders**: Add a folder to the workspace to include it in scans
 - **Show Code Groups**: Display the quick picker to navigate between groups
 - **Refresh Code Groups**: Perform a complete rescan of all files
 - **Suggest Code Group with AI**: Get AI-powered suggestions for selected code
@@ -290,19 +289,19 @@ The AI will:
 4. Add @group comments in the correct format
 5. Automatically scan and update the tree view
 
-### Smart Format Detection
+### Updating existing annotations
 
-If you have existing @group comments with incorrect format (using dash instead of colon), the AI generation will automatically detect and fix them:
+Use `@groupcode /generate update` to replace existing annotations with new suggestions. For every eligible file, use `@groupcode /generate workspace update` and confirm the workspace operation. Generated annotations use a colon before the description:
 
 ```javascript
-// Old format (dash) - will be detected
+// Old format (dash)
 // @group Authentication - User login
 
 // Correct format (colon) - what AI generates
 // @group Authentication: User login
 ```
 
-Simply run `@groupcode generate workspace` and it will update all files with incorrect formats.
+Review the resulting edits, then save the documents. Ordinary generation preserves existing annotations; it does not automatically rewrite their format.
 
 ### Language Model Tool
 
@@ -315,7 +314,7 @@ The `groupcode_generate` tool is available for GitHub Copilot to invoke when you
 The tool supports three actions:
 
 - **analyze**: Identify groups without modifying code
-- **generate**: Create code with @group comments inserted
+- **generate**: Suggest validated annotations and offer to apply them to the active document
 - **suggest**: Get quick suggestions for selected code
 
 ## Supported Languages
@@ -334,7 +333,7 @@ Each language uses its native comment syntax to define code groups.
 - **Descriptive Groups**: Choose meaningful group names that reflect functionality
 - **Correct Format**: Always use colon (:) not dash (-) after group name
 - **Regular Refreshing**: The extension auto-refreshes, but you can manually refresh after major changes
-- **External Code**: For monorepos or multi-project setups, use "Scan External Project Folder"
+- **External Code**: Add each project folder to the workspace; each folder uses its own ignore rules and index
 
 ### With AI Features
 
@@ -366,26 +365,61 @@ Each language uses its native comment syntax to define code groups.
 - **No AI suggestions**: Ensure GitHub Copilot is installed, enabled, and you have an active subscription
 - **Wrong format generated**: Update to latest version (1.3.0+) which uses correct colon format
 - **Tree view not updating**: The extension now auto-refreshes; if issues persist, try manual refresh
-- **Chat participant not showing**: Make sure VS Code is version 1.90.0 or higher
+- **Chat participant not showing**: Make sure VS Code is version 1.99.1 or higher
 - **Hierarchical groups not showing**: Ensure you're using the correct `>` separator with spaces
 
 ### Format Issues
 
 If you have old groups with dash format (`@group Name - Description`):
 
-1. Run `@groupcode generate workspace`
-2. The AI will detect and regenerate with correct format
-3. Tree view will update automatically
+1. Run `@groupcode /generate update` for one file, or `@groupcode /generate workspace update` for eligible workspace files.
+2. Review the regenerated annotations before saving the edited documents.
+3. The tree view updates after the annotations are applied.
+
+## Supported hosts and settings
+
+Group Code requires VS Code **1.99.1 or newer**. It runs in the desktop or remote **workspace extension host** against filesystem workspaces. Browser-only VS Code and virtual workspaces are currently unsupported; the former nonfunctional browser entry has been removed.
+
+Workspace settings live in `.groupcode/settings.json`. The Settings panel reads and writes the same validated schema used by the extension:
+
+```json
+{
+  "autoScan": true,
+  "autoRefreshOnSave": true,
+  "showNotifications": true,
+  "maxSearchResults": 100,
+  "maxFileSizeKB": 500,
+  "additionalIgnorePatterns": [],
+  "preferredModel": "auto"
+}
+```
+
+`autoScan` controls startup scanning. `autoRefreshOnSave` controls background updates on edits and saves. `showNotifications` controls scan-result notifications. Search limits apply to filtered tree/chat results. File-size and ignore settings apply to scanning and workspace AI generation. The legacy `autoScanOnSave` key migrates to `autoRefreshOnSave`. Hierarchical grouping remains available; its former ineffective toggle has been removed.
+
+Model selection uses an exact saved model ID first, then the chat-selected model, then an available model. An unavailable saved model produces an error. `auto` or an empty preference uses the chat selection when available.
+
+AI generation requests structured annotations and inserts comments locally. It rejects malformed results, invalid locations, cancellation, and source changes made during the request. Add, rename, remove, conversion, and AI edits remain open for review and Undo; save the documents to persist source changes. Diff previews show the complete proposed source.
 
 ## Data Storage
 
-Code group metadata is stored in the `.groupcode` folder in your workspace root. This folder contains JSON files with:
+Each workspace folder owns its `.groupcode/codegroups.json` index and `functionalities.json` metadata. The index is provisional at startup and refreshed when startup scanning is enabled. Full rescans preserve `.groupcode/settings.json` and unrelated files.
 
-- Group definitions and descriptions
-- File locations and line numbers
-- Functionality mappings
+Favorites, tree state, and model metadata use VS Code's extension storage on the active extension host. Existing `~/.groupcode/<workspace-hash>/` favorites and tree state remain readable during migration. You can add `.groupcode/` to `.gitignore` to keep generated workspace metadata out of Git.
 
-You can add `.groupcode/` to your `.gitignore` if you don't want to commit this metadata.
+## Development and validation
+
+Use Node **22 or 24** for development and CI.
+
+```sh
+npm ci
+npm test
+npm run test:package
+npm run test:integration
+```
+
+The package check creates `artifacts/groupcode-review.vsix` and extracts it to `artifacts/package`. Set `GROUPCODE_PACKAGE_PATH=artifacts/package` to run host tests against that extracted package. Host tests use a disposable workspace and VS Code profile; they default to VS Code 1.99.1. `VSCODE_VERSION=stable` selects the current stable host, or `VSCODE_EXECUTABLE_PATH` can point at a local VS Code executable.
+
+`npm run watch` updates the bundled development entry; `npm test` performs production typechecking and unit regressions. CI additionally checks the package and real extension-host behavior. Live model requests are not required by the automated suite.
 
 ## Privacy & Security
 

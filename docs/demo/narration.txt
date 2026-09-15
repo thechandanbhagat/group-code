@@ -1,0 +1,15 @@
+Finding a feature shouldn't mean searching through dozens of files. Meet Group Code, the Visual Studio Code extension that organizes your codebase by what it does.
+
+Start with a simple comment. Add an at-group annotation above your code, give it a name, and describe its purpose. Use the greater-than separator to create a hierarchy, like Checkout, then Payments.
+
+Your groups appear in the sidebar. Related code can live in TypeScript, SQL, or HTML, while still belonging to the same feature. Switch to the file view when you want to explore by location.
+
+Click a group to jump straight to its code. Search to narrow the list, and favorite the groups you use most.
+
+Need to reorganize? Rename a parent group, and its child annotations follow. Your edits stay available for review and undo.
+
+For a faster starting point, the Copilot integration can suggest group annotations. Review the proposed changes, then save when you're ready.
+
+Group Code keeps its index up to date as eligible files change, and respects your workspace's ignore rules.
+
+Turn a collection of files into a map of your features. Find Group Code in the Visual Studio Code Marketplace.

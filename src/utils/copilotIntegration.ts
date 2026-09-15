@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import logger from './logger';
+import { resolveModel, checkCancellation } from './aiModels';
 
 /**
  * Integration with GitHub Copilot and VS Code Language Model API
@@ -9,9 +10,7 @@ export class CopilotIntegration {
     private isAvailable: boolean = false;
 
     // @group Integration > Copilot > Initialization: Initialize integration instance and perform initial availability check with VS Code API
-    constructor() {
-        this.checkAvailability();
-    }
+
 
     /**
      * Check if language model API is available
@@ -46,21 +45,9 @@ export class CopilotIntegration {
      * Generate code group suggestions using AI
      */
     // @group AI > Suggestions > GroupName: Use language model to suggest hierarchical group name for given code snippet
-    public async suggestGroupName(codeSnippet: string, context?: string): Promise<string | undefined> {
+    public async suggestGroupName(codeSnippet: string, context?: string, token?: vscode.CancellationToken, chatModel?: vscode.LanguageModelChat): Promise<string | undefined> {
         try {
-            if (!await this.isIntegrationAvailable()) {
-                logger.info('Copilot not available, skipping AI suggestion');
-                return undefined;
-            }
-
-            // Select any available language model
-            const models = await vscode.lm.selectChatModels();
-            if (models.length === 0) {
-                logger.warn('No language model found');
-                return undefined;
-            }
-
-            const model = models[0];
+            const model = await resolveModel(chatModel, token);
             logger.info(`Using language model: ${model.id}`);
             const prompt = this.buildGroupNamePrompt(codeSnippet, context);
             
@@ -68,16 +55,18 @@ export class CopilotIntegration {
                 vscode.LanguageModelChatMessage.User(prompt)
             ];
 
-            const chatResponse = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+            const chatResponse = await model.sendRequest(messages, {}, token);
             
             let suggestion = '';
             for await (const fragment of chatResponse.text) {
+                checkCancellation(token);
                 suggestion += fragment;
             }
 
             return suggestion.trim();
         } catch (error) {
             logger.error('Error getting AI suggestion', error);
+            checkCancellation(token);
             return undefined;
         }
     }
@@ -86,18 +75,9 @@ export class CopilotIntegration {
      * Generate description for a code group using AI
      */
     // @group AI > Suggestions > Description: Request AI to generate concise description (10-20 words) for specified code group
-    public async suggestDescription(codeSnippet: string, groupName: string): Promise<string | undefined> {
+    public async suggestDescription(codeSnippet: string, groupName: string, token?: vscode.CancellationToken, chatModel?: vscode.LanguageModelChat): Promise<string | undefined> {
         try {
-            if (!await this.isIntegrationAvailable()) {
-                return undefined;
-            }
-
-            const models = await vscode.lm.selectChatModels();
-            if (models.length === 0) {
-                return undefined;
-            }
-
-            const model = models[0];
+            const model = await resolveModel(chatModel, token);
             logger.info(`Using language model: ${model.id}`);
             const prompt = this.buildDescriptionPrompt(codeSnippet, groupName);
             
@@ -105,16 +85,18 @@ export class CopilotIntegration {
                 vscode.LanguageModelChatMessage.User(prompt)
             ];
 
-            const chatResponse = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+            const chatResponse = await model.sendRequest(messages, {}, token);
             
             let description = '';
             for await (const fragment of chatResponse.text) {
+                checkCancellation(token);
                 description += fragment;
             }
 
             return description.trim();
         } catch (error) {
             logger.error('Error getting description suggestion', error);
+            checkCancellation(token);
             return undefined;
         }
     }
@@ -134,14 +116,14 @@ export class CopilotIntegration {
                 return [];
             }
 
-            const model = models[0];
+            const model = await resolveModel();
             const prompt = this.buildAnalysisPrompt(code, filePath);
             
             const messages = [
                 vscode.LanguageModelChatMessage.User(prompt)
             ];
 
-            const chatResponse = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+            const chatResponse = await model.sendRequest(messages, {}, undefined);
             
             let response = '';
             for await (const fragment of chatResponse.text) {
@@ -259,7 +241,7 @@ JSON Response:`;
                 return null;
             }
 
-            const model = models[0];
+            const model = await resolveModel();
             logger.info(`Checking semantic similarity for: ${newGroupName}`);
             
             const prompt = this.buildSemanticSimilarityPrompt(newGroupName, existingGroupNames);
@@ -268,7 +250,7 @@ JSON Response:`;
                 vscode.LanguageModelChatMessage.User(prompt)
             ];
 
-            const chatResponse = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+            const chatResponse = await model.sendRequest(messages, {}, undefined);
             
             let response = '';
             for await (const fragment of chatResponse.text) {
@@ -352,18 +334,9 @@ JSON Response:`;
      * Get AI-powered code explanation
      */
     // @group AI > Explanation > CodeGroup: Ask AI to explain code snippet clearly for documentation under given group name
-    public async explainCodeGroup(codeSnippet: string, groupName: string): Promise<string | undefined> {
+    public async explainCodeGroup(codeSnippet: string, groupName: string, token?: vscode.CancellationToken, chatModel?: vscode.LanguageModelChat): Promise<string | undefined> {
         try {
-            if (!await this.isIntegrationAvailable()) {
-                return undefined;
-            }
-
-            const models = await vscode.lm.selectChatModels();
-            if (models.length === 0) {
-                return undefined;
-            }
-
-            const model = models[0];
+            const model = await resolveModel(chatModel, token);
             logger.info(`Using language model: ${model.id}`);
             const prompt = `Explain what the following code does in the "${groupName}" group. 
 Provide a clear, concise explanation suitable for documentation.
@@ -379,16 +352,18 @@ Explanation:`;
                 vscode.LanguageModelChatMessage.User(prompt)
             ];
 
-            const chatResponse = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+            const chatResponse = await model.sendRequest(messages, {}, token);
             
             let explanation = '';
             for await (const fragment of chatResponse.text) {
+                checkCancellation(token);
                 explanation += fragment;
             }
 
             return explanation.trim();
         } catch (error) {
             logger.error('Error getting code explanation', error);
+            checkCancellation(token);
             return undefined;
         }
     }

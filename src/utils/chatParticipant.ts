@@ -1,11 +1,15 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { CodeGroupProvider } from '../codeGroupProvider';
 import { CodeGroupTreeProvider } from '../codeGroupTreeProvider';
 import { CodeGroup } from '../groupDefinition';
 import logger from './logger';
 import { enrichWithHierarchy, parseHierarchy, isDescendantOf } from './hierarchyUtils';
-import { getSupportedFilesGlobPattern } from './fileUtils';
+import { loadGroupCodeSettings, defaultSettings, getSearchLimit } from './fileUtils';
+import { findEligibleFiles } from './fileSelection';
+import { generatePlan, applyGeneration } from './aiGeneration';
+import { checkCancellation } from './aiModels';
+import { parseAnnotations } from './annotations';
+import { chatCommand } from './chatRouting';
 
 /**
  * GitHub Copilot Chat Participant for Code Grouping Extension
@@ -42,35 +46,19 @@ export class GroupCodeChatParticipant {
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
         try {
-            const prompt = request.prompt.trim().toLowerCase();
-            const command = request.command; // VS Code passes slash commands here
-            logger.info(`Chat request received - command: ${command}, prompt: ${prompt}`);
-
-            // First check if there's a slash command, then fall back to prompt parsing
-            if (command === 'generate' || prompt.includes('generate') || prompt.includes('auto group') || prompt.includes('add groups')) {
-                return await this.handleGenerateCommand(request, stream, token);
-            } else if (command === 'refactor' || prompt.includes('refactor') || prompt.includes('analyze refactoring') || prompt.includes('improve')) {
-                return await this.handleRefactoringCommand(request, stream, token);
-            } else if (command === 'duplicates' || prompt.includes('duplicate') || prompt.includes('similar')) {
-                return await this.handleDuplicatesCommand(stream, token);
-            } else if (command === 'orphaned' || prompt.includes('orphaned') || prompt.includes('unused') || prompt.includes('old groups')) {
-                return await this.handleOrphanedCommand(stream, token);
-            } else if (command === 'scan' || prompt.includes('scan') || prompt.includes('analyze')) {
-                return await this.handleScanCommand(request, stream, token);
-            } else if (command === 'suggest' || prompt.includes('suggest') || prompt.includes('recommendation')) {
-                return await this.handleSuggestCommand(request, stream, token);
-            } else if (command === 'list' || prompt.includes('show') || prompt.includes('list') || prompt.includes('all groups')) {
-                return await this.handleShowGroupsCommand(stream);
-            } else if (command === 'find' || prompt.includes('find') || prompt.includes('search')) {
-                return await this.handleFindGroupCommand(request, stream);
-            } else if (command === 'navigate' || prompt.includes('navigate') || prompt.includes('go to')) {
-                return await this.handleNavigateCommand(request, stream);
-            } else if (command === 'refresh' || prompt.includes('refresh') || prompt.includes('rescan')) {
-                return await this.handleRefreshCommand(stream, token);
-            } else if (prompt.includes('help')) {
-                return await this.handleHelpCommand(stream);
-            } else {
-                return await this.handleHelpCommand(stream);
+            checkCancellation(token);
+            switch (chatCommand(request.command, request.prompt)) {
+                case 'generate': return await this.handleGenerateCommand(request, stream, token);
+                case 'refactor': return await this.handleRefactoringCommand(request, stream, token);
+                case 'duplicates': return await this.handleDuplicatesCommand(stream, token);
+                case 'orphaned': return await this.handleOrphanedCommand(stream, token);
+                case 'scan': return await this.handleScanCommand(request, stream, token);
+                case 'suggest': return await this.handleSuggestCommand(request, stream, token);
+                case 'list': return await this.handleShowGroupsCommand(stream);
+                case 'find': return await this.handleFindGroupCommand(request, stream);
+                case 'navigate': return await this.handleNavigateCommand(request, stream);
+                case 'refresh': return await this.handleRefreshCommand(stream, token);
+                default: return await this.handleHelpCommand(stream);
             }
         } catch (error) {
             logger.error('Error handling chat request', error);
@@ -99,7 +87,8 @@ export class GroupCodeChatParticipant {
             // Scan entire workspace
             stream.progress('Scanning entire workspace for code groups...');
             
-            await this.codeGroupProvider.processWorkspace();
+            await this.codeGroupProvider.processWorkspace(token);
+            checkCancellation(token);
             this.treeProvider.refresh();
             
             const allGroups = this.codeGroupProvider.getAllGroups();
@@ -194,8 +183,8 @@ export class GroupCodeChatParticipant {
         const { copilotIntegration } = await import('./copilotIntegration');
         
         stream.progress('Getting AI suggestions...');
-        const groupName = await copilotIntegration.suggestGroupName(selectedText);
-        const description = groupName ? await copilotIntegration.suggestDescription(selectedText, groupName) : undefined;
+        const groupName = await copilotIntegration.suggestGroupName(selectedText, undefined, token, request.model);
+        const description = groupName ? await copilotIntegration.suggestDescription(selectedText, groupName, token, request.model) : undefined;
 
         if (groupName) {
             stream.markdown('### 💡 AI Suggestion\n\n');
@@ -258,7 +247,7 @@ export class GroupCodeChatParticipant {
     ): Promise<vscode.ChatResult> {
         // Extract search term from prompt
         const prompt = request.prompt.toLowerCase();
-        const searchMatch = prompt.match(/(?:find|search)\s+(?:group\s+)?["']?([^"']+)["']?/i);
+        const searchMatch = (request.command === 'find' ? 'find ' + prompt : prompt).match(/(?:find|search)\s+(?:group\s+)?["']?([^"']+)["']?/i);
         
         if (!searchMatch) {
             stream.markdown('⚠️ Please specify a group name to search for. Example: `@groupcode find authentication` or `@groupcode find Auth > Login`\n');
@@ -287,6 +276,7 @@ export class GroupCodeChatParticipant {
             );
         }
 
+        matchingGroups = matchingGroups.slice(0, await getSearchLimit());
         if (matchingGroups.length === 0) {
             stream.markdown(`❌ No groups found matching "${searchTerm}".\n`);
             return {};
@@ -338,7 +328,7 @@ export class GroupCodeChatParticipant {
         stream: vscode.ChatResponseStream
     ): Promise<vscode.ChatResult> {
         const prompt = request.prompt.toLowerCase();
-        const searchMatch = prompt.match(/(?:navigate|go to)\s+(?:group\s+)?["']?([^"']+)["']?/i);
+        const searchMatch = (request.command === 'navigate' ? 'navigate ' + prompt : prompt).match(/(?:navigate|go to)\s+(?:group\s+)?["']?([^"']+)["']?/i);
         
         if (!searchMatch) {
             stream.markdown('⚠️ Please specify a group name. Example: `@groupcode navigate to authentication`\n');
@@ -370,466 +360,73 @@ export class GroupCodeChatParticipant {
      * - @groupcode /generate workspace - Add groups to all workspace files where missing
      * - @groupcode /generate workspace update - Replace all groups in workspace (with warning)
      */
-    private async handleGenerateCommand(
-        request: vscode.ChatRequest,
-        stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
-    ): Promise<vscode.ChatResult> {
-        const prompt = request.prompt.toLowerCase();
-        const isWorkspaceMode = prompt.includes('workspace') || prompt.includes('all files') || prompt.includes('entire project');
-        const isUpdateMode = prompt.includes('update') || prompt.includes('replace') || prompt.includes('refresh');
-        const editor = vscode.window.activeTextEditor;
-        
-        // If no active file and not workspace mode, offer workspace generation
-        if (!editor && !isWorkspaceMode) {
-            const choice = await vscode.window.showInformationMessage(
-                'No file is currently open. Would you like to generate code groups for the entire workspace?',
-                'Yes', 'No'
-            );
-            
-            if (choice !== 'Yes') {
-                stream.markdown('⚠️ Please open a file first, or use `@groupcode /generate workspace` to process all files.\n');
-                return {};
-            }
-            
-            return await this.handleWorkspaceGeneration(stream, token, isUpdateMode);
-        }
-        
-        // Workspace mode
-        if (isWorkspaceMode) {
-            return await this.handleWorkspaceGeneration(stream, token, isUpdateMode);
-        }
-        
-        // Single file mode
-        return await this.handleSingleFileGeneration(editor!, stream, token, isUpdateMode);
-    }
-
-    /**
-     * Generate code groups for entire workspace
-     * @param isUpdateMode If true, replaces existing groups. If false, only adds where missing.
-     */
-    private async handleWorkspaceGeneration(
-        stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken,
-        isUpdateMode: boolean = false
-    ): Promise<vscode.ChatResult> {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        
-        if (!workspaceFolders || workspaceFolders.length === 0) {
-            stream.markdown('⚠️ No workspace folder found. Please open a workspace first.\n');
-            return {};
-        }
-
-        // Check if Copilot is available before processing
-        const { copilotIntegration } = await import('./copilotIntegration');
-        const isAvailable = await copilotIntegration.isIntegrationAvailable();
-        
-        if (!isAvailable) {
-            stream.markdown('❌ **GitHub Copilot is not available.**\n\n');
-            stream.markdown('To use AI-powered code group generation, you need:\n');
-            stream.markdown('1. GitHub Copilot extension installed\n');
-            stream.markdown('2. Active GitHub Copilot subscription\n');
-            stream.markdown('3. Copilot enabled in VS Code settings\n\n');
-            stream.markdown('💡 You can still use manual code grouping with the "Add Code Group" command.\n');
-            return {};
-        }
-
-        stream.progress('🔍 Finding code files in workspace...');
-
-        try {
-            // Get ignore patterns from .gitignore and defaults
-            const ignorePatterns = await this.getIgnorePatterns(workspaceFolders[0].uri.fsPath);
-            const excludePattern = `{${ignorePatterns.join(',')}}`;
-            
-            logger.info(`Workspace generation using ${ignorePatterns.length} ignore patterns`);
-            
-            // Find all supported code files, respecting gitignore
-            // Uses centralized supported extensions from fileUtils
-            const files = await vscode.workspace.findFiles(
-                getSupportedFilesGlobPattern(),
-                excludePattern
-            );
-
-            if (files.length === 0) {
-                stream.markdown('⚠️ No code files found in the workspace.\n');
-                return {};
-            }
-
-            // Show warning for update mode
-            if (isUpdateMode) {
-                stream.markdown('### ⚠️ Update Mode\n\n');
-                stream.markdown('This will **replace all existing @group comments** with fresh AI-generated ones.\n\n');
-                
-                const proceed = await vscode.window.showWarningMessage(
-                    'Update mode will replace all existing @group comments in the workspace. This cannot be undone. Continue?',
-                    { modal: true },
-                    'Yes, Replace All', 'Cancel'
-                );
-                
-                if (proceed !== 'Yes, Replace All') {
-                    stream.markdown('❌ Operation cancelled.\n');
-                    return {};
-                }
-                
-                stream.markdown('Proceeding with update...\n\n');
-            } else {
-                stream.markdown('###  Generating Code Groups for Workspace\n\n');
-                stream.markdown('ℹ️ **Add mode:** Only files without @group comments will be processed.\n');
-                stream.markdown('💡 Use `@groupcode /generate workspace update` to replace existing groups.\n\n');
-            }
-
-            stream.markdown(`Found **${files.length}** code file(s). Processing...\n\n`);
-
-            let processed = 0;
+    private async handleGenerateCommand(request: vscode.ChatRequest, stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken): Promise<vscode.ChatResult> {
+        const update = /\bupdate\b/i.test(request.prompt);
+        if (/\bworkspace\b|\ball files\b/i.test(request.prompt)) {
+            const files = await findEligibleFiles(token);
+            if (update && await vscode.window.showWarningMessage('Replace existing group annotations in eligible workspace files?', { modal: true }, 'Generate') !== 'Generate') { return {}; }
             let modified = 0;
-            let skipped = 0;
             let failed = 0;
-
             for (const file of files) {
-                if (token.isCancellationRequested) {
-                    stream.markdown('\n⚠️ **Cancelled by user**\n');
-                    break;
-                }
-
+                checkCancellation(token);
                 try {
-                    stream.progress(`Processing ${file.fsPath}... (${processed + 1}/${files.length})`);
-                    
                     const document = await vscode.workspace.openTextDocument(file);
-                    const code = document.getText();
-                    
-                    // Skip empty files or files that are too small
-                    if (!code.trim() || code.length < 100) {
-                        processed++;
-                        continue;
+                    const source = document.getText();
+                    if (!source.trim()) { continue; }
+                    const version = document.version;
+                    stream.progress(`Generating annotations for ${vscode.workspace.asRelativePath(file)}`);
+                    const plan = await generatePlan(source, document.languageId, document.fileName, token, request.model, update);
+                    checkCancellation(token);
+                    if (plan.count) {
+                        await applyGeneration(document, plan, version, token);
+                        modified++;
+                        await this.codeGroupProvider.processFileOnSave(document);
+                        stream.anchor(file, `${plan.count} annotations`);
+                        stream.markdown('\n');
                     }
-
-                    // Check if file already has @group comments
-                    const hasExistingGroups = /@group\s+.+/i.test(code);
-                    
-                    // In add mode (not update), skip files that already have groups
-                    if (hasExistingGroups && !isUpdateMode) {
-                        stream.markdown(`- ⏭️ \`${file.fsPath.split(/[\\/]/).pop()}\` - Already has groups, skipping\n`);
-                        skipped++;
-                        processed++;
-                        continue;
-                    }
-                    
-                    if (hasExistingGroups && isUpdateMode) {
-                        stream.markdown(`- 🔄 \`${file.fsPath.split(/[\\/]/).pop()}\` - Replacing existing groups...\n`);
-                    }
-
-                    const language = document.languageId;
-                    
-                    // Generate groups for this file
-                    const { AICodeGroupTool } = await import('./aiCodeGroupTool');
-                    const tool = new AICodeGroupTool();
-                    
-                    const result = await tool.invoke({
-                        input: {
-                            action: 'generate',
-                            code,
-                            filePath: file.fsPath,
-                            language
-                        },
-                        toolInvocationToken: undefined,
-                        tokenizationOptions: undefined
-                    }, token);
-
-                    if (result && result.content && result.content.length > 0) {
-                        const firstContent = result.content[0] as vscode.LanguageModelTextPart;
-                        const generatedCode = firstContent.value || String(firstContent);
-                        
-                        // Only apply if there are actual changes
-                        if (generatedCode && generatedCode.trim() !== code.trim() && generatedCode.includes('@group')) {
-                            const edit = new vscode.WorkspaceEdit();
-                            const fullRange = new vscode.Range(
-                                document.positionAt(0),
-                                document.positionAt(code.length)
-                            );
-                            edit.replace(file, fullRange, generatedCode);
-                            await vscode.workspace.applyEdit(edit);
-                            await document.save();
-                            
-                            // Extract the groups that were added
-                            const groupMatches = generatedCode.matchAll(/@group\s+([^\n\r]+)/gi);
-                            const addedGroups: Array<{name: string, line: number}> = [];
-                            const lines = generatedCode.split('\n');
-                            
-                            for (const match of groupMatches) {
-                                const groupName = match[1].trim();
-                                // Find the line number of this group
-                                const lineIndex = lines.findIndex((line: string) => line.includes(match[0]));
-                                if (lineIndex !== -1) {
-                                    addedGroups.push({ name: groupName, line: lineIndex + 1 });
-                                }
-                            }
-                            
-                            // Show file with clickable anchor
-                            stream.markdown(`- ✅ `);
-                            stream.anchor(file, `${file.fsPath.split(/[\\/]/).pop()}`);
-                            stream.markdown(` - **${addedGroups.length}** group(s) added:\n`);
-                            
-                            // Show each group with clickable location
-                            for (const group of addedGroups) {
-                                const location = new vscode.Location(file, new vscode.Position(group.line - 1, 0));
-                                stream.markdown(`  - `);
-                                stream.anchor(location, `📁 ${group.name}`);
-                                stream.markdown(`\n`);
-                            }
-                            
-                            modified++;
-                        } else {
-                            stream.markdown(`- ➖ \`${file.fsPath.split(/[\\/]/).pop()}\` - No groups suggested\n`);
-                        }
-                    }
-                    
-                    processed++;
                 } catch (error) {
-                    const errorMsg = error instanceof Error ? error.message : String(error);
-                    logger.error(`Error processing file ${file.fsPath}`, error);
-                    stream.markdown(`- ❌ \`${file.fsPath.split(/[\\/]/).pop()}\` - ${errorMsg}\n`);
+                    checkCancellation(token);
                     failed++;
-                    processed++;
+                    logger.error(`Generation failed for ${file.fsPath}`, error);
+                    stream.markdown(`Could not generate annotations for ${vscode.workspace.asRelativePath(file)}: ${String(error)}\n`);
                 }
             }
-
-            stream.markdown(`\n### 📊 Summary\n\n`);
-            stream.markdown(`- **Total files:** ${files.length}\n`);
-            stream.markdown(`- **Modified:** ${modified}\n`);
-            stream.markdown(`- **Skipped (already has groups):** ${skipped}\n`);
-            stream.markdown(`- **No groups needed:** ${processed - modified - skipped - failed}\n`);
-            stream.markdown(`- **Failed:** ${failed}\n\n`);
-            
-            if (modified > 0) {
-                stream.markdown('✅ **Done!** Scanning workspace to update tree view...\n\n');
-                
-                // Automatically scan to update tree view and .groupcode folder
-                stream.progress('Scanning workspace for groups...');
-                await this.codeGroupProvider.processWorkspace();
-                
-                // Force save to ensure .groupcode folder is updated
-                await this.codeGroupProvider.saveGroups();
-                
-                // Trigger tree view refresh
-                this.treeProvider.refresh();
-                
-                // Give a moment for the refresh to propagate
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                const allGroups = this.codeGroupProvider.getAllGroups();
-                stream.markdown(`✨ **Scan complete!** Found **${allGroups.length}** code group(s) across all files.\n`);
-                stream.markdown('Check the Group Code tree view to see all organized groups! 🎉\n');
-            } else {
-                stream.markdown('ℹ️ No files were modified. Your code might already be well-organized or too small to group.\n');
-            }
-
+            stream.markdown(`Updated ${modified} file(s); ${failed} failed. Changes are open for review and undo. Save edited documents to keep them.\n`);
             return {};
-        } catch (error) {
-            logger.error('Error in workspace generation', error);
-            stream.markdown(`❌ Failed to process workspace: ${error}\n`);
-            return { errorDetails: { message: String(error) } };
         }
+        const document = vscode.window.activeTextEditor?.document;
+        if (!document) { throw new Error('Open a source file first'); }
+        const root = vscode.workspace.getWorkspaceFolder(document.uri);
+        const settings = root ? await loadGroupCodeSettings(root.uri.fsPath) : defaultSettings;
+        const source = document.getText();
+        if (Buffer.byteLength(source, 'utf8') > settings.maxFileSizeKB * 1024) { throw new Error('The source exceeds the configured maximum file size'); }
+        const version = document.version;
+        const plan = await generatePlan(source, document.languageId, document.fileName, token, request.model, update);
+        checkCancellation(token);
+        if (!plan.count) { stream.markdown('No additional annotations were suggested.\n'); return {}; }
+        stream.markdown(`Prepared ${plan.count} annotations. Choose Show Diff to review the complete changes.\n`);
+        const choice = await vscode.window.showInformationMessage(`Add ${plan.count} code group annotations?`, 'Apply', 'Show Diff');
+        checkCancellation(token);
+        if (choice === 'Apply') {
+            await applyGeneration(document, plan, version, token);
+            await this.codeGroupProvider.processFileOnSave(document);
+            stream.markdown('Annotations applied. Save the edited document to keep the changes.\n');
+        } else if (choice === 'Show Diff') {
+            const preview = await vscode.workspace.openTextDocument({content: plan.generated, language: document.languageId});
+            await vscode.commands.executeCommand('vscode.diff', document.uri, preview.uri, 'Proposed group annotations');
+        }
+        return {};
     }
 
-    /**
-     * Generate code groups for a single file
-     * @param isUpdateMode If true, replaces existing groups. If false, only adds if missing.
-     */
-    private async handleSingleFileGeneration(
-        editor: vscode.TextEditor,
-        stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken,
-        isUpdateMode: boolean = false
-    ): Promise<vscode.ChatResult> {
-        stream.progress(' Analyzing your code...');
-
-        try {
-            // Get the code to process
-            const code = editor.document.getText();
-            const language = editor.document.languageId;
-            const filePath = editor.document.fileName;
-            const fileName = filePath.split(/[\\/]/).pop() || 'file';
-
-            if (!code.trim()) {
-                stream.markdown('⚠️ The current file is empty.\n');
-                return {};
-            }
-
-            // Check if file already has @group comments
-            const hasExistingGroups = /@group\s+.+/i.test(code);
-            
-            if (hasExistingGroups && !isUpdateMode) {
-                stream.markdown(`### ⚠️ File Already Has Groups\n\n`);
-                stream.markdown(`\`${fileName}\` already contains @group comments.\n\n`);
-                stream.markdown('**Options:**\n');
-                stream.markdown('- Use `@groupcode /generate update` to replace existing groups\n');
-                stream.markdown('- Use `@groupcode /scan` to refresh the tree view with current groups\n\n');
-                
-                const proceed = await vscode.window.showInformationMessage(
-                    `${fileName} already has @group comments. Replace them?`,
-                    'Yes, Replace', 'Cancel'
-                );
-                
-                if (proceed !== 'Yes, Replace') {
-                    stream.markdown('✅ Keeping existing groups.\n');
-                    return {};
-                }
-                
-                stream.markdown('Proceeding with replacement...\n\n');
-            }
-            
-            if (hasExistingGroups && isUpdateMode) {
-                stream.markdown('### 🔄 Update Mode\n\n');
-                stream.markdown(`Replacing existing @group comments in \`${fileName}\`...\n\n`);
-            }
-
-            // Use the AI tool to generate grouped code
-            const { AICodeGroupTool } = await import('./aiCodeGroupTool');
-            const tool = new AICodeGroupTool();
-            
-            stream.progress(' Generating @group comments...');
-            
-            const result = await tool.invoke({
-                input: {
-                    action: 'generate',
-                    code,
-                    filePath,
-                    language
-                },
-                toolInvocationToken: undefined,
-                tokenizationOptions: undefined
-            }, token);
-
-            // Check if generation was successful
-            if (!result || !result.content || result.content.length === 0) {
-                stream.markdown('❌ No code groups were generated. The AI might not have found distinct functional areas in your code.\n');
-                return {};
-            }
-
-            // The result contains the generated code
-            const firstContent = result.content[0] as vscode.LanguageModelTextPart;
-            const generatedCode = firstContent.value || String(firstContent);
-            
-            if (!generatedCode || generatedCode.trim() === code.trim()) {
-                stream.markdown('⚠️ No new groups were suggested. Your code might already be well-organized or the AI couldn\'t identify clear groupings.\n');
-                return {};
-            }
-            
-            stream.markdown('### ✅ AI Generated Code Groups\n\n');
-            stream.markdown('The AI has analyzed your code and identified functional groups. Here\'s a preview:\n\n');
-            
-            // Show a preview of the first few lines with groups
-            const preview = generatedCode.split('\n').slice(0, 20).join('\n');
-            stream.markdown('```' + language + '\n' + preview + '\n...\n```\n\n');
-            
-            stream.markdown('**Next Steps:**\n');
-            stream.markdown('1. The changes are ready to apply\n');
-            stream.markdown('2. Review the full generated code above\n');
-            stream.markdown('3. A prompt will appear to apply or view diff\n\n');
-
-            // Offer to apply the changes
-            const choice = await vscode.window.showInformationMessage(
-                'AI has generated code group comments. Would you like to apply them?',
-                'Apply', 'Show Diff', 'Cancel'
-            );
-
-            if (choice === 'Apply') {
-                const edit = new vscode.WorkspaceEdit();
-                const fullRange = new vscode.Range(
-                    editor.document.positionAt(0),
-                    editor.document.positionAt(code.length)
-                );
-                edit.replace(editor.document.uri, fullRange, generatedCode);
-                await vscode.workspace.applyEdit(edit);
-                await editor.document.save();
-                
-                // Extract the groups that were added
-                const groupMatches = generatedCode.matchAll(/@group\s+([^\n\r]+)/gi);
-                const addedGroups: Array<{name: string, line: number}> = [];
-                const lines = generatedCode.split('\n');
-                
-                for (const match of groupMatches) {
-                    const groupName = match[1].trim();
-                    const lineIndex = lines.findIndex((line: string) => line.includes(match[0]));
-                    if (lineIndex !== -1) {
-                        addedGroups.push({ name: groupName, line: lineIndex + 1 });
-                    }
-                }
-                
-                stream.markdown('### ✅ Code Groups Applied!\n\n');
-                stream.markdown(`Added **${addedGroups.length}** group(s) to `);
-                stream.anchor(editor.document.uri, fileName);
-                stream.markdown(`:\n\n`);
-                
-                // Show each group with clickable location
-                for (const group of addedGroups) {
-                    const location = new vscode.Location(editor.document.uri, new vscode.Position(group.line - 1, 0));
-                    stream.markdown(`- `);
-                    stream.anchor(location, `📁 ${group.name}`);
-                    stream.markdown(`\n`);
-                }
-                stream.markdown(`\n`);
-                
-                // Automatically process the file to update tree view
-                stream.progress('Scanning file for groups...');
-                await this.codeGroupProvider.processFileOnSave(editor.document);
-                
-                // Force save groups to .groupcode folder
-                await this.codeGroupProvider.saveGroups();
-                
-                // Refresh tree view
-                this.treeProvider.refresh();
-                
-                // Give a moment for the refresh to propagate
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                stream.markdown('✨ **Done!** Check the Group Code tree view to navigate your groups. 🎉\n');
-            } else if (choice === 'Show Diff') {
-                // Create a temporary document for diff
-                const tempUri = editor.document.uri.with({ 
-                    scheme: 'untitled', 
-                    path: editor.document.uri.path + '.grouped'
-                });
-                const tempDoc = await vscode.workspace.openTextDocument(tempUri);
-                const tempEdit = new vscode.WorkspaceEdit();
-                tempEdit.insert(tempUri, new vscode.Position(0, 0), generatedCode);
-                await vscode.workspace.applyEdit(tempEdit);
-                
-                await vscode.commands.executeCommand(
-                    'vscode.diff',
-                    editor.document.uri,
-                    tempUri,
-                    'Original ↔ With Code Groups'
-                );
-                
-                stream.markdown('📊 **Diff view opened.** Review the changes and apply manually if desired.\n');
-            } else {
-                stream.markdown('❌ **Cancelled.** No changes were made to your file.\n');
-            }
-
-            return {};
-        } catch (error) {
-            logger.error('Error generating code groups', error);
-            stream.markdown(`❌ Failed to generate code groups.\n\n**Error:** ${error}\n\n`);
-            stream.markdown('**Troubleshooting:**\n');
-            stream.markdown('- Ensure GitHub Copilot is installed and active\n');
-            stream.markdown('- Check that you have an active Copilot subscription\n');
-            stream.markdown('- Try with a smaller file first\n');
-            stream.markdown('- Make sure the file has clear, well-named functions/classes\n');
-            return { errorDetails: { message: String(error) } };
-        }
-    }
-
-    /**
-     * Handle refresh command
-     */
     private async handleRefreshCommand(
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
         stream.progress('Refreshing all code groups...');
         
-        await this.codeGroupProvider.processWorkspace();
+        await this.codeGroupProvider.processWorkspace(token);
+            checkCancellation(token);
         this.treeProvider.refresh();
         
         const allGroups = this.codeGroupProvider.getAllGroups();
@@ -1089,110 +686,6 @@ export class GroupCodeChatParticipant {
 
     /**
      * Get glob patterns to ignore based on .gitignore and common folders to exclude
-     */
-    private async getIgnorePatterns(folderPath?: string): Promise<string[]> {
-        const ignorePatterns: string[] = [];
-        
-        // Try to read .gitignore patterns from the specified folder
-        if (folderPath) {
-            try {
-                const normalizedPath = folderPath.replace(/\\/g, '/');
-                const gitignorePath = normalizedPath.endsWith('/') ? 
-                    `${normalizedPath}.gitignore` : 
-                    `${normalizedPath}/.gitignore`;
-                
-                try {
-                    await fs.promises.access(gitignorePath);
-                    const gitignoreContent = await fs.promises.readFile(gitignorePath, 'utf8');
-                    const gitignoreLines = gitignoreContent.split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line && !line.startsWith('#'));
-
-                    // Add all non-empty, non-comment lines
-                    for (const line of gitignoreLines) {
-                        // Skip negation patterns for now (patterns starting with !)
-                        if (!line.startsWith('!')) {
-                            let pattern = line;
-                            
-                            // Check if this is a directory pattern (ends with /)
-                            const isDirectoryPattern = pattern.endsWith('/');
-                            
-                            // Remove leading slash if present
-                            if (pattern.startsWith('/')) {
-                                pattern = pattern.substring(1);
-                            }
-                            
-                            // Remove trailing slash
-                            if (pattern.endsWith('/')) {
-                                pattern = pattern.slice(0, -1);
-                            }
-                            
-                            // Check if this looks like a file pattern (contains * with extension or has file extension)
-                            const isFilePattern = /\*\.[a-zA-Z0-9]+$/.test(pattern) || 
-                                                  /\.[a-zA-Z0-9]+$/.test(pattern) && !pattern.startsWith('.');
-                            
-                            // Add ** prefix if the pattern doesn't already have it
-                            if (!pattern.startsWith('**/') && !pattern.startsWith('**\\')) {
-                                pattern = '**/' + pattern;
-                            }
-                            
-                            // Add /** suffix only for directory patterns, not file patterns
-                            if (isDirectoryPattern || (!isFilePattern && !pattern.endsWith('/**'))) {
-                                // This is a directory - add /** to match contents
-                                if (!pattern.endsWith('/**')) {
-                                    pattern = pattern + '/**';
-                                }
-                            }
-                            
-                            ignorePatterns.push(pattern);
-                        }
-                    }
-                    
-                    logger.info(`Chat participant loaded ${ignorePatterns.length} patterns from .gitignore`);
-                } catch {
-                    logger.info(`No .gitignore file found in ${folderPath}, using default ignore patterns`);
-                }
-            } catch (error) {
-                logger.error('Error reading .gitignore file', error);
-            }
-        }
-        
-        // Add default patterns that should always be ignored
-        const defaultPatterns = [
-            '**/node_modules/**',
-            '**/.git/**',
-            '**/.groupcode/**',
-            '**/dist/**',
-            '**/build/**',
-            '**/.next/**',
-            '**/out/**',
-            '**/coverage/**',
-            '**/venv/**',
-            '**/.venv/**',
-            '**/env/**',
-            '**/.env/**',
-            '**/bin/**',
-            '**/obj/**',
-            '**/.vs/**',
-            '**/.idea/**',
-            '**/.vscode/**',
-            '**/tmp/**',
-            '**/temp/**',
-            '**/.cache/**',
-            '**/target/**',
-            '**/vendor/**',
-            '**/__pycache__/**',
-            '**/*.min.js',
-            '**/*.min.css',
-            '**/*.map'
-        ];
-        
-        ignorePatterns.push(...defaultPatterns);
-        return ignorePatterns;
-    }
-
-    /**
-     * Dispose the chat participant
      */
     public dispose() {
         this.participant.dispose();

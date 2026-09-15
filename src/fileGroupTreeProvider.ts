@@ -1,9 +1,9 @@
+import { getSearchLimit } from './utils/fileUtils';
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroup } from './groupDefinition';
 import { getFileName } from './utils/fileUtils';
 import logger from './utils/logger';
-import * as path from 'path';
 
 /**
  * Represents the different types of tree items in the file-based group explorer
@@ -117,6 +117,8 @@ export class FileGroupTreeProvider implements vscode.TreeDataProvider<FileGroupT
     }
 
     // @group Providers > Tree Provider > Tree Structure: Get tree item representation
+    dispose(): void { this._onDidChangeTreeData.dispose(); }
+
     getTreeItem(element: FileGroupTreeItem): vscode.TreeItem {
         return element;
     }
@@ -124,7 +126,12 @@ export class FileGroupTreeProvider implements vscode.TreeDataProvider<FileGroupT
     // @group Providers > Tree Provider > Tree Structure: Get children for tree node
     async getChildren(element?: FileGroupTreeItem): Promise<FileGroupTreeItem[]> {
         // @group Performance > Cache : Fetch groups once per getChildren call — shared between file list and group list
-        const allGroups = await this.codeGroupProvider.getAllGroups();
+        let allGroups = this.codeGroupProvider.getAllGroups();
+        if (this.searchFilter) {
+            allGroups = allGroups.filter(group => group.functionality.toLowerCase().includes(this.searchFilter) ||
+                group.description?.toLowerCase().includes(this.searchFilter) || group.filePath.toLowerCase().includes(this.searchFilter))
+                .slice(0, await getSearchLimit());
+        }
 
         if (!element) {
             return this.getFilesWithGroups(allGroups);
@@ -166,15 +173,7 @@ export class FileGroupTreeProvider implements vscode.TreeDataProvider<FileGroupT
         
         // Convert to tree items, sorted by file path
         const sortedFiles = Array.from(fileMap.keys()).sort((a, b) => {
-            // Get workspace-relative paths for sorting
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                const rootPath = workspaceFolders[0].uri.fsPath;
-                const relA = path.relative(rootPath, a);
-                const relB = path.relative(rootPath, b);
-                return relA.localeCompare(relB);
-            }
-            return a.localeCompare(b);
+            return vscode.workspace.asRelativePath(a, true).localeCompare(vscode.workspace.asRelativePath(b, true));
         });
         
         const fileItems: FileGroupTreeItem[] = [];
@@ -184,14 +183,8 @@ export class FileGroupTreeProvider implements vscode.TreeDataProvider<FileGroupT
             const fileName = getFileName(filePath);
             
             // Get workspace-relative path for display
-            let displayPath = fileName;
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                const rootPath = workspaceFolders[0].uri.fsPath;
-                const relativePath = path.relative(rootPath, filePath);
-                displayPath = relativePath;
-            }
-            
+            const displayPath = vscode.workspace.asRelativePath(filePath, true);
+
             const item = new FileGroupTreeItem(
                 displayPath,
                 vscode.TreeItemCollapsibleState.Collapsed,
@@ -217,7 +210,7 @@ export class FileGroupTreeProvider implements vscode.TreeDataProvider<FileGroupT
         const filteredGroups = this.searchFilter
             ? fileGroups.filter(g => 
                 g.functionality.toLowerCase().includes(this.searchFilter) ||
-                (g.description && g.description.toLowerCase().includes(this.searchFilter))
+                (g.description && g.description.toLowerCase().includes(this.searchFilter)) || g.filePath.toLowerCase().includes(this.searchFilter)
             )
             : fileGroups;
         

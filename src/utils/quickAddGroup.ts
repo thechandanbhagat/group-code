@@ -3,126 +3,21 @@ import { CodeGroupProvider } from '../codeGroupProvider';
 import { copilotIntegration } from './copilotIntegration';
 import logger from './logger';
 
+import { insertAnnotation } from './annotationEdits';
+
 /**
  * Utility class for quick adding groups via context menu
  * @group Utils > QuickAdd > Core: Provides quick add group functionality with both manual and AI-assisted workflows
  */
 export class QuickAddGroupUtility {
     
-    /**
-     * Get appropriate comment syntax based on file extension
-     * @group Utils > QuickAdd > CommentSyntax: Determine and return comment prefix/suffix based on file type
-     */
-    private static getCommentSyntax(fileExtension: string | undefined): { prefix: string, suffix: string } {
-        switch (fileExtension?.toLowerCase()) {
-            case 'js':
-            case 'ts':
-            case 'jsx':
-            case 'tsx':
-            case 'css':
-            case 'scss':
-            case 'less':
-            case 'c':
-            case 'cpp':
-            case 'cs':
-            case 'java':
-            case 'swift':
-            case 'go':
-            case 'rust':
-            case 'kotlin':
-            case 'dart':
-            case 'scala':
-                return { prefix: '// @group ', suffix: '' };
-                
-            case 'py':
-            case 'gitignore':
-            case 'yml':
-            case 'yaml':
-            case 'bash':
-            case 'sh':
-            case 'zsh':
-            case 'dockerfile':
-            case 'makefile':
-            case 'properties':
-            case 'ruby':
-            case 'rb':
-            case 'perl':
-            case 'pl':
-                return { prefix: '# @group ', suffix: '' };
-                
-            case 'html':
-            case 'htm':
-            case 'xml':
-            case 'svg':
-                return { prefix: '<!-- @group ', suffix: ' -->' };
-                
-            case 'sql':
-                return { prefix: '-- @group ', suffix: '' };
-                
-            case 'php':
-                return { prefix: '// @group ', suffix: '' };
-                
-            default:
-                return { prefix: '// @group ', suffix: '' };
-        }
-    }
-    
-    /**
-     * Format group comment text with name, description, and tags
-     * @group Utils > QuickAdd > Format: Build complete comment string from group components
-     */
-    private static formatGroupComment(
-        groupName: string,
-        description: string | undefined,
-        tags: string[] | undefined,
-        commentSyntax: { prefix: string, suffix: string }
-    ): string {
-        let commentText = commentSyntax.prefix + groupName;
-        
-        if (description) {
-            commentText += `: ${description}`;
-        }
-        
-        if (tags && tags.length > 0) {
-            commentText += ` #${tags.join(' #')}`;
-        }
-        
-        commentText += commentSyntax.suffix;
-        return commentText;
-    }
-    
-    /**
-     * Insert group comment at the specified position
-     * @group Utils > QuickAdd > Insert: Apply text edit to insert formatted comment at position
-     */
-    private static async insertGroupComment(
-        editor: vscode.TextEditor,
-        position: vscode.Position,
-        commentText: string,
-        wrapSelection: boolean = false
-    ): Promise<void> {
-        await editor.edit(editBuilder => {
-            if (wrapSelection && !editor.selection.isEmpty) {
-                // Insert comment above the selection
-                const lineStart = new vscode.Position(position.line, 0);
-                const indent = editor.document.lineAt(position.line).text.match(/^\s*/)?.[0] || '';
-                editBuilder.insert(lineStart, indent + commentText + '\n');
-            } else {
-                // Insert at current position
-                editBuilder.insert(position, commentText + '\n');
-            }
-        });
-    }
-    
-    /**
-     * Show manual group creation flow
-     * @group Utils > QuickAdd > Manual: Handle manual group creation with user input for name, description, and tags
-     */
     public static async addGroupManually(
         editor: vscode.TextEditor,
         codeGroupProvider: CodeGroupProvider,
         selectedText: string
     ): Promise<void> {
+        const version = editor.document.version;
+        const line = editor.selection.start.line;
         try {
             // Get existing functionalities for autocomplete
             const existingGroups = codeGroupProvider.getFunctionalities();
@@ -203,24 +98,17 @@ export class QuickAddGroupUtility {
             
             const tags = tagsInput ? tagsInput.trim().split(/\s+/).filter(t => t.length > 0) : undefined;
             
-            // Step 4: Insert the comment
-            const document = editor.document;
-            const fileExtension = document.uri.fsPath.split('.').pop();
-            const commentSyntax = this.getCommentSyntax(fileExtension);
-            const commentText = this.formatGroupComment(groupName, description, tags, commentSyntax);
-            
-            const insertPosition = editor.selection.start;
-            await this.insertGroupComment(editor, insertPosition, commentText, true);
+            await insertAnnotation(editor, groupName, `${description || ''}${tags?.length ? ' #' + tags.join(' #') : ''}`, line, version);
             
             // Refresh the provider
-            await codeGroupProvider.processActiveDocument();
+            await codeGroupProvider.processFileOnSave(editor.document);
             
             vscode.window.showInformationMessage(`✓ Added group: ${groupName}`);
             logger.info(`Manually added group: ${groupName}`);
             
         } catch (error) {
             logger.error('Error in manual group creation', error);
-            vscode.window.showErrorMessage('Failed to add group. Please try again.');
+            vscode.window.showErrorMessage('Failed to add group. Check the group name and comment context, then try again.');
         }
     }
     
@@ -233,6 +121,8 @@ export class QuickAddGroupUtility {
         codeGroupProvider: CodeGroupProvider,
         selectedText: string
     ): Promise<void> {
+        const version = editor.document.version;
+        const line = editor.selection.start.line;
         try {
             // Check if Copilot is available
             if (!await copilotIntegration.isIntegrationAvailable()) {
@@ -322,17 +212,10 @@ export class QuickAddGroupUtility {
                 
                 const tags = tagsInput ? tagsInput.trim().split(/\s+/).filter(t => t.length > 0) : undefined;
                 
-                // Step 4: Insert the comment
-                const document = editor.document;
-                const fileExtension = document.uri.fsPath.split('.').pop();
-                const commentSyntax = this.getCommentSyntax(fileExtension);
-                const commentText = this.formatGroupComment(groupName, description, tags, commentSyntax);
-                
-                const insertPosition = editor.selection.start;
-                await this.insertGroupComment(editor, insertPosition, commentText, true);
+                await insertAnnotation(editor, groupName, `${description || ''}${tags?.length ? ' #' + tags.join(' #') : ''}`, line, version);
                 
                 // Refresh the provider
-                await codeGroupProvider.processActiveDocument();
+                await codeGroupProvider.processFileOnSave(editor.document);
                 
                 vscode.window.showInformationMessage(`✓ AI added group: ${groupName}`);
                 logger.info(`AI-assisted added group: ${groupName}`);
@@ -404,7 +287,7 @@ export class QuickAddGroupUtility {
             
         } catch (error) {
             logger.error('Error in quick add group', error);
-            vscode.window.showErrorMessage('Failed to add group. Please try again.');
+            vscode.window.showErrorMessage('Failed to add group. Check the group name and comment context, then try again.');
         }
     }
 }

@@ -26,7 +26,9 @@ describe('fileUtils', () => {
         });
 
         it('should return empty string for no extension', () => {
-            assert.strictEqual(getFileType('Makefile'), '');
+            assert.strictEqual(getFileType('LICENSE'), '');
+            assert.strictEqual(getFileType('Makefile'), 'makefile');
+            assert.strictEqual(getFileType('/project/Dockerfile'), 'dockerfile');
         });
 
         it('should return empty string for undefined', () => {
@@ -148,9 +150,11 @@ describe('fileUtils', () => {
 
     // @group UnitTests > GlobPattern : Tests for getSupportedFilesGlobPattern function
     describe('getSupportedFilesGlobPattern()', () => {
-        it('should start with **/*.{', () => {
+        it('should include patterns for extensions and special filenames', () => {
             const pattern = getSupportedFilesGlobPattern();
-            assert.ok(pattern.startsWith('**/*.{'));
+            assert.ok(pattern.startsWith('**/{*.{'));
+            assert.ok(pattern.includes('Dockerfile'));
+            assert.ok(pattern.includes('Makefile'));
         });
 
         it('should end with }', () => {

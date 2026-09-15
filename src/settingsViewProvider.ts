@@ -2,12 +2,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import logger from './utils/logger';
+import { defaultSettings, loadGroupCodeSettings, saveGroupCodeSettings, normalizeSettings, getUserPrefsBaseDir, GroupCodeSettings } from './utils/fileUtils';
 
 export class SettingsViewProvider {
     private static _panel?: vscode.WebviewPanel;
     private static _cachedModels?: Array<{id: string, name: string, vendor: string}>;
     private static _modelsCacheTime?: number;
     private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (changed from 5 minutes)
+
+    public static dispose(): void { SettingsViewProvider._panel?.dispose(); }
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -42,7 +45,7 @@ export class SettingsViewProvider {
         panel.webview.html = provider._getHtmlForWebview(panel.webview);
 
         // Handle messages from the webview
-        panel.webview.onDidReceiveMessage(async (data) => {
+        const messages = panel.webview.onDidReceiveMessage(async (data) => {
             switch (data.type) {
                 case 'saveSettings':
                     await provider.saveSettings(data.settings);
@@ -64,12 +67,14 @@ export class SettingsViewProvider {
 
         // Reset when the panel is closed
         panel.onDidDispose(() => {
+            clearTimeout(initialLoad);
+            messages.dispose();
             SettingsViewProvider._panel = undefined;
         });
 
         // Load settings after a short delay to ensure webview is ready
-        setTimeout(() => {
-            provider.loadSettings(panel);
+        const initialLoad = setTimeout(() => {
+            void provider.loadSettings(panel);
         }, 100);
     }
 
@@ -82,17 +87,7 @@ export class SettingsViewProvider {
             }
 
             const workspaceRoot = workspaceFolders[0].uri.fsPath;
-            const groupCodeDir = path.join(workspaceRoot, '.groupcode');
-            const settingsPath = path.join(groupCodeDir, 'settings.json');
-
-            // Create .groupcode directory if it doesn't exist
-            if (!fs.existsSync(groupCodeDir)) {
-                fs.mkdirSync(groupCodeDir, { recursive: true });
-            }
-
-            // Write settings to file
-            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
-            
+            await saveGroupCodeSettings(workspaceRoot, settings as Partial<GroupCodeSettings>);
             vscode.window.showInformationMessage('Settings saved successfully');
             logger.info('Settings saved:', settings);
         } catch (error) {
@@ -101,21 +96,7 @@ export class SettingsViewProvider {
         }
     }
 
-    private getModelsCachePath(): string | null {
-        try {
-            // Store cache globally in user's home directory
-            const homeDir = process.env.USERPROFILE || process.env.HOME;
-            if (!homeDir) {
-                logger.warn('Could not determine user home directory');
-                return null;
-            }
-            const groupCodeDir = path.join(homeDir, '.groupcode');
-            return path.join(groupCodeDir, 'models-cache.json');
-        } catch (error) {
-            logger.warn('Failed to get models cache path', error);
-            return null;
-        }
-    }
+    private getModelsCachePath(): string { return path.join(getUserPrefsBaseDir(), 'models-cache.json'); }
 
     private loadModelsFromDisk(): Array<{id: string, name: string, vendor: string}> | null {
         try {
@@ -205,14 +186,8 @@ export class SettingsViewProvider {
             return modelList;
         } catch (error) {
             logger.warn('Could not fetch language models, using defaults', error);
-            const defaultModels = [
-                { id: 'copilot-gpt-4o', name: 'GPT-4o', vendor: 'Copilot' },
-                { id: 'copilot-gpt-4', name: 'GPT-4', vendor: 'Copilot' },
-                { id: 'copilot-gpt-3.5-turbo', name: 'GPT-3.5 Turbo', vendor: 'Copilot' }
-            ];
-            // Also cache defaults
-            this.saveModelsToDisk(defaultModels);
-            return defaultModels;
+            return [];
+
         }
     }
 
@@ -255,17 +230,7 @@ export class SettingsViewProvider {
             }
 
             const workspaceRoot = workspaceFolders[0].uri.fsPath;
-            const settingsPath = path.join(workspaceRoot, '.groupcode', 'settings.json');
-
-            let settings;
-            if (fs.existsSync(settingsPath)) {
-                const content = fs.readFileSync(settingsPath, 'utf8');
-                settings = JSON.parse(content);
-                logger.info('Loaded settings from file');
-            } else {
-                settings = this.getDefaultSettings();
-                logger.info('Using default settings');
-            }
+            const settings = await loadGroupCodeSettings(workspaceRoot);
 
             logger.info('Sending message to webview with models:', models);
             panel.webview.postMessage({
@@ -341,52 +306,9 @@ export class SettingsViewProvider {
     }
 
     private async clearAllGroups() {
-        try {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders || workspaceFolders.length === 0) {
-                vscode.window.showWarningMessage('No workspace folder found');
-                return;
-            }
-
-            // Show confirmation dialog
-            const confirm = await vscode.window.showWarningMessage(
-                'Are you sure you want to remove ALL @group comments from the entire workspace? This action cannot be undone.',
-                { modal: true },
-                'Remove All Groups',
-                'Cancel'
-            );
-
-            if (confirm !== 'Remove All Groups') {
-                return;
-            }
-
-            // Execute the removeAllGroups command
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: 'Removing all group comments...',
-                cancellable: false
-            }, async () => {
-                await vscode.commands.executeCommand('groupCode.removeAllGroups');
-            });
-
-            vscode.window.showInformationMessage('All group comments have been removed');
-            logger.info('All groups cleared from settings');
-        } catch (error) {
-            vscode.window.showErrorMessage(`Failed to clear groups: ${error}`);
-            logger.error('Failed to clear all groups', error);
-        }
+        await vscode.commands.executeCommand('groupCode.removeAllGroups');
     }
-
-    private getDefaultSettings() {
-        return {
-            preferredModel: 'auto',
-            autoScan: true,
-            showNotifications: true,
-            autoRefreshOnSave: true,
-            enableHierarchicalGrouping: true,
-            maxSearchResults: 100
-        };
-    }
+    private getDefaultSettings() { return { ...defaultSettings, additionalIgnorePatterns: [] }; }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
         return `<!DOCTYPE html>
@@ -568,9 +490,9 @@ export class SettingsViewProvider {
         <div class="setting-item">
             <div class="checkbox-label">
                 <input type="checkbox" id="showNotifications">
-                <label for="showNotifications">Show notifications</label>
+                <label for="showNotifications">Show scan notifications</label>
             </div>
-            <div class="description">Display notifications for scan results and operations</div>
+            <div class="description">Display scan result notifications</div>
         </div>
 
         <div class="setting-item">
@@ -582,20 +504,18 @@ export class SettingsViewProvider {
         </div>
 
         <div class="setting-item">
-            <div class="checkbox-label">
-                <input type="checkbox" id="enableHierarchicalGrouping">
-                <label for="enableHierarchicalGrouping">Enable hierarchical grouping</label>
-            </div>
-            <div class="description">Support nested groups using '>' separator (e.g., Auth > Login)</div>
-        </div>
-
-        <div class="setting-item">
             <label for="maxSearchResults">Max search results</label>
             <input type="number" id="maxSearchResults" min="10" max="1000" step="10">
             <div class="description">Maximum number of search results to display</div>
         </div>
     </div>
 
+    <div class="setting-item">
+        <label for="maxFileSizeKB">Maximum file size (KB)</label>
+        <input type="number" id="maxFileSizeKB" min="1" max="100000">
+        <label for="additionalIgnorePatterns">Additional Git ignore patterns (one per line)</label>
+        <textarea id="additionalIgnorePatterns" rows="4"></textarea>
+    </div>
     <div class="button-group">
         <button id="saveBtn">Save Settings</button>
         <button class="secondary" id="openFileBtn">Open Settings File</button>
@@ -643,7 +563,8 @@ export class SettingsViewProvider {
                 autoScan: document.getElementById('autoScan').checked,
                 showNotifications: document.getElementById('showNotifications').checked,
                 autoRefreshOnSave: document.getElementById('autoRefreshOnSave').checked,
-                enableHierarchicalGrouping: document.getElementById('enableHierarchicalGrouping').checked,
+                maxFileSizeKB: Number(document.getElementById('maxFileSizeKB').value),
+                additionalIgnorePatterns: document.getElementById('additionalIgnorePatterns').value.split('\\n').filter(Boolean),
                 maxSearchResults: parseInt(document.getElementById('maxSearchResults').value)
             };
             vscode.postMessage({ type: 'saveSettings', settings });
@@ -656,9 +577,7 @@ export class SettingsViewProvider {
 
         // Clear all groups button click handler
         document.getElementById('clearAllBtn').addEventListener('click', () => {
-            if (confirm('Are you sure you want to remove ALL @group comments from your entire workspace? This action cannot be undone.')) {
-                vscode.postMessage({ type: 'clearAllGroups' });
-            }
+            vscode.postMessage({ type: 'clearAllGroups' });
         });
 
         function populateModelDropdown(models) {
@@ -669,30 +588,29 @@ export class SettingsViewProvider {
                 return;
             }
 
-            // Group models by vendor
-            const grouped = {};
+            listContainer.replaceChildren();
+            const grouped = new Map();
             models.forEach(model => {
-                if (!grouped[model.vendor]) {
-                    grouped[model.vendor] = [];
-                }
-                grouped[model.vendor].push(model);
+                const list = grouped.get(model.vendor) || [];
+                list.push(model);
+                grouped.set(model.vendor, list);
             });
-
-            // Build HTML for grouped models
-            let html = '';
-            Object.keys(grouped).sort().forEach(vendor => {
-                html += '<div class="model-group">';
-                html += '<div class="vendor-name">' + vendor + '</div>';
-                grouped[vendor].forEach(model => {
-                    html += '<div class="model-item" data-model-id="' + model.id + '">';
-                    html += '<span class="model-name">' + model.name + '</span>';
-                    html += '<span class="model-id">(' + model.id + ')</span>';
-                    html += '</div>';
+            [...grouped.keys()].sort().forEach(vendor => {
+                const group = document.createElement('div');
+                group.className = 'model-group';
+                const title = document.createElement('div');
+                title.className = 'vendor-name';
+                title.textContent = vendor;
+                group.appendChild(title);
+                grouped.get(vendor).forEach(model => {
+                    const item = document.createElement('div');
+                    item.className = 'model-item';
+                    item.dataset.modelId = model.id;
+                    item.textContent = model.name + ' (' + model.id + ')';
+                    group.appendChild(item);
                 });
-                html += '</div>';
+                listContainer.appendChild(group);
             });
-
-            listContainer.innerHTML = html;
 
             // Add click handlers to model items
             listContainer.querySelectorAll('.model-item').forEach(item => {
@@ -730,8 +648,9 @@ export class SettingsViewProvider {
             document.getElementById('autoScan').checked = settings.autoScan !== false;
             document.getElementById('showNotifications').checked = settings.showNotifications !== false;
             document.getElementById('autoRefreshOnSave').checked = settings.autoRefreshOnSave !== false;
-            document.getElementById('enableHierarchicalGrouping').checked = settings.enableHierarchicalGrouping !== false;
             document.getElementById('maxSearchResults').value = settings.maxSearchResults || 100;
+            document.getElementById('maxFileSizeKB').value = settings.maxFileSizeKB || 500;
+            document.getElementById('additionalIgnorePatterns').value = (settings.additionalIgnorePatterns || []).join('\\n');
             
             // Update selected model in list
             updateSelectedModel();

@@ -6,6 +6,7 @@ import * as crypto from 'crypto';
 import { CodeGroup } from '../groupDefinition';
 import { enrichWithHierarchy } from './hierarchyUtils';
 import { logger } from './logger';
+import { fileType, languageConfig } from './languageRegistry';
 
 // @group Types > Functionalities: Type definitions for the functionalities index structure
 export interface FunctionalityMetadata {
@@ -28,10 +29,10 @@ export interface FunctionalitiesData {
  * This is stored in the OS user profile, not in the workspace
  * Location: ~/.groupcode/ on Unix/Mac, %USERPROFILE%\.groupcode on Windows
  */
-function getUserPrefsBaseDir(): string {
-    const homeDir = os.homedir();
-    return path.join(homeDir, '.groupcode');
-}
+let storageDirectory: string | undefined;
+export function configureStorage(uri: vscode.Uri): void { storageDirectory = uri.fsPath; }
+export function getUserPrefsBaseDir(): string { return storageDirectory || path.join(os.homedir(), '.groupcode'); }
+
 
 // @group Utilities > Hashing > Workspace: Generate a consistent workspace identifier hash from its path
 /**
@@ -94,7 +95,7 @@ export async function saveUserFavorites(workspacePath: string, favorites: Map<st
             }
         });
 
-        await fs.promises.writeFile(favoritesPath, JSON.stringify(favoritesObj, null, 2), 'utf8');
+        await writeFile(favoritesPath, JSON.stringify(favoritesObj, null, 2));
         logger.info(`Saved ${favorites.size} favorites to ${favoritesPath}`);
     } catch (error) {
         logger.error('Error saving user favorites:', error);
@@ -116,8 +117,7 @@ export async function loadUserFavorites(workspacePath: string): Promise<Map<stri
         const favoritesPath = path.join(userPrefsDir, 'favorites.json');
 
         try {
-            await fs.promises.access(favoritesPath);
-            const content = await fs.promises.readFile(favoritesPath, 'utf8');
+            const content = await readPreference(workspacePath, 'favorites.json');
             const favoritesObj = JSON.parse(content);
 
             // Convert object to Map
@@ -232,34 +232,17 @@ export function readFile(filePath: string): Promise<string> {
 }
 
 // @group FileSystem > IO > FileReadWrite: Promise-based file write helper
-export function writeFile(filePath: string, data: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        fs.writeFile(filePath, data, 'utf8', (err) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve();
-        });
-    });
+export async function writeFile(filePath: string, data: string): Promise<void> {
+    const temporary = `${filePath}.${crypto.randomBytes(8).toString('hex')}.tmp`;
+    try {
+        await fs.promises.writeFile(temporary, data, 'utf8');
+        await fs.promises.rename(temporary, filePath);
+    } finally { await fs.promises.unlink(temporary).catch(() => undefined); }
 }
 
 // @group Utilities > FileInfo > Parsing: Determine file extension/type from file path safely
 export function getFileType(filePath: string | undefined): string {
-    if (!filePath) {
-        logger.warn("Received undefined filePath in getFileType()");
-        return '';
-    }
-    
-    try {
-        const lastDotIndex = filePath.lastIndexOf('.');
-        if (lastDotIndex !== -1 && lastDotIndex < filePath.length - 1) {
-            return filePath.slice(lastDotIndex + 1).toLowerCase();
-        }
-        return '';
-    } catch (error) {
-        logger.error(`Error in getFileType for path ${filePath}:`, error);
-        return '';
-    }
+    return fileType(filePath || '');
 }
 
 // @group Utilities > FileInfo > Parsing: Extract filename from path with robust validation and fallbacks
@@ -378,7 +361,7 @@ const supportedTypes = [
  * Get all supported file extensions as an array
  */
 export function getSupportedExtensions(): string[] {
-    return [...supportedTypes];
+    return [...new Set([...supportedTypes, ...languageConfig.languages.flatMap(language => language.fileTypes), 'makefile'])];
 }
 
 // @group FileTypes > Helpers > Patterns: Generate a glob pattern matching all supported file types
@@ -386,7 +369,7 @@ export function getSupportedExtensions(): string[] {
  * Get a glob pattern for all supported file types
  */
 export function getSupportedFilesGlobPattern(): string {
-    return `**/*.{${supportedTypes.join(',')}}`;
+    return `**/{*.{${getSupportedExtensions().join(',')}},Dockerfile,Dockerfile.*,Makefile,GNUmakefile}`;
 }
 
 // @group FileTypes > Helpers > Validation: Check if file type string is among supported extensions
@@ -395,7 +378,7 @@ export function isSupportedFileType(fileType: string): boolean {
         return false;
     }
     
-    return supportedTypes.includes(fileType.toLowerCase());
+    return getSupportedExtensions().includes(fileType.toLowerCase());
 }
 
 // @group Workspace > GroupCode > Management: Ensure .groupcode directory exists in the workspace
@@ -577,7 +560,7 @@ export async function loadCodeGroups(workspacePath: string): Promise<Map<string,
     }
     
     try {
-        const groupCodeDir = await ensureGroupCodeDir(workspacePath);
+        const groupCodeDir = path.join(workspacePath, ".groupcode");
         const groupsFilePath = path.join(groupCodeDir, 'codegroups.json');
 
         try {
@@ -823,76 +806,47 @@ export function getWorkspaceFolders(): string[] {
  * GroupCode settings interface
  */
 export interface GroupCodeSettings {
-    /** Preferred AI model ID (e.g., "claude-3.5-sonnet", "gpt-4", "gpt-4o") */
     preferredModel?: string;
-    /** Whether to auto-scan on file save */
-    autoScanOnSave?: boolean;
-    /** Maximum file size to process (in KB) */
-    maxFileSizeKB?: number;
-    /** Custom ignore patterns (in addition to .gitignore) */
-    additionalIgnorePatterns?: string[];
+    autoScan: boolean;
+    autoRefreshOnSave: boolean;
+    showNotifications: boolean;
+    maxSearchResults: number;
+    maxFileSizeKB: number;
+    additionalIgnorePatterns: string[];
 }
-
-// @group Settings > GroupCode > Defaults: Default GroupCode settings used when no saved settings exist
-/**
- * Default settings
- */
-const defaultSettings: GroupCodeSettings = {
-    preferredModel: undefined, // Use chat's selected model by default
-    autoScanOnSave: true,
-    maxFileSizeKB: 500,
-    additionalIgnorePatterns: []
+export const defaultSettings: GroupCodeSettings = {
+    autoScan: true, autoRefreshOnSave: true, showNotifications: true,
+    maxSearchResults: 100, maxFileSizeKB: 500, additionalIgnorePatterns: [],
 };
-
-// @group Settings > GroupCode > Management: Load GroupCode settings from workspace .groupcode/settings.json
-/**
- * Load settings from .groupcode/settings.json
- */
-export async function loadGroupCodeSettings(workspacePath: string): Promise<GroupCodeSettings> {
-    if (!workspacePath || typeof workspacePath !== 'string') {
-        return { ...defaultSettings };
-    }
-
-    try {
-        const groupCodeDir = await ensureGroupCodeDir(workspacePath);
-        const settingsPath = `${groupCodeDir}/settings.json`;
-        
-        try {
-            await fs.promises.access(settingsPath);
-            const content = await fs.promises.readFile(settingsPath, 'utf8');
-            const settings = JSON.parse(content);
-            logger.info(`Loaded GroupCode settings from ${settingsPath}`);
-            return { ...defaultSettings, ...settings };
-        } catch {
-            // Settings file doesn't exist, return defaults
-            return { ...defaultSettings };
-        }
-    } catch (error) {
-        logger.error('Error loading GroupCode settings:', error);
-        return { ...defaultSettings };
-    }
+export function normalizeSettings(value: unknown): GroupCodeSettings {
+    const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+    const bool = (key: string, fallback: boolean) => typeof input[key] === 'boolean' ? input[key] as boolean : fallback;
+    const number = (key: string, fallback: number, max: number) => typeof input[key] === 'number' && Number.isFinite(input[key]) && (input[key] as number) > 0
+        ? Math.min(max, Math.floor(input[key] as number)) : fallback;
+    const preferredModel = typeof input.preferredModel === 'string' ? input.preferredModel.trim() : '';
+    return {
+        preferredModel: preferredModel && preferredModel !== 'auto' ? preferredModel : undefined,
+        autoScan: bool('autoScan', true),
+        autoRefreshOnSave: bool('autoRefreshOnSave', bool('autoScanOnSave', true)),
+        showNotifications: bool('showNotifications', true),
+        maxSearchResults: number('maxSearchResults', 100, 10000),
+        maxFileSizeKB: number('maxFileSizeKB', 500, 100000),
+        additionalIgnorePatterns: Array.isArray(input.additionalIgnorePatterns) ? input.additionalIgnorePatterns.filter((x): x is string => typeof x === 'string') : [],
+    };
 }
-
-// @group Settings > GroupCode > Management: Save provided GroupCode settings to workspace .groupcode/settings.json
-/**
- * Save settings to .groupcode/settings.json
- */
-export async function saveGroupCodeSettings(workspacePath: string, settings: GroupCodeSettings): Promise<void> {
-    if (!workspacePath || typeof workspacePath !== 'string') {
-        throw new Error("Invalid workspace path");
-    }
-
-    try {
-        const groupCodeDir = await ensureGroupCodeDir(workspacePath);
-        const settingsPath = `${groupCodeDir}/settings.json`;
-        
-        const content = JSON.stringify(settings, null, 2);
-        await fs.promises.writeFile(settingsPath, content, 'utf8');
-        logger.info(`Saved GroupCode settings to ${settingsPath}`);
-    } catch (error) {
-        logger.error('Error saving GroupCode settings:', error);
-        throw error;
-    }
+export async function loadGroupCodeSettings(workspacePath: string): Promise<GroupCodeSettings> {
+    if (!workspacePath) { return normalizeSettings({}); }
+    try { return normalizeSettings(JSON.parse(await fs.promises.readFile(path.join(workspacePath, '.groupcode', 'settings.json'), 'utf8'))); }
+    catch { return normalizeSettings({}); }
+}
+export async function saveGroupCodeSettings(workspacePath: string, settings: Partial<GroupCodeSettings>): Promise<void> {
+    if (!workspacePath) { throw new Error('Invalid workspace path'); }
+    const directory = await ensureGroupCodeDir(workspacePath);
+    const settingsPath = path.join(directory, 'settings.json');
+    let existing: Record<string, unknown> = {};
+    try { existing = JSON.parse(await fs.promises.readFile(settingsPath, 'utf8')); } catch { /* New settings file. */ }
+    const merged = { ...existing, ...settings };
+    await writeFile(settingsPath, JSON.stringify({ ...merged, ...normalizeSettings(merged) }, null, 2));
 }
 
 // @group Settings > GroupCode > Convenience: Retrieve preferred model ID from GroupCode settings
@@ -928,7 +882,7 @@ export async function saveTreeViewState(workspacePath: string, expandedNodes: Se
         // Convert Set to array for JSON serialization
         const expandedArray = Array.from(expandedNodes);
 
-        await fs.promises.writeFile(treeStatePath, JSON.stringify(expandedArray, null, 2), 'utf8');
+        await writeFile(treeStatePath, JSON.stringify(expandedArray, null, 2));
         logger.info(`Saved tree state with ${expandedNodes.size} expanded nodes to ${treeStatePath}`);
     } catch (error) {
         logger.error('Error saving tree view state:', error);
@@ -949,8 +903,7 @@ export async function loadTreeViewState(workspacePath: string): Promise<Set<stri
         const treeStatePath = path.join(userPrefsDir, 'treestate.json');
 
         try {
-            await fs.promises.access(treeStatePath);
-            const content = await fs.promises.readFile(treeStatePath, 'utf8');
+            const content = await readPreference(workspacePath, 'treestate.json');
             const expandedArray = JSON.parse(content);
 
             if (Array.isArray(expandedArray)) {
@@ -968,4 +921,16 @@ export async function loadTreeViewState(workspacePath: string): Promise<Set<stri
     }
 
     return expandedNodes;
+}
+export async function getSearchLimit(): Promise<number> {
+    const root = getWorkspaceFolders()[0];
+    return (root ? await loadGroupCodeSettings(root) : defaultSettings).maxSearchResults;
+}
+
+async function readPreference(workspacePath: string, filename: string): Promise<string> {
+    try { return await fs.promises.readFile(path.join(getUserPrefsDir(workspacePath), filename), 'utf8'); }
+    catch (error) {
+        if (!storageDirectory || (error as NodeJS.ErrnoException).code !== 'ENOENT') { throw error; }
+        return fs.promises.readFile(path.join(os.homedir(), '.groupcode', getWorkspaceHash(workspacePath), filename), 'utf8');
+    }
 }

@@ -1,3 +1,4 @@
+import { getSearchLimit } from './utils/fileUtils';
 import * as vscode from 'vscode';
 import { CodeGroupProvider } from './codeGroupProvider';
 import { CodeGroup } from './groupDefinition';
@@ -124,6 +125,8 @@ export class CodeGroupTreeItem extends vscode.TreeItem {
 export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<CodeGroupTreeItem | undefined | null> = new vscode.EventEmitter<CodeGroupTreeItem | undefined | null>();
     readonly onDidChangeTreeData: vscode.Event<CodeGroupTreeItem | undefined | null> = this._onDidChangeTreeData.event;
+    private readonly subscriptions: vscode.Disposable[] = [];
+    private disposed = false;
     private searchFilter: string = '';
     private mainTreeView?: vscode.TreeView<CodeGroupTreeItem>;
     private explorerTreeView?: vscode.TreeView<CodeGroupTreeItem>;
@@ -134,7 +137,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     constructor(private codeGroupProvider: CodeGroupProvider) {
         logger.info('CodeGroupTreeProvider initialized');
         // Load tree state asynchronously
-        this.loadTreeState();
+        this.stateLoadedPromise = this.loadTreeState();
     }
 
     // @group Providers > Tree Provider > View Management: Attach tree view and handle expansion/collapse events
@@ -144,24 +147,24 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
         } else if (viewId === 'groupCodeExplorerView') {
             this.explorerTreeView = view;
         }
-        view.message = 'Type to filter groups';
+        view.message = 'Use Search Groups to filter';
 
         // Track expansion and collapse events to persist state
-        view.onDidExpandElement((e) => {
+        this.subscriptions.push(view.onDidExpandElement((e) => {
             const nodePath = this.getNodePath(e.element);
             if (nodePath) {
                 this.expandedNodes.add(nodePath);
                 this.saveTreeState();
             }
-        });
+        }));
 
-        view.onDidCollapseElement((e) => {
+        this.subscriptions.push(view.onDidCollapseElement((e) => {
             const nodePath = this.getNodePath(e.element);
             if (nodePath) {
                 this.expandedNodes.delete(nodePath);
                 this.saveTreeState();
             }
-        });
+        }));
     }
 
     /**
@@ -204,6 +207,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     private isSavingTreeState = false;
     // @group Providers > Persistence > Save State: Persist expanded nodes to workspace storage with debounce to reduce writes
     private saveTreeState(): void {
+        if (this.disposed) { return; }
         // Debounce saves to avoid excessive writes
         if (this.saveTreeStateTimeout) {
             clearTimeout(this.saveTreeStateTimeout);
@@ -238,10 +242,10 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
         this.searchFilter = query.toLowerCase();
         // Update both tree views
         if (this.mainTreeView) {
-            this.mainTreeView.message = query ? `Filtered: ${query}` : 'Type to filter groups';
+            this.mainTreeView.message = query ? `Filtered: ${query}` : 'Use Search Groups to filter';
         }
         if (this.explorerTreeView) {
-            this.explorerTreeView.message = query ? `Filtered: ${query}` : 'Type to filter groups';
+            this.explorerTreeView.message = query ? `Filtered: ${query}` : 'Use Search Groups to filter';
         }
         this.refresh();
     }
@@ -263,6 +267,7 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     // @group Providers > Tree Provider > Refresh: Debounced refresh — coalesces rapid successive calls into one UI update
     private refreshDebounceTimeout?: NodeJS.Timeout;
     refresh(): void {
+        if (this.disposed) { return; }
         if (this.refreshDebounceTimeout) {
             clearTimeout(this.refreshDebounceTimeout);
         }
@@ -273,6 +278,14 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     }
 
     // @group Providers > Tree Provider > Adapter: Adapter to return the vscode.TreeItem for a given element instance
+    dispose(): void {
+        this.disposed = true;
+        clearTimeout(this.saveTreeStateTimeout);
+        clearTimeout(this.refreshDebounceTimeout);
+        this.subscriptions.forEach(subscription => subscription.dispose());
+        this._onDidChangeTreeData.dispose();
+    }
+
     getTreeItem(element: CodeGroupTreeItem): vscode.TreeItem {
         return element;
     }
@@ -280,9 +293,10 @@ export class CodeGroupTreeProvider implements vscode.TreeDataProvider<CodeGroupT
     // @group Providers > Tree Provider > Children: Compute child tree items for element types, build hierarchy and filter results
     async getChildren(element?: CodeGroupTreeItem): Promise<CodeGroupTreeItem[]> {
         try {
+            await this.stateLoadedPromise;
             // @group Performance > Cache : Fetch and enrich groups once per getChildren call — avoids redundant getAllGroups() on children
             const allGroups = await this.codeGroupProvider.getAllGroups();
-            const filteredGroups = allGroups.filter(g => this.matchesSearch(g));
+            const filteredGroups = allGroups.filter(g => this.matchesSearch(g)).slice(0, this.searchFilter ? await getSearchLimit() : undefined);
             const enrichedGroups = filteredGroups.map(enrichWithHierarchy);
 
             if (!element) {

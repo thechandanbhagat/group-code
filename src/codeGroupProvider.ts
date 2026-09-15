@@ -1,930 +1,217 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import { GroupDefinition, CodeGroup } from './groupDefinition';
+import { CodeGroup } from './groupDefinition';
 import { parseLanguageSpecificComments } from './utils/commentParser';
-import { groupCodeByFunctionality } from './utils/groupingUtils';
-import {
-    saveCodeGroups,
-    loadCodeGroups,
-    getWorkspaceFolders,
-    getFileType,
-    getFileName,
-    isSupportedFileType,
-    loadUserFavorites,
-    saveUserFavorites
-} from './utils/fileUtils';
+import { getFileType, getFileName, isSupportedFileType, getWorkspaceFolders, loadCodeGroups, saveCodeGroups,
+    loadUserFavorites, saveUserFavorites, loadGroupCodeSettings } from './utils/fileUtils';
+import { FileSelection, relativeUriPath } from './utils/fileSelection';
+import { SnapshotWriter } from './utils/snapshotWriter';
+import { renamedGroup } from './utils/annotationEdits';
 import logger from './utils/logger';
 
-// @group Workspace > Provider: VS Code provider managing code groups and UI integration
 export class CodeGroupProvider implements vscode.Disposable {
-    private groups: Map<string, CodeGroup[]> = new Map();
-    private functionalities: Set<string> = new Set();
-    private statusBarItem: vscode.StatusBarItem;
-    private onDidUpdateGroupsEventEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
-    private lastSaveTime: number = Date.now();
-    private saveThrottleTime: number = 1000; // Wait at least 1 second between saves
-    
-    // Event that fires whenever code groups are updated
-    public readonly onDidUpdateGroups: vscode.Event<void> = this.onDidUpdateGroupsEventEmitter.event;
-    
-    // @group Workspace > Provider > Lifecycle: Initialize UI elements and log provider startup
+    private documents = new Map<string, CodeGroup[]>();
+    private groups = new Map<string, CodeGroup[]>();
+    private functionalities = new Set<string>();
+    private favorites = new Set<string>();
+    private revisions = new Map<string, number>();
+    private revision = 0;
+    private scanRevision = 0;
+    private scanCancellation?: vscode.CancellationTokenSource;
+    private disposed = false;
+    private writers = new Map<string, SnapshotWriter>();
+    private statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+    private onDidUpdateGroupsEventEmitter = new vscode.EventEmitter<void>();
+    readonly onDidUpdateGroups = this.onDidUpdateGroupsEventEmitter.event;
+
     constructor() {
-        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-        this.statusBarItem.text = "$(map) Group Code"; // Changed from "Code Compass" to "Group Code"
-        this.statusBarItem.tooltip = "View and navigate code functionalities";
-        this.statusBarItem.command = "groupCode.showGroups"; // Updated command prefix
+        this.statusBarItem.command = 'groupCode.showGroups';
+        this.statusBarItem.tooltip = 'View and navigate code groups';
+        this.updateStatusBar();
         this.statusBarItem.show();
-        
-        logger.info('CodeGroupProvider initialized');
     }
-    
-    // @group Workspace > Provider > Lifecycle: Dispose provider resources and event emitters
-    public dispose() {
+    dispose(): void {
+        this.disposed = true;
+        this.scanRevision++;
+        this.scanCancellation?.cancel();
+        for (const writer of this.writers.values()) { writer.dispose(); }
         this.statusBarItem.dispose();
         this.onDidUpdateGroupsEventEmitter.dispose();
     }
-
-    /**
-     * Initialize by loading saved groups or scanning the workspace
-     */
-    // @group Workspace > Initialization > Loading: Load saved groups or scan workspace for groups
-    public async initialize(): Promise<void> {
-        const workspaceFolders = getWorkspaceFolders();
-        if (workspaceFolders.length === 0) {
-            return;
-        }
-
-        // Try to load saved groups first
-        let loadedGroups = false;
-
-        for (const folder of workspaceFolders) {
-            const savedGroups = await loadCodeGroups(folder);
-            if (savedGroups) {
-                // Merge saved groups with existing
-                savedGroups.forEach((groups, fileType) => {
-                    this.addGroups(fileType, groups);
-                    groups.forEach(group => {
-                        if (group && group.functionality) {
-                            this.functionalities.add(group.functionality);
-                        }
-                    });
-                });
-                loadedGroups = true;
-            }
-        }
-
-        // If no saved groups found, scan the workspace
-        if (!loadedGroups) {
-            await this.processWorkspace();
-        } else {
-            // Load user favorites from user profile and apply them
-            await this.loadAndApplyUserFavorites();
-
-            // Update UI for loaded groups
-            this.updateStatusBar();
-            this.onDidUpdateGroupsEventEmitter.fire();
-        }
-    }
-
-    /**
-     * Initialize the workspace by either loading existing groups or scanning for new ones
-     */
-    // @group Workspace > Initialization > Scanning: Robust initialization with workspace scanning and error handling
-    public async initializeWorkspace(): Promise<void> {
-        try {
-            // First try to load existing groups
-            let loaded = false;
-            const workspaceFolders = getWorkspaceFolders();
-            
-            for (const folder of workspaceFolders) {
-                try {
-                    const groups = await loadCodeGroups(folder);
-                    if (groups) {
-                        // Add loaded groups to our collection
-                        groups.forEach((groupArray, fileType) => {
-                            if (groupArray && groupArray.length > 0) {
-                                this.addGroups(fileType, groupArray);
-                                loaded = true;
-                                
-                                // Update functionalities set
-                                groupArray.forEach(group => {
-                                    if (group && group.functionality) {
-                                        this.functionalities.add(group.functionality);
-                                    }
-                                });
-                            }
-                        });
-                    }
-                } catch (err) {
-                    logger.error('Error loading groups from folder', err);
-                }
-            }
-
-            // If no groups were loaded, scan the workspace
-            if (!loaded) {
-                logger.info('No existing groups found, scanning workspace...');
-                await this.processWorkspace();
-            } else {
-                // Load user favorites from user profile and apply them
-                await this.loadAndApplyUserFavorites();
-
-                // Update UI for loaded groups
-                this.updateStatusBar();
-                // Notify listeners that groups have been loaded
-                this.onDidUpdateGroupsEventEmitter.fire();
-            }
-        } catch (err) {
-            logger.error('Error initializing workspace', err);
-            throw err;
-        }
-    }
-
-    /**
-     * Scan a document for code groups
-     */
-    // @group Parsing > Document Scan: Parse document comments and group code by functionality
-    private async scanDocument(document: vscode.TextDocument): Promise<void> {
-        const fileName = document.fileName;
-        const fileType = getFileType(fileName);
-        
-        if (!fileType || !isSupportedFileType(fileType)) {
-            return;
-        }        // Parse comments and extract functionalities
-        const comments = await parseLanguageSpecificComments(document);
-        const groups = groupCodeByFunctionality(comments);
-        
-        if (groups.length > 0) {
-            this.addGroups(fileType, groups);
-        }
-    }
-
-    // Process the active document and extract code groups based on comments
-    // @group Parsing > Active Document: Extract groups from currently active editor document and preserve favorites
-    public async processActiveDocument(): Promise<void> {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            logger.info('No active editor found');
-            return;
-        }
-        
-        const document = editor.document;
-        const filePath = document.uri.fsPath;
-        
-        // Get file type safely
-        const fileType = getFileType(filePath);
-        
-        logger.info(`Processing active document: ${filePath} (${fileType})`);
-
-        // IMPORTANT: Preserve isFavorite flags before updating
-        const favoriteStatusMap = new Map<string, boolean>();
-        this.groups.forEach((groups) => {
-            groups.forEach(group => {
-                if (group.filePath === filePath && group.isFavorite) {
-                    favoriteStatusMap.set(group.functionality, true);
-                }
-            });
-        });
-
-        // Remove existing groups for this file to avoid duplicates
-        this.removeGroupsForFile(filePath);
-
-        // Parse the document for code groups
-        const codeGroups = parseLanguageSpecificComments(document);
-
-        // Restore isFavorite flags to the new groups
-        codeGroups.forEach(group => {
-            if (favoriteStatusMap.has(group.functionality)) {
-                group.isFavorite = true;
-            }
-        });
-
-        // Add the groups to the collection
-        this.addGroups(fileType, codeGroups);
-
-        // Update functionalities set
-        codeGroups.forEach(group => {
-            if (group && group.functionality) {
+    private key(file: string, name: string): string { return `${file}::${name}`; }
+    private rebuild(): void {
+        this.groups.clear();
+        this.functionalities.clear();
+        for (const [file, groups] of this.documents) {
+            const type = getFileType(file);
+            for (const group of groups) {
+                group.isFavorite = this.favorites.has(this.key(file, group.functionality));
                 this.functionalities.add(group.functionality);
             }
-        });
-        
-        // Update the status bar
+            this.groups.set(type, [...(this.groups.get(type) || []), ...groups]);
+        }
         this.updateStatusBar();
-        
-        // Save the groups to .groupcode folder
-        this.saveGroups();
-        
-        // Notify listeners that groups have been updated
-        this.onDidUpdateGroupsEventEmitter.fire();
-        
-        logger.info(`Found ${codeGroups.length} code groups in ${filePath}`);
-        vscode.window.showInformationMessage(`Found ${codeGroups.length} code groups in ${getFileName(filePath)}`);
+        if (!this.disposed) { this.onDidUpdateGroupsEventEmitter.fire(); }
     }
-    
-    /**
-     * Process a file when it's saved to update code groups
-     */
-    // @group Parsing > File Save Handling: Update groups when files are saved, preserve favorites, and save
-    public async processFileOnSave(document: vscode.TextDocument): Promise<void> {
-        try {
-            const filePath = document.uri.fsPath;
-            const fileType = getFileType(filePath);
-            
-            // Only process supported file types
-            if (!isSupportedFileType(fileType)) {
-                return;
+    private rootFor(file: string): vscode.WorkspaceFolder | undefined {
+        return vscode.workspace.getWorkspaceFolder(vscode.Uri.file(file));
+    }
+    private async loadFavorites(): Promise<void> {
+        this.favorites.clear();
+        for (const root of getWorkspaceFolders()) {
+            for (const [key, favorite] of await loadUserFavorites(root)) {
+                if (favorite) { this.favorites.add(key); }
             }
-
-            // Get workspace folder for this file
-            const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
-            const folderPath = workspaceFolder?.uri.fsPath;
-
-            // Check if file should be ignored
-            const ignorePatterns = await this.getIgnorePatterns(folderPath);
-            if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
-                logger.info(`Skipping ignored file: ${filePath}`);
-                // Remove any existing groups for this file since it's now ignored
-                const removedAny = this.removeGroupsForFile(filePath);
-                if (removedAny) {
-                    logger.info(`Removed groups for ignored file: ${filePath}`);
-                    await this.saveGroups();
-                    this.onDidUpdateGroupsEventEmitter.fire();
-                }
-                return;
-            }
-            
-            logger.info(`Processing saved file: ${filePath}`);
-            
-            // Parse the document for code groups
-            const codeGroups = parseLanguageSpecificComments(document);
-            
-            // If we found code groups, update the collection
-            if (codeGroups.length > 0) {
-                logger.info(`Found ${codeGroups.length} code groups in saved file`);
-
-                // IMPORTANT: Preserve isFavorite flags before removing old groups
-                const favoriteStatusMap = new Map<string, boolean>();
-                this.groups.forEach((groups) => {
-                    groups.forEach(group => {
-                        if (group.filePath === filePath && group.isFavorite) {
-                            favoriteStatusMap.set(group.functionality, true);
-                        }
-                    });
-                });
-
-                // First, remove any existing groups for this file
-                this.removeGroupsForFile(filePath);
-
-                // Restore isFavorite flags to the new groups
-                codeGroups.forEach(group => {
-                    if (favoriteStatusMap.has(group.functionality)) {
-                        group.isFavorite = true;
+        }
+    }
+    async initialize(): Promise<void> {
+        await this.loadFavorites();
+        const scanRoots: vscode.WorkspaceFolder[] = [];
+        for (const folder of vscode.workspace.workspaceFolders || []) {
+            const saved = await loadCodeGroups(folder.uri.fsPath);
+            if (saved) {
+                for (const groups of saved.values()) {
+                    for (const group of groups) {
+                        if (this.rootFor(group.filePath)?.uri.toString() !== folder.uri.toString()) { continue; }
+                        this.documents.set(group.filePath, [...(this.documents.get(group.filePath) || []), group]);
                     }
-                });
-
-                // Then add the new groups
-                this.addGroups(fileType, codeGroups);
-
-                // Update functionalities set
-                codeGroups.forEach(group => {
-                    if (group && group.functionality) {
-                        this.functionalities.add(group.functionality);
-                    }
-                });
-
-                // Update the status bar
-                this.updateStatusBar();
-
-                // Save the groups to .groupcode folder (with throttling)
-                await this.saveGroups();
-
-                // Notify listeners that groups have been updated
-                this.onDidUpdateGroupsEventEmitter.fire();
-            } else {
-                // If no code groups found but we previously had groups for this file,
-                // we need to remove them
-                const removedAny = this.removeGroupsForFile(filePath);
-                
-                if (removedAny) {
-                    logger.info(`Removed groups for file that no longer has any: ${filePath}`);
-                    await this.saveGroups();
-                    this.onDidUpdateGroupsEventEmitter.fire();
                 }
             }
-        } catch (error) {
-            logger.error('Error processing file on save', error);
+            if ((await loadGroupCodeSettings(folder.uri.fsPath)).autoScan) { scanRoots.push(folder); }
+        }
+        this.rebuild();
+        if (scanRoots.length) { await this.processWorkspace(undefined, scanRoots); }
+    }
+    async initializeWorkspace(): Promise<void> { await this.initialize(); }
+    async processActiveDocument(): Promise<void> {
+        const document = vscode.window.activeTextEditor?.document;
+        if (!document) { return; }
+        await this.processFileOnSave(document);
+        const root = this.rootFor(document.uri.fsPath);
+        if (root && (await loadGroupCodeSettings(root.uri.fsPath)).showNotifications) {
+            vscode.window.showInformationMessage(`Found ${(this.documents.get(document.uri.fsPath) || []).length} groups in ${getFileName(document.uri.fsPath)}`);
         }
     }
-    
-    /**
-     * Remove all code groups associated with a specific file
-     * @returns true if any groups were removed
-     */
-    // @group Workspace > Group Management > Removal: Remove groups for a file and update state accordingly
-    private removeGroupsForFile(filePath: string): boolean {
-        let removedAny = false;
-        
-        this.groups.forEach((groups, fileType) => {
-            const originalLength = groups.length;
-            const filteredGroups = groups.filter(group => group.filePath !== filePath);
-            
-            if (filteredGroups.length !== originalLength) {
-                this.groups.set(fileType, filteredGroups);
-                removedAny = true;
-            }
-        });
-        
-        // Re-calculate functionalities
-        if (removedAny) {
-            this.recalculateFunctionalities();
-            this.updateStatusBar();
+    hasFile(file: string): boolean { return this.documents.has(file); }
+    async processFileOnSave(document: vscode.TextDocument): Promise<void> {
+        if (this.disposed) { return; }
+        const file = document.uri.fsPath;
+        const root = this.rootFor(file);
+        if (!root || !isSupportedFileType(getFileType(file))) { return; }
+        const revision = ++this.revision;
+        this.revisions.set(file, revision);
+        try { await vscode.workspace.fs.stat(document.uri); }
+        catch (error) {
+            const code = (error as {code?: string}).code;
+            if (code === 'FileNotFound' || code === 'ENOENT') { await this.removeFile(document.uri); return; }
+            throw error;
         }
-        
-        return removedAny;
+        const settings = await loadGroupCodeSettings(root.uri.fsPath);
+        const included = await new FileSelection(root.uri, settings).includes(document.uri, false);
+        if (this.disposed || this.revisions.get(file) !== revision) { return; }
+        const groups = included && Buffer.byteLength(document.getText(), 'utf8') <= settings.maxFileSizeKB * 1024
+            ? parseLanguageSpecificComments(document) : [];
+        if (groups.length) { this.documents.set(file, groups); } else { this.documents.delete(file); }
+        this.rebuild();
+        await this.saveGroups(root.uri.fsPath);
     }
-    
-    /**
-     * Recalculate the set of functionalities based on existing groups
-     */
-    // @group Workspace > Group Management > Recalculation: Recompute functionality set from current groups
-    private recalculateFunctionalities(): void {
-        this.functionalities.clear();
-        
-        this.groups.forEach((groups) => {
-            groups.forEach(group => {
-                if (group && group.functionality) {
-                    this.functionalities.add(group.functionality);
-                }
-            });
-        });
-    }
-
-    /**
-     * Convert a gitignore pattern to a regular expression that matches file paths
-     */
-    // @group IO > Ignore Patterns > Conversion: Convert gitignore-style patterns into regular expressions
-    private gitignorePatternToRegex(pattern: string): RegExp {
-        // Remove leading slash to keep patterns relative to any folder
-        let processedPattern = pattern.startsWith('/') ? pattern.substring(1) : pattern;
-
-        // Remove trailing slash (directory marker)
-        processedPattern = processedPattern.endsWith('/') ? processedPattern.slice(0, -1) : processedPattern;
-
-        // Escape special regex chars except * and ?
-        processedPattern = processedPattern.replace(/[.+\-\^${}()|[\]\\]/g, '\\$&');
-
-        // Handle special case for .venv to match both /.venv/ and .venv/ at any level
-        if (processedPattern === '.venv' || processedPattern === '**/.venv' || processedPattern === '**/.venv/**') {
-            return new RegExp('(/|^)\\.venv(/|$)');
-        }
-
-        // Convert gitignore glob patterns to regex patterns
-        processedPattern = processedPattern
-            .replace(/\*\*/g, '.*') // ** matches anything (including slashes)
-            .replace(/\*/g, '[^/]*') // * matches anything except slashes
-            .replace(/\?/g, '[^/]'); // ? matches a single non-slash character
-
-        // Make sure the pattern matches full segments
-        if (!processedPattern.includes('/')) {
-            // For patterns without slashes, match the full path segment
-            processedPattern = '(/|^)' + processedPattern + '(/|$)';
-        } else {
-            // For patterns with slashes, anchor appropriately
-            if (!processedPattern.startsWith('^')) {
-                processedPattern = '(?:/|^)' + processedPattern;
-            }
-            if (!processedPattern.endsWith('$')) {
-                processedPattern = processedPattern + '(?:/|$)';
+    async removeFile(uri: vscode.Uri): Promise<void> {
+        if (this.disposed) { return; }
+        const file = uri.fsPath;
+        this.revisions.set(file, ++this.revision);
+        // Directory deletion/rename also removes all descendants.
+        for (const known of this.documents.keys()) {
+            if (known === file || relativeUriPath(uri, vscode.Uri.file(known)) !== undefined) {
+                this.revisions.set(known, ++this.revision);
+                this.documents.delete(known);
             }
         }
-
-        return new RegExp(processedPattern);
+        this.rebuild();
+        await this.saveGroups();
     }
-
-    /**
-     * Check if a file path should be ignored based on ignore patterns
-     */
-    // @group IO > Ignore Patterns > Matching: Determine if a file path matches ignore patterns
-    private shouldIgnoreFile(filePath: string, ignorePatterns: string[]): boolean {
-        // Forward slashes for consistency
-        const normalizedPath = filePath.replace(/\\/g, '/');
-
-        return ignorePatterns.some(pattern => {
-            try {
-                const regex = this.gitignorePatternToRegex(pattern);
-                return regex.test(normalizedPath);
-            } catch (error) {
-                logger.error('Error in ignore pattern', error);
-                return false;
+    async processWorkspace(token?: vscode.CancellationToken, roots = vscode.workspace.workspaceFolders || []): Promise<void> {
+        if (this.disposed || token?.isCancellationRequested) { return; }
+        this.scanCancellation?.cancel();
+        const cancellation = new vscode.CancellationTokenSource();
+        const subscription = token?.onCancellationRequested?.(() => cancellation.cancel());
+        this.scanCancellation = cancellation;
+        let timedOut = false;
+        const timeout = setTimeout(() => { timedOut = true; cancellation.cancel(); }, 30_000);
+        try { await this.scanWorkspace(cancellation.token, roots); }
+        finally {
+            clearTimeout(timeout);
+            subscription?.dispose();
+            cancellation.dispose();
+            if (this.scanCancellation === cancellation) { this.scanCancellation = undefined; }
+            if (timedOut) { vscode.window.showWarningMessage('Code group scan timed out. Previous results were retained; narrow the scan using ignore patterns.'); }
+        }
+    }
+    private async scanWorkspace(token: vscode.CancellationToken, roots: readonly vscode.WorkspaceFolder[]): Promise<void> {
+        const scan = ++this.scanRevision;
+        const started = this.revision;
+        const snapshot = new Map(this.documents);
+        const failures: string[] = [];
+        const activeRoots = vscode.workspace.workspaceFolders || [];
+        for (const file of snapshot.keys()) {
+            const uri = vscode.Uri.file(file);
+            if (!activeRoots.some(root => relativeUriPath(root.uri, uri) !== undefined) || roots.some(root => relativeUriPath(root.uri, uri) !== undefined)) {
+                snapshot.delete(file);
             }
-        });
-    }
-
-    /**
-     * Get glob patterns to ignore based on .gitignore and common folders to exclude
-     */
-    // @group IO > Ignore Patterns > Loading: Load .gitignore and default ignore patterns for scanning
-    private async getIgnorePatterns(folderPath?: string): Promise<string[]> {
-        const ignorePatterns: string[] = [];
-        
-        // Try to read .gitignore patterns from the specified folder
-        if (folderPath) {
-            try {
-                // Safely construct .gitignore path
-                const normalizedPath = folderPath.replace(/\\/g, '/');
-                const gitignorePath = normalizedPath.endsWith('/') ? 
-                    `${normalizedPath}.gitignore` : 
-                    `${normalizedPath}/.gitignore`;
-                
+        }
+        for (const root of roots) {
+            const settings = await loadGroupCodeSettings(root.uri.fsPath);
+            const policy = new FileSelection(root.uri, settings);
+            const files = await vscode.workspace.findFiles(new vscode.RelativePattern(root, '**/*'),
+                '{**/.git/**,**/.groupcode/**,**/node_modules/**}', undefined, token);
+            for (const uri of files) {
+                if (token?.isCancellationRequested || this.disposed || scan !== this.scanRevision) { return; }
                 try {
-                    await fs.promises.access(gitignorePath);
-                    const gitignoreContent = await fs.promises.readFile(gitignorePath, 'utf8');
-                    const gitignoreLines = gitignoreContent.split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line && !line.startsWith('#'));
-
-                    // Add all non-empty, non-comment lines
-                    for (const line of gitignoreLines) {
-                        // Skip negation patterns for now (patterns starting with !)
-                        if (!line.startsWith('!')) {
-                            let pattern = line;
-                            
-                            // Check if this is a directory pattern (ends with /)
-                            const isDirectoryPattern = pattern.endsWith('/');
-                            
-                            // Remove leading slash if present
-                            if (pattern.startsWith('/')) {
-                                pattern = pattern.substring(1);
-                            }
-                            
-                            // Remove trailing slash
-                            if (pattern.endsWith('/')) {
-                                pattern = pattern.slice(0, -1);
-                            }
-                            
-                            // Check if this looks like a file pattern (contains * with extension or has file extension)
-                            const isFilePattern = /\*\.[a-zA-Z0-9]+$/.test(pattern) || 
-                                                  /\.[a-zA-Z0-9]+$/.test(pattern) && !pattern.startsWith('.');
-                            
-                            // Add ** prefix if the pattern doesn't already have it
-                            if (!pattern.startsWith('**/') && !pattern.startsWith('**\\')) {
-                                pattern = '**/' + pattern;
-                            }
-                            
-                            // Add /** suffix only for directory patterns, not file patterns
-                            if (isDirectoryPattern || (!isFilePattern && !pattern.endsWith('/**'))) {
-                                // This is a directory - add /** to match contents
-                                if (!pattern.endsWith('/**')) {
-                                    pattern = pattern + '/**';
-                                }
-                            }
-                            
-                            ignorePatterns.push(pattern);
-                            logger.debug(`Converted gitignore pattern: "${line}" -> "${pattern}"`);
-                        }
-                    }
-                    
-                    logger.info(`Loaded ${ignorePatterns.length} patterns from .gitignore in ${folderPath}`);
-                } catch (error) {
-                    // No .gitignore file, use default patterns
-                    logger.info(`No .gitignore file found in ${folderPath}, using default ignore patterns`);
-                }
-            } catch (error) {
-                logger.error('Error reading .gitignore file', error);
-            }
-        }
-        
-        // Add some common default patterns that should always be ignored
-        const defaultPatterns = [
-            '**/node_modules/**',
-            '**/.git/**',
-            '**/.groupcode/**',  // Don't scan our own metadata folder
-            '**/dist/**',
-            '**/build/**',
-            '**/.next/**',
-            '**/out/**',
-            '**/coverage/**',
-            '**/venv/**',
-            '**/.venv/**',
-            '**/env/**',
-            '**/.env/**',
-            '**/bin/**',
-            '**/obj/**',
-            '**/.vs/**',
-            '**/.idea/**',
-            '**/.vscode/**',  // Don't scan VS Code settings
-            '**/tmp/**',
-            '**/temp/**',
-            '**/.cache/**',
-            '.DS_Store',
-            '*.min.js',  // Don't scan minified files
-            '*.min.css',
-            '*.map'  // Don't scan source maps
-        ];
-        
-        ignorePatterns.push(...defaultPatterns);
-        return ignorePatterns;
-    }
-    
-    private static readonly SCAN_TIMEOUT_MS = 30_000;
-
-    // Process all documents in the workspace
-    // @group Workspace > Scanning > FullScan: Scan workspace files, parse groups, and preserve favorites
-    public async processWorkspace(): Promise<void> {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders || workspaceFolders.length === 0) {
-            return;
-        }
-
-        try {
-            // IMPORTANT: Build a map of existing favorites before scanning
-            const favoriteStatusMap = new Map<string, boolean>();
-            this.groups.forEach((groups) => {
-                groups.forEach(group => {
-                    if (group.isFavorite && group.functionality) {
-                        favoriteStatusMap.set(`${group.filePath}::${group.functionality}`, true);
-                    }
-                });
-            });
-
-            // Get ignore patterns from .gitignore and defaults
-            const rootFolder = workspaceFolders[0].uri.fsPath;
-            const ignorePatterns = await this.getIgnorePatterns(rootFolder);
-
-            // Create exclude pattern for findFiles
-            const excludePattern = `{${ignorePatterns.join(',')}}`;
-
-            logger.info(`Scanning workspace with ${ignorePatterns.length} ignore patterns`);
-
-            let scanTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
-            const timeout = new Promise<never>((_, reject) => {
-                scanTimeoutHandle = setTimeout(() => reject(new Error(`Workspace scan timed out after ${CodeGroupProvider.SCAN_TIMEOUT_MS / 1000}s`)), CodeGroupProvider.SCAN_TIMEOUT_MS);
-            });
-
-            let files: vscode.Uri[];
-            try {
-                files = await Promise.race([
-                    vscode.workspace.findFiles('**/*.*', excludePattern),
-                    timeout
-                ]);
-            } catch (err) {
-                if (err instanceof Error && err.message.includes('timed out')) {
-                    logger.warn(err.message);
-                    vscode.window.showWarningMessage('Workspace scan timed out. Try scanning a smaller folder or adding more patterns to .gitignore.');
-                    return;
-                }
-                throw err;
-            } finally {
-                clearTimeout(scanTimeoutHandle);
-            }
-            let processedCount = 0;
-
-            for (const file of files) {
-                const fileType = getFileType(file.fsPath);
-                if (!fileType || !isSupportedFileType(fileType)) {
-                    continue;
-                }
-
-                try {
-                    // Double-check with shouldIgnoreFile for extra safety
-                    if (this.shouldIgnoreFile(file.fsPath, ignorePatterns)) {
-                        logger.debug(`Skipping ignored file: ${file.fsPath}`);
-                        continue;
-                    }
-
-                    const document = await vscode.workspace.openTextDocument(file);
-
+                    if (!await policy.includes(uri)) { continue; }
+                    const document = await vscode.workspace.openTextDocument(uri);
+                    if (Buffer.byteLength(document.getText(), 'utf8') > settings.maxFileSizeKB * 1024) { continue; }
                     const groups = parseLanguageSpecificComments(document);
-                    if (groups.length > 0) {
-                        // Restore isFavorite flags to groups before adding them
-                        groups.forEach(group => {
-                            const key = `${file.fsPath}::${group.functionality}`;
-                            if (favoriteStatusMap.has(key)) {
-                                group.isFavorite = true;
-                            }
-                        });
-
-                        this.addGroups(fileType, groups);
-                        processedCount++;
-
-                        // Update functionalities set
-                        groups.forEach(group => {
-                            if (group && group.functionality) {
-                                this.functionalities.add(group.functionality);
-                            }
-                        });
+                    if (groups.length) { snapshot.set(uri.fsPath, groups); }
+                } catch (error) {
+                    failures.push(uri.fsPath);
+                    const previous = this.documents.get(uri.fsPath);
+                    if (previous) { snapshot.set(uri.fsPath, previous); }
+                    logger.error(`Could not scan ${uri.fsPath}`, error);
+                }
+            }
+        }
+        if (token?.isCancellationRequested || this.disposed || scan !== this.scanRevision) { return; }
+        // An incremental edit/deletion made after this scan began always wins.
+        for (const [file, revision] of this.revisions) {
+            if (revision <= started) { continue; }
+            const current = this.documents.get(file);
+            if (current) { snapshot.set(file, current); } else { snapshot.delete(file); }
+        }
+        this.documents = snapshot;
+        this.rebuild();
+        await this.saveGroups();
+        if (failures.length) { vscode.window.showWarningMessage(`Could not refresh ${failures.length} file(s); previous entries were retained. See Group Code output.`); }
+    }
+    async processExternalFolder(_folderPath: string): Promise<void> {
+        throw new Error('Add the folder to the workspace before scanning it.');
+    }
+    async saveGroups(folderPath?: string, force = false): Promise<void> {
+        for (const folder of folderPath ? [folderPath] : getWorkspaceFolders()) {
+            let writer = this.writers.get(folder);
+            if (!writer) {
+                writer = new SnapshotWriter(async () => {
+                    const snapshot = new Map<string, CodeGroup[]>();
+                    for (const [file, groups] of this.documents) {
+                        if (this.rootFor(file)?.uri.fsPath !== folder) { continue; }
+                        const type = getFileType(file);
+                        snapshot.set(type, [...(snapshot.get(type) || []), ...groups.map(group => ({...group, lineNumbers: [...group.lineNumbers]}))]);
                     }
-                } catch (err) {
-                    logger.error('Error processing file', err);
-                }
+                    await saveCodeGroups(folder, snapshot);
+                }, error => { logger.error('Could not persist code groups', error); vscode.window.showErrorMessage('Could not save the code group index. See Group Code output.'); });
+                this.writers.set(folder, writer);
             }
-
-            // Load user favorites from user profile and apply them
-            await this.loadAndApplyUserFavorites();
-
-            // Update UI
-            this.updateStatusBar();
-            await this.saveGroups();
-            this.onDidUpdateGroupsEventEmitter.fire();
-
-            if (this.functionalities.size > 0) {
-                vscode.window.showInformationMessage(
-                    `Found ${this.functionalities.size} code groups in ${processedCount} files`
-                );
-            }
-
-            logger.info(`Workspace scan complete. Processed ${processedCount} files, found ${this.functionalities.size} groups`);
-        } catch (err) {
-            logger.error('Error scanning workspace', err);
-            throw err;
+            writer.schedule();
+            if (force) { await writer.flush(); }
         }
     }
-    
-    // Process files in an external folder (outside of the current workspace)
-    // @group Workspace > Scanning > External: Scan external folder, batch process files, and save results externally
-    public async processExternalFolder(folderPath: string): Promise<void> {
-        if (!folderPath) {
-            vscode.window.showErrorMessage('Invalid folder path');
-            return;
-        }
-        
-        logger.info(`Processing external folder: ${folderPath}`);
-        
-        // First clear existing groups to avoid mixing results
-        this.clearGroups();
-        
-        // Show scanning progress indicator
-        vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: `Scanning external folder: ${folderPath}`,
-            cancellable: false
-        }, async (progress) => {
-            try {
-                // Get ignore patterns for the external folder
-                const ignorePatterns = await this.getIgnorePatterns(folderPath);
-                
-                // First, identify which file types exist in the external folder
-                progress.report({ message: 'Identifying file types in the external folder...' });
-                
-                try {
-                    const relativePattern = new vscode.RelativePattern(folderPath, '**/*.*');
-                    const allFiles = await vscode.workspace.findFiles(relativePattern, `{${ignorePatterns.join(',')}}`);
-                    
-                    // Group files by extension
-                    const filesByExtension = new Map<string, vscode.Uri[]>();
-                    
-                    allFiles.forEach(file => {
-                        const fileType = getFileType(file.fsPath);
-                        if (fileType && isSupportedFileType(fileType)) {
-                            if (!filesByExtension.has(fileType)) {
-                                filesByExtension.set(fileType, []);
-                            }
-                            filesByExtension.get(fileType)!.push(file);
-                        }
-                    });
-                    
-                    // Log the extensions found
-                    logger.info('File types found in the external folder:');
-                    filesByExtension.forEach((files, ext) => {
-                        logger.info(`- ${ext}: ${files.length} files`);
-                    });
-                    
-                    // If no supported files were found, show a message and return
-                    if (filesByExtension.size === 0) {
-                        logger.info('No supported file types found in the external folder');
-                        vscode.window.showInformationMessage('No supported files found in the external folder');
-                        return;
-                    }
-                    
-                    // Now scan only the files with extensions we actually found
-                    let processedCount = 0;
-                    let totalFilesToScan = 0;
-                    
-                    // Count total files to scan
-                    filesByExtension.forEach(files => {
-                        totalFilesToScan += files.length;
-                    });
-                    
-                    logger.info(`Total files to scan in external folder: ${totalFilesToScan}`);
-                    
-                    // Scan files in batches, grouped by extension for more efficient processing
-                    const batchSize = 10;
-                    
-                    for (const [fileType, files] of filesByExtension.entries()) {
-                        logger.info(`Scanning ${files.length} ${fileType} files in external folder...`);
-                        
-                        for (let i = 0; i < files.length; i += batchSize) {
-                            const batch = files.slice(i, Math.min(i + batchSize, files.length));
-                            
-                            // Process this batch
-                            for (const fileUri of batch) {
-                                try {
-                                    processedCount++;
-                                    const filePath = fileUri.fsPath;
-                                    
-                                    progress.report({
-                                        message: `Processing file ${processedCount} of ${totalFilesToScan}: ${getFileName(filePath)}`,
-                                        increment: (100 * batch.length) / totalFilesToScan
-                                    });
-                                    
-                                    // Double-check file isn't ignored
-                                    if (this.shouldIgnoreFile(filePath, ignorePatterns)) {
-                                        logger.info(`Skipping ignored file during external scan: ${filePath}`);
-                                        continue;
-                                    }
-                                    
-                                    // Open and process the document
-                                    try {
-                                        const document = await vscode.workspace.openTextDocument(fileUri);
-                                        const codeGroups = parseLanguageSpecificComments(document);
-                                        
-                                        if (codeGroups.length > 0) {
-                                            logger.info(`Found ${codeGroups.length} code groups in ${filePath}`);
-                                            
-                                            // Add the groups to our collection
-                                            this.addGroups(fileType, codeGroups);
-                                            
-                                            // Update functionalities set
-                                            codeGroups.forEach(group => {
-                                                if (group && group.functionality) {
-                                                    this.functionalities.add(group.functionality);
-                                                }
-                                            });
-                                        }
-                                    } catch (docError) {
-                                        logger.error('Error opening document', docError);
-                                    }
-                                } catch (error) {
-                                    logger.error('Error processing file', error);
-                                }
-                            }
-                            
-                            // Give UI a chance to update
-                            await new Promise(resolve => setTimeout(resolve, 0));
-                        }
-                    }
-                    
-                    // Update the status bar
-                    this.updateStatusBar();
-                    
-                    // Save the groups to .groupcode folder in the external folder
-                    await this.saveGroups(folderPath);
-                    
-                    // Notify listeners that groups have been updated
-                    this.onDidUpdateGroupsEventEmitter.fire();
-                    
-                    const functionalityCount = this.functionalities.size;
-                    if (functionalityCount > 0) {
-                        vscode.window.showInformationMessage(`Found ${functionalityCount} code groups in ${processedCount} files in external folder`);
-                    } else {
-                        vscode.window.showInformationMessage('No code groups found in external folder. Check console for details.');
-                    }
-                } catch (scanError) {
-                    logger.error('Error scanning for files in external folder', scanError);
-                    vscode.window.showErrorMessage(`Error scanning files in external folder: ${scanError}`);
-                }
-            } catch (error) {
-                logger.error('Error scanning external folder', error);
-                vscode.window.showErrorMessage(`Error scanning external folder: ${error}`);
-            }
-        });
-    }
-    
-    // Direct Python parser
-    // @group Parsing > Language Parsers > Python: Manual Python comment parser extracting starred groups
-    private parsePythonCommentsDirectly(content: string, filePath: string): CodeGroup[] {
-        const codeGroups: CodeGroup[] = [];
-        const lines = content.split('\n');
-        
-        logger.info(`MANUAL PYTHON PARSING: ${filePath}`);
-        
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            
-            // Skip empty lines
-            if (!line) continue;
-            
-            // Skip JavaScript-style comments
-            if (line.startsWith('//')) continue;
-            
-            // Python login special case if all else fails
-            if (line.toLowerCase().includes('login') && line.startsWith('#')) {
-                logger.info(`Special case - found login in Python: ${line}`);
-                codeGroups.push({
-                    functionality: 'login',
-                    description: 'login in python',
-                    lineNumbers: [i + 1],
-                    filePath: filePath
-                });
-                continue;
-            }
-            
-            // Check for Python code groups - ANY line starting with # and containing *
-            if (line.startsWith('#') && line.includes('*')) {
-                logger.info(`Potential Python code group found: ${line}`);
-                
-                // First try normal regex pattern
-                const regex = /#\s*\*\s*(.*?)(?:\s*:\s*(.*?))?$/i;
-                let match = line.match(regex);
-                
-                if (!match) {
-                    // Try simplified pattern
-                    const simpleRegex = /#.*\*\s*([^:]+):(.*)$/i;
-                    match = line.match(simpleRegex);
-                }
-                
-                if (!match) {
-                    // Try any pattern with * and : (even more simplified)
-                    const verySimpleRegex = /#.*\*.*([^:]+):(.*)$/i;
-                    match = line.match(verySimpleRegex);
-                }
-                
-                if (match) {
-                    const functionality = (match[1] || 'Unnamed Group').trim().toLowerCase();
-                    const description = (match[2] || '').trim();
-                    
-                    logger.info(`Found Python code group: functionality="${functionality}", description="${description}"`);
-                    
-                    codeGroups.push({
-                        functionality: functionality,
-                        description: description,
-                        lineNumbers: [i + 1],
-                        filePath: filePath
-                    });
-                } else {
-                    logger.info(`Failed to parse Python code group: ${line}`);
-                }
-            }
-        }
-        
-        return codeGroups;
-    }
-
-    /**
-     * Save code groups to .groupcode folder
-     * Now public so it can be called from extension.ts
-     * @param folderPath Optional folder path to save to
-     * @param force If true, bypass throttling (use for critical saves like deactivation)
-     */
-    // @group Persistence > Storage > Save: Persist groups to disk with optional throttling or forced save
-    public async saveGroups(folderPath?: string, force: boolean = false): Promise<void> {
-        try {
-            // Implement throttling to avoid excessive saves (unless forced)
-            const now = Date.now();
-            if (!force && now - this.lastSaveTime < this.saveThrottleTime) {
-                // Skip this save call if it's too soon after the last one
-                logger.info(`Throttling save request - only ${now - this.lastSaveTime}ms since last save`);
-                return;
-            }
-
-            const workspaceFolders = getWorkspaceFolders();
-            const targetFolder = folderPath || (workspaceFolders.length > 0 ? workspaceFolders[0] : undefined);
-
-            if (!targetFolder) {
-                logger.info('No target folder provided for saving code groups');
-                return;
-            }
-
-            logger.info(`Saving code groups to ${targetFolder}${force ? ' (FORCED)' : ''}`);
-            await saveCodeGroups(targetFolder, this.groups);
-
-            // Update last save time
-            this.lastSaveTime = Date.now();
-            logger.info(`Successfully saved ${this.groups.size} file type groups to disk`);
-        } catch (error) {
-            logger.error('Error saving code groups', error);
-        }
-    }
-    
-    // @group Workspace > Group Management > Addition: Add unique code groups per file type avoiding duplicates
-    private addGroups(fileType: string, groups: CodeGroup[]): void {
-        if (!this.groups.has(fileType)) {
-            this.groups.set(fileType, []);
-        }
-        
-        const existingGroups = this.groups.get(fileType) || [];
-        
-        // Filter out duplicate groups before adding
-        const newGroups = groups.filter(newGroup => {
-            // Skip invalid groups
-            if (!newGroup || !newGroup.filePath || !newGroup.functionality) {
-                return false;
-            }
-            
-            // Check if this group already exists in existingGroups
-            return !existingGroups.some(existingGroup => 
-                existingGroup.functionality === newGroup.functionality &&
-                existingGroup.filePath === newGroup.filePath &&
-                JSON.stringify(existingGroup.lineNumbers) === JSON.stringify(newGroup.lineNumbers)
-            );
-        });
-        
-        // Only add the unique groups
-        if (newGroups.length > 0) {
-            this.groups.set(fileType, [...existingGroups, ...newGroups]);
-        }
-    }
-    
     // Get all groups for a specific functionality across different file types
     // @group Workspace > Retrieval > FunctionalityGroups: Retrieve groups grouped by file type for a functionality
     public getFunctionalityGroups(functionality: string): Map<string, CodeGroup[]> {
@@ -1109,197 +396,44 @@ export class CodeGroupProvider implements vscode.Disposable {
     // Clear all code groups and refresh
     // @group Workspace > Group Management > Clear: Remove all groups, reset state, and notify UI
     public clearGroups(): void {
-        this.groups.clear();
-        this.functionalities.clear();
-        this.updateStatusBar();
-        this.onDidUpdateGroupsEventEmitter.fire();
+        this.documents.clear();
+        this.scanRevision++;
+        this.rebuild();
     }
 
-    /**
-     * Load user favorites from user profile and apply them to existing groups
-     * This should be called after loading groups from the shared codegroups.json
-     */
-    // @group Persistence > Favorites > Load: Load user favorites and apply to in-memory groups
-    private async loadAndApplyUserFavorites(): Promise<void> {
-        try {
-            const workspaceFolders = getWorkspaceFolders();
-            if (workspaceFolders.length === 0) {
-                logger.warn('No workspace folders found, cannot load user favorites');
-                return;
-            }
 
-            // Use the first workspace folder for favorites storage
-            const workspacePath = workspaceFolders[0];
-            const favorites = await loadUserFavorites(workspacePath);
-
-            logger.info(`Loaded ${favorites.size} favorites from user profile`);
-
-            // Apply favorites to existing groups
-            let appliedCount = 0;
-            this.groups.forEach((groups) => {
-                groups.forEach(group => {
-                    const key = `${group.filePath}::${group.functionality}`;
-                    if (favorites.has(key) && favorites.get(key) === true) {
-                        group.isFavorite = true;
-                        appliedCount++;
-                    }
-                });
-            });
-
-            logger.info(`Applied ${appliedCount} favorites to groups`);
-        } catch (error) {
-            logger.error('Error loading and applying user favorites:', error);
-        }
-    }
-
-    /**
-     * Save current favorites to user profile
-     */
-    // @group Persistence > Favorites > Save: Persist user's favorite selections to profile storage
-    private async saveUserFavoritesToProfile(): Promise<void> {
-        try {
-            const workspaceFolders = getWorkspaceFolders();
-            if (workspaceFolders.length === 0) {
-                logger.warn('No workspace folders found, cannot save user favorites');
-                return;
-            }
-
-            const workspacePath = workspaceFolders[0];
+    private async persistFavorites(): Promise<void> {
+        for (const root of getWorkspaceFolders()) {
             const favorites = new Map<string, boolean>();
-
-            // Collect all favorites from groups
-            this.groups.forEach((groups) => {
-                groups.forEach(group => {
-                    if (group.isFavorite) {
-                        const key = `${group.filePath}::${group.functionality}`;
-                        favorites.set(key, true);
-                    }
-                });
-            });
-
-            await saveUserFavorites(workspacePath, favorites);
-            logger.info(`Saved ${favorites.size} favorites to user profile`);
-        } catch (error) {
-            logger.error('Error saving user favorites to profile:', error);
-        }
-    }
-
-    /**
-     * Toggle favorite status for a specific group
-     * Matches group by functionality name (works for any level of hierarchy)
-     * Also toggles all descendant groups if this is a parent node
-     */
-    // @group UI > Favorites > Toggle: Toggle favorite status for functionality and its descendants, then persist
-    public async toggleFavorite(functionality: string): Promise<void> {
-        try {
-            const { isDescendantOf } = await import('./utils/hierarchyUtils');
-            let found = false;
-            let newFavoriteStatus: boolean | undefined;
-
-            logger.info(`=== TOGGLE FAVORITE START: ${functionality} ===`);
-
-            // First pass: determine the new status by checking existing groups
-            // Check both exact matches and descendants
-            this.groups.forEach((groups) => {
-                groups.forEach(group => {
-                    if (group.functionality === functionality || isDescendantOf(group.functionality, functionality)) {
-                        // Determine what the new status should be (toggle from current)
-                        if (newFavoriteStatus === undefined) {
-                            newFavoriteStatus = !group.isFavorite;
-                            logger.info(`Current favorite status: ${group.isFavorite}, will change to: ${newFavoriteStatus}`);
-                        }
-                        found = true;
-                    }
-                });
-            });
-
-            if (!found) {
-                logger.warn(`No groups found for functionality: ${functionality}`);
-                return;
+            for (const key of this.favorites) {
+                const file = key.slice(0, key.lastIndexOf('::'));
+                if (this.rootFor(file)?.uri.fsPath === root) { favorites.set(key, true); }
             }
-
-            // Second pass: apply the new status to this functionality and all descendants
-            let updatedCount = 0;
-            this.groups.forEach((groups) => {
-                groups.forEach(group => {
-                    // Toggle if it matches exactly OR if it's a descendant
-                    if (group.functionality === functionality || isDescendantOf(group.functionality, functionality)) {
-                        group.isFavorite = newFavoriteStatus!;
-                        updatedCount++;
-                        logger.info(`Updated ${group.functionality} (${group.filePath}) - isFavorite: ${newFavoriteStatus}`);
-                    }
-                });
-            });
-
-            logger.info(`Updated ${updatedCount} groups with favorite status: ${newFavoriteStatus}`);
-
-            // Save favorites to user profile (not to shared codegroups.json)
-            await this.saveUserFavoritesToProfile();
-            logger.info(`Saved favorites to user profile`);
-
-            // Notify listeners that groups have been updated
-            this.onDidUpdateGroupsEventEmitter.fire();
-
-            logger.info(`=== TOGGLE FAVORITE END ===`);
-        } catch (error) {
-            logger.error('Error toggling favorite', error);
-            vscode.window.showErrorMessage('Failed to toggle favorite status');
+            await saveUserFavorites(root, favorites);
         }
     }
-
-    /**
-     * Get all favorite groups
-     */
-    // @group Workspace > Retrieval > Favorites: Return all groups currently marked as favorites
-    public getFavoriteGroups(): CodeGroup[] {
-        const favorites: CodeGroup[] = [];
-
-        this.groups.forEach((groups) => {
-            groups.forEach(group => {
-                if (group.isFavorite) {
-                    favorites.push(group);
-                }
-            });
-        });
-
-        return favorites;
-    }
-
-    /**
-     * Check if a functionality is marked as favorite
-     * This also returns true if any descendant is marked as favorite
-     */
-    // @group Workspace > Retrieval > FavoritesCheck: Check favorite status including descendant matching
-    public isFavorite(functionality: string): boolean {
-        const prefix = functionality + ' > ';
-        for (const groups of this.groups.values()) {
-            for (const group of groups) {
-                if (group.isFavorite && (
-                    group.functionality === functionality ||
-                    group.functionality.startsWith(prefix)
-                )) {
-                    return true;
-                }
-            }
+    async renameFavorites(oldName: string, newName: string, file: string): Promise<void> {
+        for (const key of [...this.favorites]) {
+            if (!key.startsWith(file + '::')) { continue; }
+            const name = key.slice(file.length + 2);
+            const renamed = renamedGroup(name, oldName, newName);
+            if (renamed !== name) { this.favorites.delete(key); this.favorites.add(this.key(file, renamed)); }
         }
-        return false;
+        await this.persistFavorites();
     }
-
-    /**
-     * Get all favorite functionalities (unique)
-     */
-    // @group Workspace > Retrieval > FavoriteFunctionalities: Return unique favorite functionality names
-    public getFavoriteFunctionalities(): string[] {
-        const favoriteFuncs = new Set<string>();
-
-        this.groups.forEach((groups) => {
-            groups.forEach(group => {
-                if (group.isFavorite && group.functionality) {
-                    favoriteFuncs.add(group.functionality);
-                }
-            });
-        });
-
-        return Array.from(favoriteFuncs);
+    async toggleFavorite(functionality: string): Promise<void> {
+        const groups = this.getAllGroups().filter(group => group.functionality === functionality || group.functionality.startsWith(functionality + ' > '));
+        const favorite = !groups.every(group => group.isFavorite);
+        for (const group of groups) {
+            const key = this.key(group.filePath, group.functionality);
+            if (favorite) { this.favorites.add(key); } else { this.favorites.delete(key); }
+        }
+        await this.persistFavorites();
+        this.rebuild();
     }
+    getFavoriteGroups(): CodeGroup[] { return this.getAllGroups().filter(group => group.isFavorite); }
+    isFavorite(functionality: string): boolean {
+        return this.getFavoriteGroups().some(group => group.functionality === functionality || group.functionality.startsWith(functionality + ' > '));
+    }
+    getFavoriteFunctionalities(): string[] { return [...new Set(this.getFavoriteGroups().map(group => group.functionality))]; }
 }

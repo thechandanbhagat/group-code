@@ -8,17 +8,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "paths": {
-      "vscode": ["./mocks/vscode"]
-    },
-    "baseUrl": "."
+    "resolveJsonModule": true
   },
   "include": [
     "./**/*.ts",
     "../src/**/*.ts"
   ],
   "exclude": [
-    "../node_modules"
+    "../node_modules",
+    "./integration"
   ]
 }

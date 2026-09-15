@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18, 20]
+        node-version: [22, 24]
 
     steps:
       - name: Checkout repository
@@ -29,14 +29,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build extension
-        run: npm run build
+      - name: Build and run unit regressions
+        run: npm test -- --reporter spec
 
-      - name: Build tests
-        run: npm run build:tests
+      - name: Build and verify packaged extension
+        run: npm run test:package
 
-      - name: Run unit tests
-        run: npm run test -- --reporter spec
+      - name: Compile extension-host tests
+        run: npx tsc -p tests/tsconfig.integration.json
+
+      - name: Run minimum and current VS Code host tests (Linux)
+        if: runner.os == 'Linux'
+        env:
+          GROUPCODE_PACKAGE_PATH: artifacts/package
+        run: |
+          xvfb-run -a node scripts/test-host.js
+          VSCODE_VERSION=stable xvfb-run -a node scripts/test-host.js
+
+      - name: Run VS Code host tests (Windows and macOS)
+        if: runner.os != 'Linux'
+        env:
+          GROUPCODE_PACKAGE_PATH: artifacts/package
+        run: node scripts/test-host.js
 
       - name: Upload test results
         if: failure()
@@ -45,4 +59,5 @@ jobs:
           name: test-results-${{ matrix.os }}-node${{ matrix.node-version }}
           path: |
             out/tests/
+            artifacts/host-logs-*/
           retention-days: 7

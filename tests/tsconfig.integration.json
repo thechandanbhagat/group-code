@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../out/integration"
+  },
+  "include": ["integration/**/*.ts", "../src/**/*.ts"],
+  "exclude": ["../node_modules", "mocks", "unit"]
+}

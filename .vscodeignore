@@ -52,3 +52,10 @@ resources/groupcode1.gif
 
 # Previous release packages
 *.vsix
+out/**
+scripts/**
+docs/review/**
+artifacts/**
+dist/*.map
+.env*
+docs/demo/**

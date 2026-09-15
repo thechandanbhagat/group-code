@@ -7,16 +7,14 @@
   "publisher": "thechandanbhagat",
   "repository": "https://github.com/thechandanbhagat/group-code",
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.99.1"
   },
   "activationEvents": [
     "onLanguageModelTool:groupcode_generate",
     "onStartupFinished"
   ],
-  "main": "./out/extension.js",
-  "browser": "./out/extension.js",
+  "main": "./dist/extension.js",
   "extensionKind": [
-    "ui",
     "workspace"
   ],
   "contributes": {
@@ -232,9 +230,6 @@
         ]
       }
     ],
-    "enabledApiProposals": [
-      "languageModels"
-    ],
     "grammars": [
       {
         "scopeName": "groupcode.injection",
@@ -383,26 +378,78 @@
           "group": "navigation@2"
         }
       ]
-    }
+    },
+    "languageModelTools": [
+      {
+        "name": "groupcode_generate",
+        "displayName": "Generate Code Groups",
+        "toolReferenceName": "groupcode",
+        "canBeReferencedInPrompt": true,
+        "userDescription": "Analyze code or add functionality annotations.",
+        "modelDescription": "Analyze, generate or suggest @group comments. Generated annotations preserve executable source.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "analyze",
+                "generate",
+                "suggest"
+              ]
+            },
+            "code": {
+              "type": "string"
+            },
+            "filePath": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]
   },
   "scripts": {
-    "build": "tsc -p ./tsconfig.json",
+    "build": "tsc -p ./tsconfig.json && node scripts/build.js",
     "build:tests": "tsc -p ./tests/tsconfig.test.json && node -e \"const fs=require('fs'),p=require('path');const d=p.join('out','tests','node_modules','vscode');fs.mkdirSync(d,{recursive:true});fs.writeFileSync(p.join(d,'index.js'),'module.exports=require(\\'../../tests/mocks/vscode\\');')\"",
     "pretest": "npm run build && npm run build:tests",
     "test": "mocha --config tests/.mocharc.yml",
-    "watch": "tsc -watch -p ./tsconfig.json",
-    "prepublish": "npm run build",
-    "start": "code --extensionDevelopmentPath='$PWD'"
+    "watch": "node scripts/build.js --watch",
+    "start": "code --extensionDevelopmentPath=.",
+    "vscode:prepublish": "npm run build",
+    "test:integration": "tsc -p tests/tsconfig.integration.json && node scripts/test-host.js",
+    "test:package": "node scripts/check-package.js",
+    "package": "vsce package --no-dependencies",
+    "pretest:integration": "npm run build"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^16.11.6",
-    "@types/vscode": "^1.90.0",
+    "@types/vscode": "1.99.1",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.5",
     "glob": "^13.0.6",
-    "mocha": "^11.7.5",
+    "mocha": "^12.0.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.4.3",
-    "vscode": "^1.1.34"
+    "yauzl": "^2.10.0"
+  },
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Group Code currently requires a filesystem workspace on the desktop or remote extension host."
+    }
+  },
+  "dependencies": {
+    "ignore": "^7.0.5"
   }
 }

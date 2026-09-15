@@ -1,3 +1,4 @@
+import * as path from 'path';
 // @group TestMocks > VSCode : Mock implementation of the VS Code API for unit testing
 
 /**
@@ -20,17 +21,23 @@ export class Uri {
         this.path = pathStr;
         this.query = query;
         this.fragment = fragment;
-        this.fsPath = pathStr.replace(/\//g, '\\');
+        this.fsPath = process.platform === 'win32' ? pathStr.replace(/\//g, '\\') : pathStr;
     }
 
     static file(filePath: string): Uri {
-        return new Uri('file', '', filePath, '', '');
+        return new Uri('file', '', filePath.replace(/\\/g, '/'), '', '');
     }
 
     static parse(value: string): Uri {
         return new Uri('file', '', value, '', '');
     }
 
+    static joinPath(base: Uri, ...segments: string[]): Uri {
+        return new Uri(base.scheme, base.authority, path.posix.join(base.path, ...segments), base.query, base.fragment);
+    }
+    with(change: Partial<Uri>): Uri {
+        return new Uri(change.scheme ?? this.scheme, change.authority ?? this.authority, change.path ?? this.path, change.query ?? this.query, change.fragment ?? this.fragment);
+    }
     toString(): string {
         return `${this.scheme}://${this.path}`;
     }
@@ -40,6 +47,8 @@ export class Uri {
 export class MockTextDocument {
     readonly uri: Uri;
     readonly languageId: string;
+    version = 1;
+    get eol(): EndOfLine { return this._text.includes("\r\n") ? EndOfLine.CRLF : EndOfLine.LF; }
     private _text: string;
     private _lines: string[];
 
@@ -54,20 +63,21 @@ export class MockTextDocument {
         return this.uri.fsPath;
     }
 
-    getText(): string {
-        return this._text;
+    getText(range?: Range): string {
+        return range ? this._text.slice(this.offsetAt(range.start), this.offsetAt(range.end)) : this._text;
     }
+    setText(text: string): void { this._text = text; this._lines = text.split('\n'); this.version++; }
 
     get lineCount(): number {
         return this._lines.length;
     }
 
-    lineAt(lineOrPosition: number | { line: number }): { text: string; lineNumber: number } {
+    lineAt(lineOrPosition: number | { line: number }) {
         const lineIndex = typeof lineOrPosition === 'number' ? lineOrPosition : lineOrPosition.line;
-        return {
-            text: this._lines[lineIndex] || '',
-            lineNumber: lineIndex
-        };
+        if (lineIndex < 0 || lineIndex >= this._lines.length) { throw new RangeError('Illegal line number'); }
+        const text = this._lines[lineIndex].replace(/\r$/, '');
+        return { text, lineNumber: lineIndex, range: new Range(new Position(lineIndex, 0), new Position(lineIndex, text.length)) };
+
     }
 
     positionAt(offset: number): { line: number; character: number } {
@@ -134,6 +144,7 @@ class MockStatusBarItem {
 
 // @group TestMocks > VSCode > Window : Mock window namespace with output channel creation
 export const window = {
+    activeTextEditor: undefined as any,
     createOutputChannel(name: string): MockOutputChannel {
         return new MockOutputChannel(name);
     },
@@ -149,19 +160,25 @@ export const window = {
 
 // @group TestMocks > VSCode > Workspace : Mock workspace namespace
 export const workspace = {
-    workspaceFolders: [],
+    workspaceFolders: [] as Array<{ uri: Uri; name: string; index: number }>,
+    getWorkspaceFolder(uri: Uri) {
+        return this.workspaceFolders.filter(folder => uri.path.startsWith(folder.uri.path + '/')).sort((a, b) => b.uri.path.length - a.uri.path.length)[0];
+    },
+    applyEdit: async (_edit: WorkspaceEdit): Promise<boolean> => true,
+
     getConfiguration: (_section?: string) => ({
         get: (_key: string, defaultValue?: any) => defaultValue,
         update: () => Promise.resolve(),
         has: () => false,
         inspect: () => undefined,
     }),
-    findFiles: () => Promise.resolve([]),
+    findFiles: (..._args: any[]): Promise<Uri[]> => Promise.resolve([]),
     openTextDocument: (uri: any) => Promise.resolve(new MockTextDocument('', 'plaintext', uri?.fsPath || '')),
     onDidSaveTextDocument: () => ({ dispose: () => {} }),
     onDidChangeTextDocument: () => ({ dispose: () => {} }),
     fs: {
-        readFile: () => Promise.resolve(Buffer.from('')),
+        stat: async (_uri: Uri) => ({type: FileType.File, size: 1}),
+        readFile: (_uri: Uri): Promise<Uint8Array> => Promise.resolve(Buffer.from('')),
         writeFile: () => Promise.resolve(),
     },
 };
@@ -232,6 +249,7 @@ export class ThemeIcon {
 
 export class Position {
     constructor(public readonly line: number, public readonly character: number) {}
+    translate(lineDelta = 0, characterDelta = 0): Position { return new Position(this.line + lineDelta, this.character + characterDelta); }
 }
 
 export class Range {
@@ -250,6 +268,7 @@ export class Location {
 
 // @group TestMocks > VSCode > LM : Mock language model namespace
 export const lm = {
+    selectChatModels: async (): Promise<any[]> => [],
     registerTool: () => ({ dispose: () => {} }),
 };
 
@@ -372,16 +391,6 @@ export class TextEdit {
     }
 }
 
-export class WorkspaceEdit {
-    private _edits: any[] = [];
-    insert(uri: Uri, position: Position, newText: string): void {
-        this._edits.push({ uri, position, newText });
-    }
-    replace(uri: Uri, range: Range, newText: string): void {
-        this._edits.push({ uri, range, newText });
-    }
-}
-
 export class SnippetString {
     value: string;
     constructor(value?: string) {
@@ -394,3 +403,17 @@ export enum ProgressLocation {
     Window = 10,
     Notification = 15,
 }
+
+export enum EndOfLine { LF = 1, CRLF = 2 }
+export enum FileType { Unknown = 0, File = 1, Directory = 2, SymbolicLink = 64 }
+export class CancellationError extends Error { constructor() { super('Cancelled'); this.name = 'Canceled'; } }
+export class FileSystemError extends Error { constructor(public code: string) { super(code); } }
+export class RelativePattern { constructor(public baseUri: any, public pattern: string) {} }
+export class WorkspaceEdit {
+    readonly changes: Array<{uri: Uri; range: Range; text: string}> = [];
+    replace(uri: Uri, range: Range, text: string): void { this.changes.push({uri, range, text}); }
+    insert(uri: Uri, position: Position, text: string): void { this.replace(uri, new Range(position, position), text); }
+}
+export class LanguageModelTextPart { constructor(public value: string) {} }
+export class LanguageModelToolResult { constructor(public content: LanguageModelTextPart[]) {} }
+export class LanguageModelChatMessage { static User(content: string) { return {content}; } }

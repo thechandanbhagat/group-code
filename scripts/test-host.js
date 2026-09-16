@@ -26,7 +26,12 @@ async function testHost() {
     throw error;
   } finally {
     // VS Code can keep a log handle briefly after its test process exits on Windows.
-    fs.rmSync(temporary, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    try {
+      fs.rmSync(temporary, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    } catch (error) {
+      // A temporary-directory cleanup failure must not mask a completed test result.
+      console.warn('Could not immediately remove temporary VS Code test files:', error);
+    }
   }
 }
 testHost().catch(error => { console.error(error); process.exitCode = 1; });

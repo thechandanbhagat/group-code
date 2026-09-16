@@ -52,8 +52,11 @@ export class CodeGroupProvider implements vscode.Disposable {
         this.updateStatusBar();
         if (!this.disposed) { this.onDidUpdateGroupsEventEmitter.fire(); }
     }
-    private rootFor(file: string): vscode.WorkspaceFolder | undefined {
-        return vscode.workspace.getWorkspaceFolder(vscode.Uri.file(file));
+    private rootFor(file: string | vscode.Uri): vscode.WorkspaceFolder | undefined {
+        // Keep a document URI intact when it came from VS Code. Rebuilding it from
+        // fsPath can lose the canonical workspace identity on paths behind a
+        // symlink (macOS /var -> /private/var) or a Windows 8.3 path.
+        return vscode.workspace.getWorkspaceFolder(typeof file === 'string' ? vscode.Uri.file(file) : file);
     }
     private belongsToWorkspaceRoot(file: string, folder: string): boolean {
         // getWorkspaceFolders normalizes separators, while Uri.fsPath preserves the
@@ -91,7 +94,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         const document = vscode.window.activeTextEditor?.document;
         if (!document) { return; }
         await this.processFileOnSave(document);
-        const root = this.rootFor(document.uri.fsPath);
+        const root = this.rootFor(document.uri);
         if (root && (await loadGroupCodeSettings(root.uri.fsPath)).showNotifications) {
             vscode.window.showInformationMessage(`Found ${(this.documents.get(document.uri.fsPath) || []).length} groups in ${getFileName(document.uri.fsPath)}`);
         }
@@ -100,7 +103,7 @@ export class CodeGroupProvider implements vscode.Disposable {
     async processFileOnSave(document: vscode.TextDocument): Promise<void> {
         if (this.disposed) { return; }
         const file = document.uri.fsPath;
-        const root = this.rootFor(file);
+        const root = this.rootFor(document.uri);
         if (!root || !isSupportedFileType(getFileType(file))) { return; }
         const revision = ++this.revision;
         this.revisions.set(file, revision);

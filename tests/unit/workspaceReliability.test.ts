@@ -129,6 +129,19 @@ describe('Workspace reliability (GC-007–012/017/019)', () => {
             workspace.asRelativePath = asRelativePath;
         }
     });
+    it('processes documents using VS Code canonical workspace identity', async () => {
+        const uri = await write('canonical/seed.js', '// @group canonical: uri');
+        const document = new MockTextDocument('// @group canonical: uri', 'javascript', uri.fsPath);
+        const folder = workspace.workspaceFolders[0];
+        const getWorkspaceFolder = workspace.getWorkspaceFolder;
+        workspace.getWorkspaceFolder = ((candidate: Uri) => candidate === document.uri ? folder : undefined) as any;
+        try {
+            await provider.processFileOnSave(document as any);
+            assert.deepStrictEqual(provider.getFunctionalities(), ['canonical']);
+        } finally {
+            workspace.getWorkspaceFolder = getWorkspaceFolder;
+        }
+    });
     it('preserves workspace settings and other metadata on full rescan', async () => {
         const settings = '{"preferredModel":"custom","autoScan":true}';
         await write('.groupcode/settings.json', settings);

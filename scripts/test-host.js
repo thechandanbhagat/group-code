@@ -8,6 +8,13 @@ async function testHost() {
   const workspace = path.join(temporary, 'workspace');
   fs.mkdirSync(workspace);
   fs.writeFileSync(path.join(workspace, 'seed.js'), '// @group initial: startup\nfunction start() {}\n');
+  for (const [filename, contents] of [
+    ['data.sql', '-- @group sql: queries'], ['config.yaml', '# @group yaml: settings'],
+    ['run.ps1', '# @group powershell: script'], ['page.html', '<!-- @group html: markup -->'],
+    ['Dockerfile', '# @group docker: build'],
+  ]) {
+    fs.writeFileSync(path.join(workspace, filename), contents);
+  }
   try {
     await runTests({
       version: process.env.VSCODE_VERSION || '1.99.1',

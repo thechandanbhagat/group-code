@@ -16,13 +16,6 @@ export async function run(): Promise<void> {
     for (const name of ['groupCode.quickAddGroup', 'groupCode.removeAllGroups', 'groupCode.renameGroup', 'groupCode.rescanWorkspace']) {
         assert.ok(commands.includes(name), `Missing command ${name}`);
     }
-    const until = async (stage: string, condition: () => boolean) => {
-        const deadline = Date.now() + 8000;
-        while (!condition()) {
-            assert.ok(Date.now() < deadline, `${stage}: file event did not reach the index; groups=${provider.getFunctionalities().join(',')}`);
-            await new Promise(resolve => setTimeout(resolve, 40));
-        }
-    };
     const retry = async <T>(operation: () => Thenable<T>, stage: string): Promise<T> => {
         let error: unknown;
         for (let attempt = 0; attempt < 10; attempt++) {
@@ -41,17 +34,8 @@ export async function run(): Promise<void> {
         () => vscode.workspace.fs.delete(uri), `delete ${uri.fsPath}`);
     const indexFile = async (uri: vscode.Uri) => provider.processFileOnSave(await vscode.workspace.openTextDocument(uri));
     const root = vscode.workspace.workspaceFolders![0].uri;
-    for (const [filename, comment] of [
-        ['data.sql', '-- @group sql: queries'], ['config.yaml', '# @group yaml: settings'],
-        ['run.ps1', '# @group powershell: script'], ['page.html', '<!-- @group html: markup -->'],
-        ['Dockerfile', '# @group docker: build'],
-    ]) {
-        const uri = vscode.Uri.joinPath(root, filename);
-        await writeFile(uri, comment);
-        await indexFile(uri);
-    }
     for (const name of ['sql', 'yaml', 'powershell', 'html', 'docker']) {
-        await until(`Packaged parser must support ${name}`, () => provider.getFunctionalities().includes(name));
+        assert.ok(provider.getFunctionalities().includes(name), `Packaged parser must support ${name}`);
     }
     const watched = vscode.Uri.joinPath(root, 'lifecycle.js');
     await writeFile(watched, '// @group watched: created\nfunction watched() {}');

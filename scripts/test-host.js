@@ -24,6 +24,9 @@ async function testHost() {
       console.error('Extension-host logs: ' + logs);
     }
     throw error;
-  } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
+  } finally {
+    // VS Code can keep a log handle briefly after its test process exits on Windows.
+    fs.rmSync(temporary, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  }
 }
 testHost().catch(error => { console.error(error); process.exitCode = 1; });

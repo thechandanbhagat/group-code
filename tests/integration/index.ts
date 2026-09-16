@@ -16,6 +16,13 @@ export async function run(): Promise<void> {
     for (const name of ['groupCode.quickAddGroup', 'groupCode.removeAllGroups', 'groupCode.renameGroup', 'groupCode.rescanWorkspace']) {
         assert.ok(commands.includes(name), `Missing command ${name}`);
     }
+    const until = async (stage: string, condition: () => boolean) => {
+        const deadline = Date.now() + 8000;
+        while (!condition()) {
+            assert.ok(Date.now() < deadline, `${stage}: file event did not reach the index; groups=${provider.getFunctionalities().join(',')}`);
+            await new Promise(resolve => setTimeout(resolve, 40));
+        }
+    };
     const root = vscode.workspace.workspaceFolders![0].uri;
     for (const [filename, comment] of [
         ['data.sql', '-- @group sql: queries'], ['config.yaml', '# @group yaml: settings'],
@@ -27,15 +34,8 @@ export async function run(): Promise<void> {
         await provider.processFileOnSave(await vscode.workspace.openTextDocument(uri));
     }
     for (const name of ['sql', 'yaml', 'powershell', 'html', 'docker']) {
-        assert.ok(provider.getFunctionalities().includes(name), `Packaged parser must support ${name}`);
+        await until(`Packaged parser must support ${name}`, () => provider.getFunctionalities().includes(name));
     }
-    const until = async (stage: string, condition: () => boolean) => {
-        const deadline = Date.now() + 8000;
-        while (!condition()) {
-            assert.ok(Date.now() < deadline, `${stage}: file event did not reach the index; groups=${provider.getFunctionalities().join(',')}`);
-            await new Promise(resolve => setTimeout(resolve, 40));
-        }
-    };
     const watched = vscode.Uri.joinPath(root, 'lifecycle.js');
     await vscode.workspace.fs.writeFile(watched, Buffer.from('// @group watched: created\nfunction watched() {}'));
     await until('create', () => provider.getFunctionalities().includes('watched'));

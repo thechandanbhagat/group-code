@@ -47,12 +47,10 @@ export async function run(): Promise<void> {
     ]) {
         const uri = vscode.Uri.joinPath(root, filename);
         await writeFile(uri, comment);
+        await provider.processFileOnSave(await vscode.workspace.openTextDocument(uri));
     }
-    // A complete scan avoids coupling parser coverage to filesystem-watcher
-    // scheduling, which varies across the three host platforms.
-    await provider.processWorkspace();
     for (const name of ['sql', 'yaml', 'powershell', 'html', 'docker']) {
-        assert.ok(provider.getFunctionalities().includes(name), `Packaged parser must support ${name}`);
+        await until(`Packaged parser must support ${name}`, () => provider.getFunctionalities().includes(name));
     }
     const watched = vscode.Uri.joinPath(root, 'lifecycle.js');
     await writeFile(watched, '// @group watched: created\nfunction watched() {}');

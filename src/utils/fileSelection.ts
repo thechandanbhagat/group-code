@@ -8,8 +8,21 @@ const defaults = ['dist/', 'build/', '.next/', 'out/', 'coverage/', 'venv/', '.v
 
 export function relativeUriPath(root: vscode.Uri, file: vscode.Uri): string | undefined {
     if (root.scheme !== file.scheme || root.authority !== file.authority) { return undefined; }
-    const prefix = root.path.replace(/\/$/, '') + '/';
-    return file.path.startsWith(prefix) ? file.path.slice(prefix.length) : undefined;
+    const workspaceFolders = vscode.workspace.workspaceFolders || [];
+    const rootFolder = vscode.workspace.getWorkspaceFolder(root)
+        || workspaceFolders.find(folder => folder.uri.toString() === root.toString());
+    const fileFolder = vscode.workspace.getWorkspaceFolder(file);
+    if (rootFolder && fileFolder?.index === rootFolder.index) {
+        // VS Code resolves Windows workspace resources to their canonical path. Use
+        // its workspace mapping instead of a raw URI prefix, which can differ for
+        // case, symlinks, or 8.3 paths such as RUNNER~1 in CI.
+        return vscode.workspace.asRelativePath(file, false).replace(/\\/g, '/');
+    }
+    const normalize = (value: string) => root.scheme === 'file' && process.platform === 'win32' ? value.toLowerCase() : value;
+    const rootPath = normalize(root.path).replace(/\/$/, '');
+    const filePath = normalize(file.path);
+    const prefix = rootPath + '/';
+    return filePath.startsWith(prefix) ? file.path.slice(prefix.length) : undefined;
 }
 
 /** One policy instance per scan/update; nested ignore files are read at most once. */

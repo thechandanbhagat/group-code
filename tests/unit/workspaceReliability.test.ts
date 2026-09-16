@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { CodeGroupProvider } from '../../src/codeGroupProvider';
-import { FileSelection } from '../../src/utils/fileSelection';
+import { FileSelection, relativeUriPath } from '../../src/utils/fileSelection';
 import { configureStorage, defaultSettings, loadGroupCodeSettings, normalizeSettings, saveGroupCodeSettings, getSearchLimit } from '../../src/utils/fileUtils';
 import { SnapshotWriter } from '../../src/utils/snapshotWriter';
 import { DocumentScheduler } from '../../src/utils/documentScheduler';
@@ -114,6 +114,20 @@ describe('Workspace reliability (GC-007–012/017/019)', () => {
         const folder = workspace.workspaceFolders[0];
         Object.defineProperty(folder.uri, 'fsPath', {value: root.replace(/\//g, '\\')});
         assert.strictEqual((provider as any).belongsToWorkspaceRoot(path.join(root, 'a.js'), root), true);
+    });
+    it('uses VS Code workspace identity for canonicalized file URIs', () => {
+        const folder = workspace.workspaceFolders[0];
+        const canonicalFile = Uri.file(path.join(base, 'canonical', 'seed.js'));
+        const getWorkspaceFolder = workspace.getWorkspaceFolder;
+        const asRelativePath = workspace.asRelativePath;
+        workspace.getWorkspaceFolder = uri => uri === canonicalFile ? folder : getWorkspaceFolder.call(workspace, uri);
+        workspace.asRelativePath = uri => uri === canonicalFile ? 'seed.js' : asRelativePath.call(workspace, uri);
+        try {
+            assert.strictEqual(relativeUriPath(folder.uri as any, canonicalFile as any), 'seed.js');
+        } finally {
+            workspace.getWorkspaceFolder = getWorkspaceFolder;
+            workspace.asRelativePath = asRelativePath;
+        }
     });
     it('preserves workspace settings and other metadata on full rescan', async () => {
         const settings = '{"preferredModel":"custom","autoScan":true}';

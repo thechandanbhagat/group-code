@@ -164,6 +164,12 @@ export const workspace = {
     getWorkspaceFolder(uri: Uri) {
         return this.workspaceFolders.filter(folder => uri.path.startsWith(folder.uri.path + '/')).sort((a, b) => b.uri.path.length - a.uri.path.length)[0];
     },
+    asRelativePath(uri: Uri, includeWorkspaceFolder = false) {
+        const folder = this.getWorkspaceFolder(uri);
+        if (!folder) { return uri.fsPath; }
+        const relative = uri.path.slice(folder.uri.path.replace(/\/$/, '').length + 1);
+        return includeWorkspaceFolder ? `${folder.name}/${relative}` : relative;
+    },
     applyEdit: async (_edit: WorkspaceEdit): Promise<boolean> => true,
 
     getConfiguration: (_section?: string) => ({

@@ -55,6 +55,11 @@ export class CodeGroupProvider implements vscode.Disposable {
     private rootFor(file: string): vscode.WorkspaceFolder | undefined {
         return vscode.workspace.getWorkspaceFolder(vscode.Uri.file(file));
     }
+    private belongsToWorkspaceRoot(file: string, folder: string): boolean {
+        // getWorkspaceFolders normalizes separators, while Uri.fsPath preserves the
+        // platform form. Compare URI identities so Windows paths are not excluded.
+        return this.rootFor(file)?.uri.toString() === vscode.Uri.file(folder).toString();
+    }
     private async loadFavorites(): Promise<void> {
         this.favorites.clear();
         for (const root of getWorkspaceFolders()) {
@@ -200,7 +205,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                 writer = new SnapshotWriter(async () => {
                     const snapshot = new Map<string, CodeGroup[]>();
                     for (const [file, groups] of this.documents) {
-                        if (this.rootFor(file)?.uri.fsPath !== folder) { continue; }
+                        if (!this.belongsToWorkspaceRoot(file, folder)) { continue; }
                         const type = getFileType(file);
                         snapshot.set(type, [...(snapshot.get(type) || []), ...groups.map(group => ({...group, lineNumbers: [...group.lineNumbers]}))]);
                     }
@@ -407,7 +412,7 @@ export class CodeGroupProvider implements vscode.Disposable {
             const favorites = new Map<string, boolean>();
             for (const key of this.favorites) {
                 const file = key.slice(0, key.lastIndexOf('::'));
-                if (this.rootFor(file)?.uri.fsPath === root) { favorites.set(key, true); }
+                if (this.belongsToWorkspaceRoot(file, root)) { favorites.set(key, true); }
             }
             await saveUserFavorites(root, favorites);
         }

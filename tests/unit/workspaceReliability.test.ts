@@ -110,6 +110,11 @@ describe('Workspace reliability (GC-007–012/017/019)', () => {
         assert.strictEqual(a.js.length, 1); assert.strictEqual(b.js.length, 1);
         assert.strictEqual(a.js[0].functionality, 'first'); assert.strictEqual(b.js[0].functionality, 'second');
     });
+    it('matches normalized workspace paths to Windows-style filesystem paths', () => {
+        const folder = workspace.workspaceFolders[0];
+        Object.defineProperty(folder.uri, 'fsPath', {value: root.replace(/\//g, '\\')});
+        assert.strictEqual((provider as any).belongsToWorkspaceRoot(path.join(root, 'a.js'), root), true);
+    });
     it('preserves workspace settings and other metadata on full rescan', async () => {
         const settings = '{"preferredModel":"custom","autoScan":true}';
         await write('.groupcode/settings.json', settings);

@@ -23,6 +23,22 @@ export async function run(): Promise<void> {
             await new Promise(resolve => setTimeout(resolve, 40));
         }
     };
+    const retry = async <T>(operation: () => Thenable<T>, stage: string): Promise<T> => {
+        let error: unknown;
+        for (let attempt = 0; attempt < 10; attempt++) {
+            try { return await operation(); }
+            catch (caught) {
+                error = caught;
+                if (!/EBUSY|EPERM/.test(String((caught as {code?: string}).code || caught)) || attempt === 9) { throw caught; }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        throw new Error(`${stage}: ${String(error)}`);
+    };
+    const writeFile = (uri: vscode.Uri, contents: string) => retry(
+        () => vscode.workspace.fs.writeFile(uri, Buffer.from(contents)), `write ${uri.fsPath}`);
+    const deleteFile = (uri: vscode.Uri) => retry(
+        () => vscode.workspace.fs.delete(uri), `delete ${uri.fsPath}`);
     const root = vscode.workspace.workspaceFolders![0].uri;
     for (const [filename, comment] of [
         ['data.sql', '-- @group sql: queries'], ['config.yaml', '# @group yaml: settings'],
@@ -30,22 +46,25 @@ export async function run(): Promise<void> {
         ['Dockerfile', '# @group docker: build'],
     ]) {
         const uri = vscode.Uri.joinPath(root, filename);
-        await vscode.workspace.fs.writeFile(uri, Buffer.from(comment));
-        await provider.processFileOnSave(await vscode.workspace.openTextDocument(uri));
+        await writeFile(uri, comment);
     }
+    // A complete scan avoids coupling parser coverage to filesystem-watcher
+    // scheduling, which varies across the three host platforms.
+    await provider.processWorkspace();
     for (const name of ['sql', 'yaml', 'powershell', 'html', 'docker']) {
-        await until(`Packaged parser must support ${name}`, () => provider.getFunctionalities().includes(name));
+        assert.ok(provider.getFunctionalities().includes(name), `Packaged parser must support ${name}`);
     }
     const watched = vscode.Uri.joinPath(root, 'lifecycle.js');
-    await vscode.workspace.fs.writeFile(watched, Buffer.from('// @group watched: created\nfunction watched() {}'));
+    await writeFile(watched, '// @group watched: created\nfunction watched() {}');
     await until('create', () => provider.getFunctionalities().includes('watched'));
     const liveDocument = await vscode.workspace.openTextDocument(watched);
     await removeAnnotations(liveDocument);
     await until('live removal', () => !provider.getFunctionalities().includes('watched'));
     assert.ok(await liveDocument.save());
-    await vscode.workspace.fs.writeFile(watched, Buffer.from('// @group deleted: remove\nfunction watched() {}'));
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    await writeFile(watched, '// @group deleted: remove\nfunction watched() {}');
     await until('external change', () => provider.getFunctionalities().includes('deleted'));
-    await vscode.workspace.fs.delete(watched);
+    await deleteFile(watched);
     await until('delete', () => !provider.getFunctionalities().includes('deleted'));
     const css = vscode.Uri.joinPath(root, 'style.css');
     await vscode.workspace.fs.writeFile(css, Buffer.from('  body { color: red; }\r\n'));

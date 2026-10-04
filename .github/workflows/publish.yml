@@ -1,0 +1,207 @@
+name: Publish extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version in package.json to publish (for example, 1.9.1)
+        required: true
+        type: string
+      registry:
+        description: Publish to both registries or retry only one
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - marketplace
+          - open-vsx
+      dry_run:
+        description: Test and package only; do not publish
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+# Do not interrupt an upload or publish the same version concurrently.
+concurrency:
+  group: groupcode-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Test and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Require the release branch
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main || "$GITHUB_REPOSITORY" != thechandanbhagat/group-code ]]; then
+            echo '::error::Run this workflow from main in thechandanbhagat/group-code.'
+            exit 1
+          fi
+
+      - name: Checkout release source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Validate release identity and version
+        id: release
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const manifest = require('./package.json');
+          const lock = require('./package-lock.json');
+          const version = process.env.REQUESTED_VERSION;
+          assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, 'Use a stable version, for example 1.9.1');
+          assert.equal(manifest.version, version, 'Requested version must match package.json');
+          assert.equal(lock.version, version, 'Lockfile version must match');
+          assert.equal(lock.packages[''].version, version, 'Root lockfile package version must match');
+          assert.equal(manifest.publisher, 'thechandanbhagat');
+          assert.equal(manifest.name, 'groupcode');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          NODE
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and run unit regressions
+        run: npm test -- --reporter spec
+
+      - name: Build and verify the VSIX
+        run: npm run test:package
+
+      - name: Compile extension-host tests
+        run: npx --no-install tsc -p tests/tsconfig.integration.json
+
+      - name: Test the packaged extension in minimum and current VS Code
+        env:
+          GROUPCODE_PACKAGE_PATH: artifacts/package
+        run: |
+          xvfb-run -a node scripts/test-host.js
+          VSCODE_VERSION=stable xvfb-run -a node scripts/test-host.js
+
+      - name: Prepare the tested release artifact
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        working-directory: artifacts
+        run: |
+          cp groupcode-review.vsix "groupcode-${VERSION}.vsix"
+          sha256sum "groupcode-${VERSION}.vsix" > "groupcode-${VERSION}.vsix.sha256"
+          echo "Tested version ${VERSION}; dry run: ${{ inputs.dry_run }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the tested VSIX and checksum
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: groupcode-${{ steps.release.outputs.version }}
+          path: |
+            artifacts/groupcode-${{ steps.release.outputs.version }}.vsix
+            artifacts/groupcode-${{ steps.release.outputs.version }}.vsix.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  marketplace:
+    name: Publish to VS Code Marketplace
+    needs: build
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'thechandanbhagat/group-code' &&
+      (inputs.registry == 'both' || inputs.registry == 'marketplace')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install the locked publishing tool without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts
+          ./node_modules/.bin/vsce --version
+
+      - name: Download the tested VSIX
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: groupcode-${{ needs.build.outputs.version }}
+          path: artifacts
+
+      - name: Verify the artifact checksum
+        working-directory: artifacts
+        run: sha256sum --check "groupcode-${VERSION}.vsix.sha256"
+
+      - name: Publish the tested VSIX
+        if: ${{ !inputs.dry_run }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [[ -z "$VSCE_PAT" ]]; then
+            echo '::error::Add the VSCE_PAT repository Actions secret before publishing.'
+            exit 1
+          fi
+          ./node_modules/.bin/vsce publish --packagePath "artifacts/groupcode-${VERSION}.vsix"
+
+  open-vsx:
+    name: Publish to Open VSX
+    needs: build
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'thechandanbhagat/group-code' &&
+      (inputs.registry == 'both' || inputs.registry == 'open-vsx')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Install the pinned publishing tool without lifecycle scripts
+        run: |
+          npm install --global --ignore-scripts ovsx@1.2.0
+          ovsx --version
+
+      - name: Download the tested VSIX
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: groupcode-${{ needs.build.outputs.version }}
+          path: artifacts
+
+      - name: Verify the artifact checksum
+        working-directory: artifacts
+        run: sha256sum --check "groupcode-${VERSION}.vsix.sha256"
+
+      - name: Publish the tested VSIX
+        if: ${{ !inputs.dry_run }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [[ -z "$OVSX_PAT" ]]; then
+            echo '::error::Add the OVSX_PAT repository Actions secret before publishing.'
+            exit 1
+          fi
+          ovsx publish "artifacts/groupcode-${VERSION}.vsix"

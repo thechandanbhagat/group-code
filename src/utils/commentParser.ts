@@ -7,14 +7,19 @@ export { LanguageConfig, LanguageInfo } from './languageRegistry';
 export function getLanguageConfig() { return languageConfig; }
 
 export function parseLanguageSpecificComments(document: vscode.TextDocument): CodeGroup[] {
-    const text = document.getText();
-    const language = getLanguage(document.languageId, document.uri.fsPath);
+    return parseSourceComments(document.getText(), document.languageId, document.uri.fsPath);
+}
+
+/** Parse without opening a VS Code document (and activating its language features). */
+export function parseSourceComments(text: string, languageId: string, filename: string): CodeGroup[] {
+    if (!/@group\b/i.test(text)) { return []; }
+    const language = getLanguage(languageId, filename);
     if (!language) { return []; }
     const lines = text.split('\n');
-    return parseAnnotations(text, document.languageId, document.uri.fsPath).map(annotation => {
+    return parseAnnotations(text, languageId, filename).map(annotation => {
         const group: CodeGroup = {
             functionality: annotation.name, description: annotation.description,
-            filePath: document.uri.fsPath, lineNumbers: [annotation.line],
+            filePath: filename, lineNumbers: [annotation.line],
         };
         if (annotation.standalone) { captureCodeBlock(group, lines, annotation.line - 1, language); }
         return enrichWithHierarchy(group);
@@ -102,4 +107,3 @@ function getIndentation(line: string): number {
     const match = line.match(/^(\s*)/);
     return match ? match[1].length : 0;
 }
-

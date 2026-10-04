@@ -15,6 +15,17 @@ export interface Annotation {
 }
 interface Comment { start: number; end: number; contentStart: number; contentEnd: number; }
 
+function canStartRegex(text: string, offset: number): boolean {
+    let previous = offset - 1;
+    while (previous >= 0 && /\s/.test(text[previous])) { previous--; }
+    if (previous < 0 || '=(:,!&|?;{}['.includes(text[previous])) { return true; }
+    for (const keyword of ['return', 'case']) {
+        const start = previous + 1 - keyword.length;
+        if (start >= 0 && text.startsWith(keyword, start) && (start === 0 || !/\w/.test(text[start - 1]))) { return true; }
+    }
+    return false;
+}
+
 /** Lexical comment spans. Quoted strings are never treated as annotation sources. */
 function comments(text: string, language: LanguageInfo, base = 0): Comment[] {
     const result: Comment[] = [];
@@ -106,7 +117,7 @@ function comments(text: string, language: LanguageInfo, base = 0): Comment[] {
         }
         // JavaScript regex literals can themselves contain slashes and quote characters.
         if (quote === '/' && language.name === 'JavaScript/TypeScript' &&
-            /(?:^|[=(:,!&|?;{}\[]|\breturn|\bcase)\s*$/.test(text.slice(0, i))) {
+            canStartRegex(text, i)) {
             i++;
             let characterClass = false;
             while (i < text.length && text[i] !== '\n') {
@@ -126,6 +137,8 @@ export function parseAnnotations(text: string, languageId: string, filename = ''
     const language = getLanguage(languageId, filename);
     if (!language) { return []; }
     const found: Annotation[] = [];
+    let line = 1;
+    let lineOffset = 0;
     for (const comment of comments(text, language)) {
         const content = text.slice(comment.contentStart, comment.contentEnd);
         const pattern = /@group[ \t]+([^:\r\n]+?)(?:[ \t]*:[ \t]*([^\r\n]*))?(?=\r?$|\n)/gim;
@@ -140,9 +153,16 @@ export function parseAnnotations(text: string, languageId: string, filename = ''
             const lineEnd = lineEndIndex < 0 ? text.length : lineEndIndex;
             const standalone = !text.slice(lineStart, comment.start).trim() &&
                 !text.slice(comment.end, lineEnd).trim();
+            // Annotation spans are ordered. Count each newline once instead of
+            // allocating and splitting the entire prefix for every annotation.
+            let newline: number;
+            while ((newline = text.indexOf('\n', lineOffset)) >= 0 && newline < start) {
+                line++;
+                lineOffset = newline + 1;
+            }
             found.push({ name: normalizeGroupName(rawName), description: (match[2] || '').trim(),
                 start, end: start + match[0].length, nameStart, nameEnd: nameStart + rawName.length,
-                commentStart: comment.start, commentEnd: comment.end, line: text.slice(0, start).split('\n').length,
+                commentStart: comment.start, commentEnd: comment.end, line,
                 standalone });
         }
     }

@@ -68,14 +68,17 @@ describe('Workspace reliability (GC-007–012/017/019)', () => {
     });
     it('keeps a newer incremental edit when an older scan finishes', async () => {
         const uri = await write('a.js', '// @group old: before');
-        let release!: (doc: MockTextDocument) => void;
+        let release!: (text: Uint8Array) => void;
         let started!: () => void;
         const opened = new Promise<void>(resolve => { started = resolve; });
-        workspace.openTextDocument = async () => { started(); return new Promise(resolve => { release = resolve; }); };
+        workspace.fs.readFile = async file => {
+            if (file.fsPath !== uri.fsPath) { return original.read(file); }
+            started(); return new Promise(resolve => { release = resolve; });
+        };
         const scan = provider.processWorkspace();
         await opened;
         await provider.processFileOnSave(new MockTextDocument('// @group new: after', 'javascript', uri.fsPath) as any);
-        release(new MockTextDocument('// @group old: before', 'javascript', uri.fsPath));
+        release(Buffer.from('// @group old: before'));
         await scan;
         assert.deepStrictEqual(provider.getFunctionalities(), ['new']);
     });

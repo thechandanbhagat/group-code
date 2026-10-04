@@ -10,6 +10,7 @@ import { generatePlan, applyGeneration } from './aiGeneration';
 import { checkCancellation } from './aiModels';
 import { parseAnnotations } from './annotations';
 import { chatCommand } from './chatRouting';
+import { scanProgressMessage } from './workspaceScanner';
 
 /**
  * GitHub Copilot Chat Participant for Code Grouping Extension
@@ -87,8 +88,13 @@ export class GroupCodeChatParticipant {
             // Scan entire workspace
             stream.progress('Scanning entire workspace for code groups...');
             
-            await this.codeGroupProvider.processWorkspace(token);
+            const result = await this.codeGroupProvider.processWorkspace(token, undefined,
+                update => stream.progress(scanProgressMessage(update)));
             checkCancellation(token);
+            if (result.status === 'cancelled') {
+                stream.markdown('The scan was superseded or cancelled. Previous results remain available.\n');
+                return {};
+            }
             this.treeProvider.refresh();
             
             const allGroups = this.codeGroupProvider.getAllGroups();
@@ -425,8 +431,13 @@ export class GroupCodeChatParticipant {
     ): Promise<vscode.ChatResult> {
         stream.progress('Refreshing all code groups...');
         
-        await this.codeGroupProvider.processWorkspace(token);
-            checkCancellation(token);
+        const result = await this.codeGroupProvider.processWorkspace(token, undefined,
+            update => stream.progress(scanProgressMessage(update)));
+        checkCancellation(token);
+        if (result.status === 'cancelled') {
+            stream.markdown('The refresh was superseded or cancelled. Previous results remain available.\n');
+            return {};
+        }
         this.treeProvider.refresh();
         
         const allGroups = this.codeGroupProvider.getAllGroups();

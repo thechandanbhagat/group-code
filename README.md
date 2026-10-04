@@ -358,7 +358,9 @@ Each language uses its native comment syntax to define code groups.
 - Ensure comments follow the exact pattern: `@group GroupName: Description` (with colon)
 - For inline comments, make sure there's a space after the comment marker
 - Check the Output panel (View → Output → Group Code) for detailed logs
-- For large workspaces, the initial scan may take a moment to complete
+- Large workspace scans process up to eight files concurrently and yield between files to keep the extension host responsive. Healthy scans can run beyond 30 seconds; Refresh and Rescan show progress and can be cancelled.
+- Ordinary UTF-8 sources are read without opening editor documents. Open buffers and non-UTF-8/encoding-detection settings use VS Code's document contents. Files without an annotation marker skip lexical parsing.
+- Repeated scans reuse parsed results when the exact source content matches, including files with no annotations. Content is still read and ignore/size rules are rechecked, so same-size edits and policy changes are detected. This cache lasts for the current extension session; completed work can be reused after cancellation while the previous index stays available.
 
 ### AI Feature Issues
 
@@ -418,6 +420,10 @@ npm run test:integration
 ```
 
 The package check creates `artifacts/groupcode-review.vsix` and extracts it to `artifacts/package`. Set `GROUPCODE_PACKAGE_PATH=artifacts/package` to run host tests against that extracted package. Host tests use a disposable workspace and VS Code profile; they default to VS Code 1.99.1. `VSCODE_VERSION=stable` selects the current stable host, or `VSCODE_EXECUTABLE_PATH` can point at a local VS Code executable.
+
+`npm run benchmark:scan` compares the working scanner with the previous scanner at commit `6cbab00` using 10,000 synthetic source files and 4ms source-I/O latency. Set `GROUPCODE_BENCHMARK_BASE_REF` to compare another commit; `GROUPCODE_BENCHMARK_FILES` and `GROUPCODE_BENCHMARK_IO_MS` customize the fixture. The benchmark checks complete results and reports time, source reads, editor-document opens, maximum source-I/O concurrency, and cache reuse. It uses mocked editor/filesystem APIs and does not write an index; it is not a real-repository or remote-host benchmark.
+
+In a local run of that fixture, the previous scanner stopped after 30.0s with 6,411 documents opened and no committed groups. The new scanner completed all 10,000 files in 6.0s, opened no documents, and indexed all 200 groups. A repeat completed in 5.9s and reused all 10,000 parse results. These timings demonstrate the controlled fixture, not a guaranteed time for every repository.
 
 `npm run watch` updates the bundled development entry; `npm test` performs production typechecking and unit regressions. CI additionally checks the package and real extension-host behavior. Live model requests are not required by the automated suite.
 

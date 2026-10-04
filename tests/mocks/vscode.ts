@@ -161,6 +161,7 @@ export const window = {
 // @group TestMocks > VSCode > Workspace : Mock workspace namespace
 export const workspace = {
     workspaceFolders: [] as Array<{ uri: Uri; name: string; index: number }>,
+    textDocuments: [] as MockTextDocument[],
     getWorkspaceFolder(uri: Uri) {
         return this.workspaceFolders.filter(folder => uri.path.startsWith(folder.uri.path + '/')).sort((a, b) => b.uri.path.length - a.uri.path.length)[0];
     },
@@ -172,7 +173,7 @@ export const workspace = {
     },
     applyEdit: async (_edit: WorkspaceEdit): Promise<boolean> => true,
 
-    getConfiguration: (_section?: string) => ({
+    getConfiguration: (_section?: string, _resource?: any) => ({
         get: (_key: string, defaultValue?: any) => defaultValue,
         update: () => Promise.resolve(),
         has: () => false,
@@ -181,6 +182,8 @@ export const workspace = {
     findFiles: (..._args: any[]): Promise<Uri[]> => Promise.resolve([]),
     openTextDocument: (uri: any) => Promise.resolve(new MockTextDocument('', 'plaintext', uri?.fsPath || '')),
     onDidSaveTextDocument: () => ({ dispose: () => {} }),
+    onDidOpenTextDocument: (_listener: (document: MockTextDocument) => any) => ({ dispose: () => {} }),
+    onDidCloseTextDocument: (_listener: (document: MockTextDocument) => any) => ({ dispose: () => {} }),
     onDidChangeTextDocument: () => ({ dispose: () => {} }),
     fs: {
         stat: async (_uri: Uri) => ({type: FileType.File, size: 1}),
@@ -288,9 +291,20 @@ export const chat = {
 
 // @group TestMocks > VSCode > Misc : Other mock exports
 export class CancellationTokenSource {
-    token = { isCancellationRequested: false, onCancellationRequested: () => ({ dispose: () => {} }) };
-    cancel(): void { this.token.isCancellationRequested = true; }
-    dispose(): void {}
+    private listeners = new Set<() => void>();
+    token = {
+        isCancellationRequested: false,
+        onCancellationRequested: (listener: () => void) => {
+            this.listeners.add(listener);
+            return { dispose: () => { this.listeners.delete(listener); } };
+        },
+    };
+    cancel(): void {
+        if (this.token.isCancellationRequested) { return; }
+        this.token.isCancellationRequested = true;
+        for (const listener of [...this.listeners]) { listener(); }
+    }
+    dispose(): void { this.listeners.clear(); }
 }
 
 export class Disposable {

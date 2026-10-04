@@ -5,6 +5,21 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2026-10-04
+
+### Performance
+- Replace the 30-second workspace scan cutoff with cancellable processing of up to eight files at a time, yielding between files and reporting progress in the status bar, commands, and chat.
+- Read ordinary UTF-8 sources without opening editor documents; preserve current buffers and use VS Code decoding for other encodings, encoding detection, and language associations.
+- Reuse parsed results by exact content fingerprint, including unannotated files and completed work from cancelled scans. Recheck eligibility each scan and commit the index atomically with newer live edits taking precedence.
+- Skip lexical parsing for files without annotation candidates, avoid repeated group-array copies, and count annotation line positions in one pass.
+
+### Fixed
+- Return promptly on cancellation even when a filesystem adapter ignores cancellation, and avoid reporting cancelled or superseded scans as successful.
+- Respect nested workspace root ownership and directory deletions during concurrent scans.
+
+### Added
+- Regression coverage and a configurable synthetic scan benchmark.
+
 ## [1.9.0] - 2026-09-15
 
 ### Fixed

@@ -1,12 +1,14 @@
 import * as vscode from 'vscode';
 import { CodeGroup } from './groupDefinition';
-import { parseLanguageSpecificComments } from './utils/commentParser';
+import { parseLanguageSpecificComments, parseSourceComments } from './utils/commentParser';
 import { getFileType, getFileName, isSupportedFileType, getWorkspaceFolders, loadCodeGroups, saveCodeGroups,
     loadUserFavorites, saveUserFavorites, loadGroupCodeSettings } from './utils/fileUtils';
-import { FileSelection, relativeUriPath } from './utils/fileSelection';
+import { FileSelection, isUriWithin } from './utils/fileSelection';
 import { SnapshotWriter } from './utils/snapshotWriter';
 import { renamedGroup } from './utils/annotationEdits';
 import logger from './utils/logger';
+import { readScanSource, scanAwait, scanConcurrent, scanProgressMessage, sourceFingerprint,
+    WorkspaceScanProgress, WorkspaceScanResult } from './utils/workspaceScanner';
 
 export class CodeGroupProvider implements vscode.Disposable {
     private documents = new Map<string, CodeGroup[]>();
@@ -17,6 +19,8 @@ export class CodeGroupProvider implements vscode.Disposable {
     private revision = 0;
     private scanRevision = 0;
     private scanCancellation?: vscode.CancellationTokenSource;
+    private scanCache = new Map<string, { fingerprint: string; groups: CodeGroup[] }>();
+    private scanRemovals = new Map<string, vscode.Uri>();
     private disposed = false;
     private writers = new Map<string, SnapshotWriter>();
     private statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -47,7 +51,9 @@ export class CodeGroupProvider implements vscode.Disposable {
                 group.isFavorite = this.favorites.has(this.key(file, group.functionality));
                 this.functionalities.add(group.functionality);
             }
-            this.groups.set(type, [...(this.groups.get(type) || []), ...groups]);
+            let typedGroups = this.groups.get(type);
+            if (!typedGroups) { typedGroups = []; this.groups.set(type, typedGroups); }
+            for (const group of groups) { typedGroups.push(group); }
         }
         this.updateStatusBar();
         if (!this.disposed) { this.onDidUpdateGroupsEventEmitter.fire(); }
@@ -126,67 +132,160 @@ export class CodeGroupProvider implements vscode.Disposable {
         if (this.disposed) { return; }
         const file = uri.fsPath;
         this.revisions.set(file, ++this.revision);
+        if (this.scanCancellation) { this.scanRemovals.set(file, uri); }
+        for (const cached of this.scanCache.keys()) {
+            if (cached === file || isUriWithin(uri, vscode.Uri.file(cached))) { this.scanCache.delete(cached); }
+        }
         // Directory deletion/rename also removes all descendants.
+        let removed = false;
         for (const known of this.documents.keys()) {
-            if (known === file || relativeUriPath(uri, vscode.Uri.file(known)) !== undefined) {
+            if (known === file || isUriWithin(uri, vscode.Uri.file(known))) {
                 this.revisions.set(known, ++this.revision);
                 this.documents.delete(known);
+                removed = true;
             }
         }
+        if (!removed) { return; }
         this.rebuild();
         await this.saveGroups();
     }
-    async processWorkspace(token?: vscode.CancellationToken, roots = vscode.workspace.workspaceFolders || []): Promise<void> {
-        if (this.disposed || token?.isCancellationRequested) { return; }
+    async processWorkspace(token?: vscode.CancellationToken, roots = vscode.workspace.workspaceFolders || [],
+        report?: (progress: WorkspaceScanProgress) => void): Promise<WorkspaceScanResult> {
+        if (this.disposed || token?.isCancellationRequested) {
+            return { status: 'cancelled', phase: 'cancelled', total: 0, processed: 0, parsed: 0, reused: 0, skipped: 0, failed: 0, elapsedMs: 0 };
+        }
         this.scanCancellation?.cancel();
         const cancellation = new vscode.CancellationTokenSource();
         const subscription = token?.onCancellationRequested?.(() => cancellation.cancel());
         this.scanCancellation = cancellation;
-        let timedOut = false;
-        const timeout = setTimeout(() => { timedOut = true; cancellation.cancel(); }, 30_000);
-        try { await this.scanWorkspace(cancellation.token, roots); }
+        this.scanRemovals.clear();
+        if (token?.isCancellationRequested) { cancellation.cancel(); }
+        try { return await this.scanWorkspace(cancellation.token, roots, report); }
         finally {
-            clearTimeout(timeout);
             subscription?.dispose();
             cancellation.dispose();
-            if (this.scanCancellation === cancellation) { this.scanCancellation = undefined; }
-            if (timedOut) { vscode.window.showWarningMessage('Code group scan timed out. Previous results were retained; narrow the scan using ignore patterns.'); }
+            if (this.scanCancellation === cancellation) {
+                this.scanCancellation = undefined;
+                this.scanRemovals.clear();
+                this.updateStatusBar();
+            }
         }
     }
-    private async scanWorkspace(token: vscode.CancellationToken, roots: readonly vscode.WorkspaceFolder[]): Promise<void> {
+    private async scanWorkspace(token: vscode.CancellationToken, roots: readonly vscode.WorkspaceFolder[],
+        report?: (progress: WorkspaceScanProgress) => void): Promise<WorkspaceScanResult> {
         const scan = ++this.scanRevision;
         const started = this.revision;
+        const startTime = Date.now();
+        const progress: WorkspaceScanProgress = { phase: 'discovering', total: 0, processed: 0, parsed: 0, reused: 0, skipped: 0, failed: 0, elapsedMs: 0 };
+        let lastReport = 0;
+        const stopped = () => token.isCancellationRequested || this.disposed || scan !== this.scanRevision;
+        const notify = (force = false) => {
+            progress.elapsedMs = Date.now() - startTime;
+            if (scan !== this.scanRevision || this.disposed || (!force && progress.elapsedMs - lastReport < 200)) { return; }
+            lastReport = progress.elapsedMs;
+            this.statusBarItem.text = `$(sync~spin) Group Code (${progress.processed}/${progress.total})`;
+            this.statusBarItem.tooltip = scanProgressMessage(progress);
+            try { report?.({ ...progress }); }
+            catch (error) { logger.error('Could not report scan progress', error); }
+        };
         const snapshot = new Map(this.documents);
-        const failures: string[] = [];
-        const activeRoots = vscode.workspace.workspaceFolders || [];
+        const activeRoots = new Set((vscode.workspace.workspaceFolders || []).map(root => root.uri.toString()));
+        const scannedRoots = new Set(roots.map(root => root.uri.toString()));
         for (const file of snapshot.keys()) {
-            const uri = vscode.Uri.file(file);
-            if (!activeRoots.some(root => relativeUriPath(root.uri, uri) !== undefined) || roots.some(root => relativeUriPath(root.uri, uri) !== undefined)) {
-                snapshot.delete(file);
-            }
+            const owner = this.rootFor(file)?.uri.toString();
+            if (!owner || !activeRoots.has(owner) || scannedRoots.has(owner)) { snapshot.delete(file); }
         }
-        for (const root of roots) {
-            const settings = await loadGroupCodeSettings(root.uri.fsPath);
-            const policy = new FileSelection(root.uri, settings);
-            const files = await vscode.workspace.findFiles(new vscode.RelativePattern(root, '**/*'),
-                '{**/.git/**,**/.groupcode/**,**/node_modules/**}', undefined, token);
-            for (const uri of files) {
-                if (token?.isCancellationRequested || this.disposed || scan !== this.scanRevision) { return; }
-                try {
-                    if (!await policy.includes(uri)) { continue; }
-                    const document = await vscode.workspace.openTextDocument(uri);
-                    if (Buffer.byteLength(document.getText(), 'utf8') > settings.maxFileSizeKB * 1024) { continue; }
-                    const groups = parseLanguageSpecificComments(document);
-                    if (groups.length) { snapshot.set(uri.fsPath, groups); }
-                } catch (error) {
-                    failures.push(uri.fsPath);
-                    const previous = this.documents.get(uri.fsPath);
-                    if (previous) { snapshot.set(uri.fsPath, previous); }
-                    logger.error(`Could not scan ${uri.fsPath}`, error);
+        // Observe documents opened during disk reads, including new unsaved buffers.
+        const openDocuments = new Map(vscode.workspace.textDocuments.map(document => [document.uri.toString(), document]));
+        const opened = vscode.workspace.onDidOpenTextDocument(document => openDocuments.set(document.uri.toString(), document));
+        const closed = vscode.workspace.onDidCloseTextDocument(document => openDocuments.delete(document.uri.toString()));
+        const retainedCache = new Set<string>();
+        const seen = new Map<string, vscode.Uri>();
+        const results = new Map<string, CodeGroup[]>();
+        notify(true);
+        try {
+            const candidates: Array<{ uri: vscode.Uri; policy: FileSelection }> = [];
+            for (const root of roots) {
+                if (stopped()) { break; }
+                const settings = await scanAwait(loadGroupCodeSettings(root.uri.fsPath), token);
+                const policy = new FileSelection(root.uri, settings);
+                const files = await scanAwait(vscode.workspace.findFiles(new vscode.RelativePattern(root, '**/*'),
+                    '{**/.git/**,**/.groupcode/**,**/node_modules/**}', undefined, token), token);
+                if (stopped()) { break; }
+                for (const uri of files) {
+                    if (seen.has(uri.toString()) || this.rootFor(uri)?.uri.toString() !== root.uri.toString() ||
+                        !isSupportedFileType(getFileType(uri.fsPath))) { continue; }
+                    seen.set(uri.toString(), uri);
+                    candidates.push({ uri, policy });
+                    if (candidates.length % 256 === 0) {
+                        await new Promise<void>(resolve => setImmediate(resolve));
+                        if (stopped()) { break; }
+                    }
                 }
             }
+            progress.total = candidates.length;
+            progress.phase = 'scanning';
+            if (!stopped()) { notify(true); }
+            await scanConcurrent(candidates, token, async ({ uri, policy }) => {
+                if (stopped()) { return; }
+                try {
+                    if (!await scanAwait(policy.includes(uri), token)) { progress.skipped++; return; }
+                    if (stopped()) { return; }
+                    const maxBytes = policy.settings.maxFileSizeKB * 1024;
+                    const source = await readScanSource(uri, token, openDocuments, maxBytes);
+                    if (stopped()) { return; }
+                    if (!source || Buffer.byteLength(source.text, 'utf8') > maxBytes) { progress.skipped++; return; }
+                    const fingerprint = sourceFingerprint(source);
+                    const cached = this.scanCache.get(uri.fsPath);
+                    let groups: CodeGroup[];
+                    if (cached?.fingerprint === fingerprint) {
+                        groups = cached.groups;
+                        progress.reused++;
+                    } else {
+                        groups = parseSourceComments(source.text, source.languageId, uri.fsPath);
+                        progress.parsed++;
+                    }
+                    results.set(uri.fsPath, groups);
+                    retainedCache.add(uri.fsPath);
+                    // Cache completed work even if this scan is later cancelled.
+                    // Exact content hashes make it safe to reuse on the next scan.
+                    if ((this.revisions.get(uri.fsPath) || 0) <= started &&
+                        ![...this.scanRemovals.values()].some(removed => removed.fsPath === uri.fsPath || isUriWithin(removed, uri))) {
+                        this.scanCache.set(uri.fsPath, { fingerprint, groups });
+                    }
+                } catch (error) {
+                    if (stopped()) { return; }
+                    progress.failed++;
+                    const previous = this.documents.get(uri.fsPath);
+                    if (previous) { results.set(uri.fsPath, previous); }
+                    retainedCache.add(uri.fsPath);
+                    logger.error(`Could not scan ${uri.fsPath}`, error);
+                } finally {
+                    if (!stopped()) { progress.processed++; notify(); }
+                }
+            });
+        } catch (error) {
+            if (!stopped()) { throw error; }
+        } finally {
+            opened.dispose();
+            closed.dispose();
         }
-        if (token?.isCancellationRequested || this.disposed || scan !== this.scanRevision) { return; }
+        if (stopped()) {
+            progress.phase = 'cancelled';
+            notify(true);
+            return { ...progress, status: 'cancelled' };
+        }
+        // Preserve discovery order rather than nondeterministic worker completion order.
+        for (const uri of seen.values()) {
+            const file = uri.fsPath;
+            const groups = results.get(file);
+            if (groups?.length) { snapshot.set(file, groups); }
+        }
+        for (const removed of this.scanRemovals.values()) {
+            for (const file of snapshot.keys()) {
+                if (file === removed.fsPath || isUriWithin(removed, vscode.Uri.file(file))) { snapshot.delete(file); }
+            }
+        }
         // An incremental edit/deletion made after this scan began always wins.
         for (const [file, revision] of this.revisions) {
             if (revision <= started) { continue; }
@@ -194,9 +293,17 @@ export class CodeGroupProvider implements vscode.Disposable {
             if (current) { snapshot.set(file, current); } else { snapshot.delete(file); }
         }
         this.documents = snapshot;
+        for (const file of this.scanCache.keys()) {
+            const owner = this.rootFor(file)?.uri.toString();
+            if (!owner || !activeRoots.has(owner) || (scannedRoots.has(owner) && !retainedCache.has(file))) { this.scanCache.delete(file); }
+        }
         this.rebuild();
         await this.saveGroups();
-        if (failures.length) { vscode.window.showWarningMessage(`Could not refresh ${failures.length} file(s); previous entries were retained. See Group Code output.`); }
+        progress.phase = 'complete';
+        notify(true);
+        logger.info(`Workspace scan: ${progress.processed} files, ${progress.parsed} parsed, ${progress.reused} reused, ${progress.skipped} skipped, ${progress.failed} failed in ${progress.elapsedMs}ms`);
+        if (progress.failed) { vscode.window.showWarningMessage(`Could not refresh ${progress.failed} file(s); previous entries were retained. See Group Code output.`); }
+        return { ...progress, status: 'completed' };
     }
     async processExternalFolder(_folderPath: string): Promise<void> {
         throw new Error('Add the folder to the workspace before scanning it.');
@@ -210,7 +317,9 @@ export class CodeGroupProvider implements vscode.Disposable {
                     for (const [file, groups] of this.documents) {
                         if (!this.belongsToWorkspaceRoot(file, folder)) { continue; }
                         const type = getFileType(file);
-                        snapshot.set(type, [...(snapshot.get(type) || []), ...groups.map(group => ({...group, lineNumbers: [...group.lineNumbers]}))]);
+                        let typedGroups = snapshot.get(type);
+                        if (!typedGroups) { typedGroups = []; snapshot.set(type, typedGroups); }
+                        for (const group of groups) { typedGroups.push({ ...group, lineNumbers: [...group.lineNumbers] }); }
                     }
                     await saveCodeGroups(folder, snapshot);
                 }, error => { logger.error('Could not persist code groups', error); vscode.window.showErrorMessage('Could not save the code group index. See Group Code output.'); });
@@ -399,12 +508,15 @@ export class CodeGroupProvider implements vscode.Disposable {
     private updateStatusBar(): void {
         const functionalities = this.getFunctionalities();
         this.statusBarItem.text = `$(map) Group Code (${functionalities.length})`;  // Changed from "$(compass) Code Compass" to "$(map) Group Code"
+        this.statusBarItem.tooltip = 'View and navigate code groups';
     }
 
     // Clear all code groups and refresh
     // @group Workspace > Group Management > Clear: Remove all groups, reset state, and notify UI
     public clearGroups(): void {
         this.documents.clear();
+        this.scanCache.clear();
+        this.scanCancellation?.cancel();
         this.scanRevision++;
         this.rebuild();
     }

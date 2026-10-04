@@ -47,7 +47,12 @@ export async function run(): Promise<void> {
     await removeAnnotations(liveDocument);
     await provider.processFileOnSave(liveDocument);
     assert.ok(!provider.getFunctionalities().includes('watched'));
+    await provider.processWorkspace();
+    assert.ok(!provider.getFunctionalities().includes('watched'), 'Full scans must use the unsaved editor buffer');
     assert.ok(await liveDocument.save());
+    const repeated = await provider.processWorkspace();
+    assert.strictEqual(repeated.status, 'completed');
+    assert.ok(repeated.reused > 0, 'A real host refresh must reuse unchanged parse results');
     const removable = vscode.Uri.joinPath(root, 'remove.js');
     await writeFile(removable, '// @group remove: deleted\nfunction remove() {}');
     await indexFile(removable);

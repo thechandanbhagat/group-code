@@ -27,6 +27,16 @@ export function relativeUriPath(root: vscode.Uri, file: vscode.Uri): string | un
     return undefined;
 }
 
+/** Strict descendant check: is `file` inside the directory `root`? Unlike
+ *  relativeUriPath this never falls back to workspace-relative paths, so it is
+ *  safe for deleted URIs whose real type (file vs directory) is unknown. */
+export function isUriWithin(root: vscode.Uri, file: vscode.Uri): boolean {
+    if (root.scheme !== file.scheme || root.authority !== file.authority) { return false; }
+    const normalize = (value: string) => root.scheme === 'file' && process.platform === 'win32' ? value.toLowerCase() : value;
+    const rootPath = normalize(root.path).replace(/\/$/, '');
+    return normalize(file.path).startsWith(rootPath + '/');
+}
+
 /** One policy instance per scan/update; nested ignore files are read at most once. */
 export class FileSelection {
     private rules = new Map<string, Promise<Ignore>>();

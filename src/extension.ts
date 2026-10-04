@@ -18,6 +18,7 @@ import { FileSelection } from './utils/fileSelection';
 import { editAnnotations } from './utils/annotations';
 import { removeAnnotations, renameEdits, renamedGroup } from './utils/annotationEdits';
 import { normalizeGroupName, validateGroupName } from './utils/languageRegistry';
+import { scanProgressMessage } from './utils/workspaceScanner';
 
 let codeGroupProvider: CodeGroupProvider;
 let ratingPromptManager: RatingPromptManager;
@@ -244,14 +245,17 @@ export async function activate(context: vscode.ExtensionContext) {
             logger.info('Executing command: refreshTreeView - scanning workspace and refreshing');
             
             // Scan entire workspace for code groups
-            await vscode.window.withProgress({
+            const result = await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: 'Scanning workspace for code groups...',
-                cancellable: false
-            }, async () => {
-                await codeGroupProvider.processWorkspace();
+                cancellable: true
+            }, async (progress, token) => {
+                const result = await codeGroupProvider.processWorkspace(token, undefined,
+                    update => progress.report({ message: scanProgressMessage(update) }));
                 codeGroupTreeProvider.refresh();
+                return result;
             });
+            if (result.status === 'cancelled') { return; }
             
             const allGroups = codeGroupProvider.getAllGroups();
             const root = vscode.workspace.workspaceFolders?.[0];
@@ -262,7 +266,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('groupCode.rescanWorkspace', async () => {
             await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Rescanning code groups', cancellable: true },
-                async (_progress, token) => { await codeGroupProvider.processWorkspace(token); });
+                async (progress, token) => { await codeGroupProvider.processWorkspace(token, undefined,
+                    update => progress.report({ message: scanProgressMessage(update) })); });
         }),
 
         vscode.commands.registerCommand('groupCode.navigateToGroup', (group) => {

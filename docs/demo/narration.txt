@@ -2,7 +2,7 @@ Finding a feature shouldn't mean searching through dozens of files. Meet Group C
 
 Start with a simple comment. Add an at-group annotation above your code, give it a name, and describe its purpose. Use the greater-than separator to create a hierarchy, like Checkout, then Payments.
 
-Your groups appear in the sidebar. Related code can live in TypeScript, SQL, or HTML, while still belonging to the same feature. Switch to the file view when you want to explore by location.
+Your groups appear in the sidebar. Related code can live in TypeScript, SQL, or HTML, while still belonging to the same feature. Expand a feature to explore all of its source files.
 
 Click a group to jump straight to its code. Search to narrow the list, and favorite the groups you use most.
 

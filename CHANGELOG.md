@@ -5,6 +5,23 @@ All notable changes to the "Group Code" extension will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.10.0] - 2026-10-30
+
+### Added
+- Refresh the user guide screenshots and narrated demo, with English captions, quiet instrumental music, and a public YouTube link.
+- Publish tested releases to VS Code Marketplace and Open VSX when a matching version tag is pushed.
+
+### Changed
+- Use a stacked-layers icon for parent functionality groups.
+- Show natural group counts: "1 group" and "4 groups".
+- Share group and action icons across trees, group pickers, completions, hover cards, chat, and the status bar; render native theme icons in Markdown surfaces.
+
+### Removed
+- Remove the separate "By File" tree view. The Group Code and Explorer views retain the functionality hierarchy, synchronized filtering, and click-to-source navigation.
+- Remove file-type nesting within the functionality hierarchy; source entries now appear directly beneath their group.
+
 ## [1.9.1] - 2026-10-04
 
 ### Performance

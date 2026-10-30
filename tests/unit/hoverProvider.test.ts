@@ -97,6 +97,7 @@ describe('GroupHoverProvider', () => {
             );
             const result = provider.provideHover(doc as any, new Position(0, 10) as any, makeCancelToken());
             assert.ok(result !== null, 'Expected a Hover result');
+            assert.strictEqual((result as any).contents[0].supportThemeIcons, true, 'Codicons must render as icons');
         });
 
         it('hover content should contain the functionality name', () => {
@@ -212,6 +213,7 @@ describe('GroupHoverProvider', () => {
             const result = provider.provideHover(doc as any, new Position(0, 10) as any, makeCancelToken()) as any;
             const content: string = result?.contents[0].value ?? '';
             // Should mention sub-group section or child names
+            assert.ok(content.includes('$(layers)'), 'Parent groups use the shared layers icon');
             assert.ok(
                 content.includes('Sub-groups') || content.includes('Login') || content.includes('Logout'),
                 'Should surface child group information'

@@ -3,11 +3,9 @@
 [![CI](https://github.com/thechandanbhagat/group-code/actions/workflows/ci.yml/badge.svg)](https://github.com/thechandanbhagat/group-code/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/thechandanbhagat.groupcode?label=VS%20Code%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=thechandanbhagat.groupcode)
 
-Group Code Navigation    
-![Group Code Demo](https://raw.githubusercontent.com/thechandanbhagat/group-code/refs/heads/main/resources/groupcode.gif)   
+[Watch the demo on YouTube](https://youtu.be/DfgPVLwPMK4) (1:25, with English captions and quiet background music) · [Download MP4](userguide/videos/group-code-demo.mp4) · [Read the user guide](userguide/index.html)
 
-Generate Groups from github copilot   
-![Group Code Demo](https://raw.githubusercontent.com/thechandanbhagat/group-code/refs/heads/main/resources/groupcode1.gif)   
+![Group Code functionality hierarchy with direct source navigation](userguide/images/group-explorer.jpg)
 
 This Visual Studio Code extension helps you navigate and organize your codebase based on functionality rather than just files. Using special comments to tag related code sections across multiple files and languages, it creates a unified view that makes it easier to understand and work with your project's different functional components.
 
@@ -35,14 +33,14 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Quick Add Group**: Quickly add code groups to selected code via right-click context menu
 - **AI-Assisted Group Creation**: Get AI-powered suggestions for group names and descriptions
 - **Hover Annotations**: Rich hover cards on `@group` comments showing hierarchy, description, file counts, and sub-groups
-- **File-Based View**: Alternative "By File" tree view that organizes groups by file location, sorted by line number
-- **Advanced Filter UI**: Visual search/clear filter buttons in view title bars with real-time filter status, synchronized across all views
+- **Functionality Tree Views**: Browse the same hierarchy in the Group Code panel or the Explorer sidebar, and click a source entry to jump to its annotation
+- **Advanced Filter UI**: Visual search/clear filter buttons in view title bars with real-time filter status, synchronized across both hierarchy views
 
 ## Core Features
 
 ### Hierarchical Grouping & Organization
 - Multi-level nested group hierarchies using `>` separator (e.g., `@group Auth > Login > Validation`)
-- Smart tree view with collapsible nodes, folder icons, and group counts
+- Smart tree view with collapsible nodes, functionality icons, and group counts
 - Hierarchy autocomplete with intelligent path suggestions
 - Real-time sidebar refresh when editing @group comments
 - Breadcrumb navigation in chat responses
@@ -100,7 +98,7 @@ The extension includes a language model tool (`groupcode_generate`) that can be 
 
 ### Manual Installation
 
-1. Download the `groupcode-1.9.0.vsix` file
+1. Download the latest `groupcode-*.vsix` release file
 2. In VS Code, open the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Run "Extensions: Install from VSIX..." and select the downloaded file
 
@@ -426,6 +424,8 @@ The package check creates `artifacts/groupcode-review.vsix` and extracts it to `
 In a local run of that fixture, the previous scanner stopped after 30.0s with 6,411 documents opened and no committed groups. The new scanner completed all 10,000 files in 6.0s, opened no documents, and indexed all 200 groups. A repeat completed in 5.9s and reused all 10,000 parse results. These timings demonstrate the controlled fixture, not a guaranteed time for every repository.
 
 `npm run watch` updates the bundled development entry; `npm test` performs production typechecking and unit regressions. CI additionally checks the package and real extension-host behavior. Live model requests are not required by the automated suite.
+
+Pushing a stable version tag such as `v1.10.0` runs the release workflow and publishes the tested VSIX to VS Code Marketplace and Open VSX. See [Publishing Group Code](docs/PUBLISHING.md) for version checks, dry runs, and registry retries.
 
 ## Privacy & Security
 

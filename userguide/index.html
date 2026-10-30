@@ -161,6 +161,7 @@
     main {
       margin-left: var(--sidebar-width);
       flex: 1;
+      min-width: 0;
       padding: 48px 56px 80px;
       max-width: 960px;
     }
@@ -407,32 +408,57 @@
       color: var(--color-muted);
     }
 
-    /* @group Styles > Components > Screenshot placeholder */
-    .screenshot-ref {
-      background: var(--color-surface);
-      border: 2px dashed var(--color-border);
+    /* @group Styles > Components > Documentation screenshots */
+    .screenshot {
+      margin: 20px 0 28px;
+      border: 1px solid var(--color-border);
       border-radius: var(--radius);
-      padding: 32px 24px;
-      text-align: center;
-      margin-bottom: 24px;
+      overflow: hidden;
+      background: #16181c;
+      box-shadow: var(--shadow);
+    }
+
+    .screenshot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .screenshot figcaption {
+      padding: 12px 16px;
       color: var(--color-muted);
+      background: var(--color-surface);
+      font-size: 13px;
+    }
+
+    .screenshot figcaption strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--color-text);
       font-size: 14px;
     }
 
-    .screenshot-ref .sc-title {
+    /* @group Styles > Components > Demo video */
+    #demo { margin-top: 0; }
+
+    .demo-video video {
       display: block;
-      font-weight: 600;
-      font-size: 15px;
-      margin-bottom: 6px;
-      color: var(--color-text);
+      width: 100%;
+      height: auto;
+      background: #09101b;
     }
 
-    .screenshot-ref .sc-caption {
-      display: block;
-      font-size: 12px;
-      margin-top: 6px;
-      font-style: italic;
+    .demo-transcript {
+      margin-bottom: 32px;
+      padding: 16px 20px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
     }
+
+    .demo-transcript summary { cursor: pointer; color: var(--color-accent); }
+    .demo-transcript[open] summary { margin-bottom: 16px; }
+    .demo-transcript p:last-child { margin-bottom: 0; }
 
     /* @group Styles > Tokens */
     .tag {
@@ -517,7 +543,7 @@
     <img src="../resources/compass-icon.png" alt="Group Code icon" />
     Group Code
   </a>
-  <span class="badge">v1.9.0</span>
+  <span class="badge">v1.10.0</span>
   <nav>
     <a href="https://marketplace.visualstudio.com/items?itemName=thechandanbhagat.groupcode" target="_blank">Marketplace</a>
     <a href="https://github.com/thechandanbhagat/group-code" target="_blank">GitHub</a>
@@ -529,6 +555,7 @@
 <aside class="sidebar">
   <div class="sidebar-section">
     <div class="sidebar-section-title">Getting Started</div>
+    <a href="#demo"><span class="icon">&#9654;</span> Watch the Demo</a>
     <a href="#overview"><span class="icon">&#9632;</span> Overview</a>
     <a href="#installation"><span class="icon">&#9632;</span> Installation</a>
     <a href="#quick-start"><span class="icon">&#9632;</span> Quick Start</a>
@@ -567,7 +594,6 @@
     <div class="sidebar-section-title">Reference</div>
     <a href="#keyboard-shortcuts"><span class="icon">&#9632;</span> Keyboard Shortcuts</a>
     <a href="#language-support"><span class="icon">&#9632;</span> Language Support</a>
-    <a href="#screenshots"><span class="icon">&#9632;</span> Screenshots Guide</a>
   </div>
 </aside>
 
@@ -590,10 +616,43 @@
     </div>
   </div>
 
+  <!-- @group Content > Demo : Narrated extension walkthrough -->
+  <h2 id="demo">See Group Code in action</h2>
+  <p>A 1-minute 25-second walkthrough of adding groups, navigating across files, searching, favorites, renaming, and getting started with Copilot.</p>
+  <figure class="screenshot demo-video">
+    <video controls playsinline preload="none" width="1920" height="1080"
+      poster="images/demo-poster.jpg" aria-labelledby="demo" aria-describedby="demo-caption">
+      <source src="videos/group-code-demo.mp4" type="video/mp4" />
+      <source src="videos/group-code-demo.webm" type="video/webm" />
+      Your browser does not support embedded video. <a href="videos/group-code-demo.mp4">Download the demo</a> to watch it.
+    </video>
+    <figcaption id="demo-caption">
+      <strong>A map of your features, inside VS Code</strong>
+      Fresh captures of the functionality hierarchy, with English narration, captions and quiet instrumental music.
+      The Copilot segment shows the suggestion command; it requires an available Copilot model.
+      <a href="https://youtu.be/DfgPVLwPMK4" target="_blank" rel="noopener">Watch on YouTube</a> &middot;
+      <a href="videos/group-code-demo.mp4" download>Download video</a> &middot;
+      <a href="videos/group-code-demo.srt" download>Captions (SRT)</a> &middot;
+      <a href="videos/group-code-demo.vtt" download>Captions (VTT)</a>
+    </figcaption>
+  </figure>
+  <details class="demo-transcript">
+    <summary>Read the video transcript</summary>
+    <p>Finding a feature shouldn't mean searching through dozens of files. Meet Group Code, the Visual Studio Code extension that organizes your codebase by what it does.</p>
+    <p>Start with a simple comment. Add an <code>@group</code> annotation above your code, give it a name, and describe its purpose. Use the greater-than separator to create a hierarchy, like Checkout, then Payments.</p>
+    <p>Your groups appear in the sidebar. Related code can live in TypeScript, SQL, or HTML, while still belonging to the same feature. Expand a feature to explore all of its source files.</p>
+    <p>Click a group to jump straight to its code. Search to narrow the list, and favorite the groups you use most.</p>
+    <p>Need to reorganize? Rename a parent group, and its child annotations follow. Your edits stay available for review and undo.</p>
+    <p>For a faster starting point, the Copilot integration can suggest group annotations. Review the proposed changes, then save when you're ready.</p>
+    <p>Group Code keeps its index up to date as eligible files change, and respects your workspace's ignore rules.</p>
+    <p>Turn a collection of files into a map of your features. Find Group Code in the Visual Studio Code Marketplace.</p>
+  </details>
+
   <!-- ===== TABLE OF CONTENTS ===== -->
   <div class="toc-box">
     <h4>Table of Contents</h4>
     <ol>
+      <li><a href="#demo">Watch the Demo</a></li>
       <li><a href="#overview">Overview</a></li>
       <li><a href="#installation">Installation</a></li>
       <li><a href="#quick-start">Quick Start</a></li>
@@ -617,7 +676,6 @@
       <li><a href="#status-bar">Status Bar</a></li>
       <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
       <li><a href="#language-support">Language Support</a></li>
-      <li><a href="#screenshots">Screenshots Guide</a></li>
     </ol>
   </div>
 
@@ -712,11 +770,10 @@
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Extensions Marketplace search</span>
-    Show the VS Code Extensions panel with "Group Code" search result, the install button, and the publisher name visible.
-    <span class="sc-caption">Path: Extensions sidebar (Ctrl+Shift+X) &gt; search "Group Code"</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/group-explorer.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/group-explorer.jpg" alt="Group Code hierarchy and source entries in the checkout example" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Group Code in VS Code</strong>After installation, open a workspace to begin scanning and organizing annotations.</figcaption>
+  </figure>
 
   <!-- ===== QUICK START ===== -->
   <h2 id="quick-start">Quick Start</h2>
@@ -760,11 +817,10 @@ export function validateToken(token: string) {
   <span class="c">// ...</span>
 }</code></pre>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Activity Bar and tree view</span>
-    Show the VS Code Activity Bar on the left with the Group Code compass icon highlighted, the sidebar expanded with a sample group tree (e.g., "Authentication" with two entries).
-    <span class="sc-caption">Activity Bar &gt; Group Code icon &gt; Group Code Explorer panel</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/group-explorer.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/group-explorer.jpg" alt="Functionality groups beside annotated TypeScript source" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Group Code Explorer and annotations</strong>Open the compass icon in the Activity Bar to browse groups while keeping the annotated source visible.</figcaption>
+  </figure>
 
   <!-- ===== COMMENT SYNTAX ===== -->
   <h2 id="comment-syntax">Comment Syntax</h2>
@@ -833,11 +889,10 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: @group comment in editor with syntax highlighting</span>
-    Show the VS Code editor with a TypeScript file open. The @group comment line should be visible with distinct syntax highlighting applied by the extension's grammar injection (the "@group" keyword and the description should appear in different colors).
-    <span class="sc-caption">Editor view with a .ts file containing @group annotations</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/annotations.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/annotations.jpg" alt="Two at-group annotations in the checkout TypeScript source" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Annotations in context</strong>The walkthrough shows <code>@group</code> comments in the editor and their corresponding entries in the explorer.</figcaption>
+  </figure>
 
   <!-- ===== HIERARCHICAL GROUPS ===== -->
   <h2 id="hierarchical-groups">Hierarchical Groups</h2>
@@ -861,18 +916,16 @@ export function validateToken(token: string) {
 <span class="a">// @group Features &gt; Dashboard &gt; Widgets &gt; Charts : Sales chart</span></code></pre>
 
   <h3>How the Tree Looks</h3>
-  <p>The tree view renders the hierarchy with folder icons for parent nodes and file icons for leaf nodes:</p>
-  <pre><code>&#128193; Auth
-  &#128193; Login
-    &#128196; Validation  (3 groups)
-      &#128196; ts
-        validateEmail.ts
-        validatePassword.ts
-    &#128196; API  (2 groups)
-      &#128196; ts
-        loginUser.ts
-  &#128193; Signup
-    &#128196; Form Handling  (1 group)</code></pre>
+  <p>Parent groups use a stacked-layers icon. The tree preserves the functionality hierarchy and lists clickable source entries directly beneath each group:</p>
+  <pre><code>Auth
+  Login
+    Validation  (2 groups)
+      validateEmail.ts
+      validatePassword.ts
+    API  (1 group)
+      loginUser.ts
+  Signup
+    Form Handling  (1 group)</code></pre>
 
   <h3>Best Practices</h3>
   <ul>
@@ -888,15 +941,14 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Hierarchical tree view</span>
-    Show the Group Code Explorer sidebar with a 3-level hierarchy expanded — parent folder, child folder, and leaf nodes with file entries. The folder icons and collapse arrows should be clearly visible.
-    <span class="sc-caption">Group Code Explorer &gt; expand a multi-level group</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/group-explorer.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/group-explorer.jpg" alt="Layer icons for parent groups and direct source entries beneath Payments" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Expanded group hierarchy</strong>Parents, children, and source entries remain navigable from the Group Code Explorer.</figcaption>
+  </figure>
 
   <!-- ===== TREE VIEWS ===== -->
   <h2 id="tree-views">Tree Views</h2>
-  <p>Group Code provides three tree views. All views are kept in sync — a filter applied in one applies to all.</p>
+  <p>Group Code provides two views of the same functionality hierarchy. Both views are kept in sync — a filter applied in one applies to both.</p>
 
   <table>
     <thead>
@@ -909,11 +961,6 @@ export function validateToken(token: string) {
         <td>Primary view. Groups organized by hierarchy. This is the main navigation view.</td>
       </tr>
       <tr>
-        <td><strong>By File</strong></td>
-        <td>Group Code Activity Bar panel (collapsed by default)</td>
-        <td>Groups organized by the file they appear in, sorted by line number.</td>
-      </tr>
-      <tr>
         <td><strong>Group Code (Explorer)</strong></td>
         <td>VS Code Explorer sidebar panel</td>
         <td>Mirror of the main Group Code view, embedded in the standard Explorer.</td>
@@ -924,8 +971,8 @@ export function validateToken(token: string) {
   <h3>Switching Views</h3>
   <p>
     Click the <strong>Group Code icon</strong> (compass) in the Activity Bar to open the dedicated panel.
-    Expand the <strong>By File</strong> section at the bottom to switch to the file-based view.
-    The Explorer panel appears at the bottom of the standard VS Code Explorer.
+    The same functionality hierarchy is also available in the Group Code panel at the bottom of the standard VS Code Explorer.
+    In either view, expand a group and click a source entry directly beneath it to jump to its <code>@group</code> annotation.
   </p>
 
   <h3>Tree View Toolbar</h3>
@@ -942,11 +989,10 @@ export function validateToken(token: string) {
     </tbody>
   </table>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Both views (Group Code and By File)</span>
-    Show the Activity Bar panel with two sections visible — the "Group Code" hierarchy view on top and the "By File" view below it. Show the toolbar icons (search, clear, refresh, settings) at the top of each view.
-    <span class="sc-caption">Group Code Activity Bar panel with both tree views</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/group-explorer.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/group-explorer.jpg" alt="Parent functionality groups with direct source entries" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Functionality hierarchy</strong>Expand a group to find its source files, then click an entry to jump to its annotation.</figcaption>
+  </figure>
 
   <!-- ===== NAVIGATION ===== -->
   <h2 id="navigation">Navigation</h2>
@@ -958,6 +1004,11 @@ export function validateToken(token: string) {
   <h3>Keyboard Navigation</h3>
   <p>Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> (or <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> on Mac) to open a quick-pick list of all groups. Type to filter and press <kbd>Enter</kbd> to jump.</p>
 
+  <figure class="screenshot">
+    <a href="images/group-picker.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/group-picker.jpg" alt="Functionality picker with consistent code-group icons" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Navigate by functionality</strong>The keyboard picker lists group names with the same code-group symbols used elsewhere in the extension.</figcaption>
+  </figure>
+
   <h3>Command Palette</h3>
   <p>Open the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) and run:</p>
   <ul class="command-list">
@@ -965,11 +1016,10 @@ export function validateToken(token: string) {
     <li><code>Group Code: Navigate to Code Group</code><span class="cmd-desc"> — same as above, via command alias</span></li>
   </ul>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Quick-pick group navigator</span>
-    Show the VS Code quick-pick dropdown (triggered by Ctrl+Shift+G) with a list of group names, the current filter text, and a highlighted selection.
-    <span class="sc-caption">Press Ctrl+Shift+G to open the group navigator</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/source-navigation.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/source-navigation.jpg" alt="SQL source opened by selecting its entry directly under Payments" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Click directly into a source file</strong>The Payments entry opens its SQL annotation. Sources appear directly under their functionality group.</figcaption>
+  </figure>
 
   <!-- ===== FAVORITES ===== -->
   <h2 id="favorites">Favorites</h2>
@@ -996,11 +1046,10 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Favorite star icon on a tree item</span>
-    Show the Group Code tree with one group item hovered, displaying the inline star icon. Also show another item that is already favorited with a filled star icon.
-    <span class="sc-caption">Hover over a group in the tree view to reveal the star icon</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/favorites.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/favorites.jpg" alt="Starred Checkout hierarchy expanded beneath Favorites" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Keep frequently used groups close</strong>The starred Checkout hierarchy stays at the top, with its source entries still directly accessible.</figcaption>
+  </figure>
 
   <!-- ===== RENAME ===== -->
   <h2 id="rename">Rename Groups</h2>
@@ -1023,11 +1072,10 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Inline rename input in tree view</span>
-    Show the Group Code Explorer with a group node in rename mode — the inline text input field is active with the current group name editable.
-    <span class="sc-caption">Select a group, press F2, edit name inline</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/rename-group.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/rename-group.jpg" alt="Rename input for changing Checkout and its descendants to Commerce" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Rename a functionality hierarchy</strong>Change the parent name once to update its child annotations across source files.</figcaption>
+  </figure>
 
   <!-- ===== QUICK ADD ===== -->
   <h2 id="quick-add">Quick Add Group</h2>
@@ -1078,17 +1126,10 @@ export function validateToken(token: string) {
   <h3>Keyboard Shortcut</h3>
   <p>You can also trigger Quick Add Group with <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd> (or <kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd> on Mac) when the editor is focused.</p>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Right-click context menu with "Add to Group..."</span>
-    Show the VS Code editor with a code selection active, the right-click context menu open, and "Add to Group..." highlighted at the top of the Group Code menu section.
-    <span class="sc-caption">Select code &gt; Right-click &gt; Add to Group...</span>
-  </div>
-
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Group name quick-pick list</span>
-    Show the VS Code quick-pick dropdown listing existing group names with a "Create New Group" option at the top, and the folder icon next to each existing group.
-    <span class="sc-caption">Quick Add Group &gt; step 1: select or create group name</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/add-group.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/add-group.jpg" alt="Add Code Group picker with code-group icons and a Create New Group option" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Add a group from the editor</strong>Choose an existing functionality or create a new hierarchical group for the selected code.</figcaption>
+  </figure>
 
   <!-- ===== AUTOCOMPLETE ===== -->
   <h2 id="autocomplete">Smart Autocomplete</h2>
@@ -1134,11 +1175,10 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: @group autocomplete dropdown</span>
-    Show the VS Code editor with a comment line being typed, the IntelliSense dropdown open showing group name suggestions with hierarchy indicators, and the current typed text highlighted in the suggestion.
-    <span class="sc-caption">Type "// @group" in a comment to trigger autocomplete</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/autocomplete.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/autocomplete.jpg" alt="Native completion suggestions for an at-group annotation" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Complete existing group names</strong>The editor suggests functionality names and child groups while you write an annotation.</figcaption>
+  </figure>
 
   <!-- ===== HOVER CARDS ===== -->
   <h2 id="hover-cards">Hover Cards <span class="tag tag-new">New in v1.8.0</span></h2>
@@ -1159,16 +1199,15 @@ export function validateToken(token: string) {
   <h3>How to Trigger</h3>
   <p>Move your cursor over the <code>@group</code> keyword on any comment line. The hover card appears automatically. It only activates on comment lines — not on regular code.</p>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Hover card on a @group annotation</span>
-    Show the VS Code editor with the cursor hovering over a @group comment line. The hover card popup should be visible with: breadcrumb path, description, file count, file list, and sub-groups section.
-    <span class="sc-caption">Hover over a @group comment to see the details card</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/hover-card.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/hover-card.jpg" alt="Hover card with rendered code-group, file and location icons" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Inspect an annotation</strong>The hover card shows the group path, description, source files and usage information with native icons.</figcaption>
+  </figure>
 
   <!-- ===== FILTER & SEARCH ===== -->
   <h2 id="filter-search">Filter &amp; Search</h2>
   <p>
-    All three tree views share a synchronized filter. Filtering one view filters all views simultaneously.
+    Both functionality hierarchy views share a synchronized filter. Filtering either view updates both simultaneously.
   </p>
 
   <h3>Using the Filter</h3>
@@ -1207,11 +1246,10 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Active filter in tree view</span>
-    Show the Group Code Explorer with the filter input box open at the top, a filter query typed (e.g., "auth"), and the tree showing only matching results. The clear-filter button should also be visible.
-    <span class="sc-caption">Group Code Explorer &gt; click search icon &gt; type filter text</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/search-groups.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/search-groups.jpg" alt="Payments search filter applied to the functionality hierarchy" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Focus on matching groups</strong>The shared Payments filter narrows the tree while preserving the functionality hierarchy.</figcaption>
+  </figure>
 
   <!-- ===== CHAT PARTICIPANT ===== -->
   <h2 id="chat-participant">Chat Participant — @groupcode</h2>
@@ -1253,12 +1291,6 @@ export function validateToken(token: string) {
 @groupcode find anything related to authentication
 @groupcode generate comment groups for this file
 @groupcode analyze my groups for duplicates</code></pre>
-
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: @groupcode in Copilot Chat</span>
-    Show the GitHub Copilot Chat panel with @groupcode typed in the input, a command like "/list" selected, and a response from the participant showing a formatted list of groups with file references and hierarchy paths.
-    <span class="sc-caption">Copilot Chat &gt; type "@groupcode" &gt; select a command</span>
-  </div>
 
   <!-- ===== AI GENERATE ===== -->
   <h2 id="ai-generate">AI Generate Groups</h2>
@@ -1307,12 +1339,6 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: AI-generated @group comments in a file</span>
-    Show a TypeScript or Python file where multiple @group comments have been automatically inserted by the AI above different functions. The comments should show varied group names with descriptions.
-    <span class="sc-caption">Before/after: open a file, run @groupcode /generate, see the comments inserted</span>
-  </div>
-
   <!-- ===== AI SUGGEST ===== -->
   <h2 id="ai-suggest">AI Suggest</h2>
   <p>
@@ -1349,11 +1375,10 @@ export function validateToken(token: string) {
     </li>
   </ol>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: AI Suggest result notification or dialog</span>
-    Show the VS Code interface after running "Suggest Code Group with AI" — either a notification popup with the suggested group name, or the Quick Add dialog pre-filled with the AI suggestion.
-    <span class="sc-caption">Right-click selected code &gt; Suggest Code Group with AI</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/copilot-workflow.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/copilot-workflow.jpg" alt="Suggest Code Group with AI command selected in the VS Code Command Palette" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Start an AI suggestion</strong>Select the suggestion command, then review the proposed annotation when a Copilot model is available.</figcaption>
+  </figure>
 
   <!-- ===== AI TOOL ===== -->
   <h2 id="ai-tool">Language Model Tool</h2>
@@ -1481,11 +1506,10 @@ export function validateToken(token: string) {
     </div>
   </div>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Analysis command result in notification or output panel</span>
-    Show the result of running "Find Duplicate/Similar Groups" — either a VS Code notification popup listing duplicate candidates, or the output shown in the Copilot Chat panel via @groupcode /duplicates.
-    <span class="sc-caption">Command Palette &gt; "Group Code: Find Duplicate/Similar Groups"</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/commands.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/commands.jpg" alt="Available Group Code analysis and navigation commands" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Inspect and maintain code groups</strong>The Command Palette exposes naming analysis, refactoring, navigation and refresh actions.</figcaption>
+  </figure>
 
   <!-- ===== SETTINGS ===== -->
   <h2 id="settings">Settings</h2>
@@ -1525,11 +1549,10 @@ export function validateToken(token: string) {
   <h3>Set Preferred AI Model (Quick)</h3>
   <p>Run <code>Group Code: Set Preferred AI Model</code> from the Command Palette to pick a model without opening the full settings panel.</p>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Group Code Settings panel (webview)</span>
-    Show the Group Code Settings webview panel with the AI model selector dropdown, Refresh Models button, and Clear All Groups button visible.
-    <span class="sc-caption">Gear icon in tree view toolbar &gt; Group Code Settings panel</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/settings.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/settings.jpg" alt="Group Code settings panel with scanning and model options" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>Configure scanning and models</strong>Open the settings panel from the Group Code toolbar to adjust workspace behavior.</figcaption>
+  </figure>
 
   <!-- ===== STATUS BAR ===== -->
   <h2 id="status-bar">Status Bar Integration</h2>
@@ -1543,11 +1566,10 @@ export function validateToken(token: string) {
     you a quick at-a-glance count.
   </p>
 
-  <div class="screenshot-ref">
-    <span class="sc-title">Screenshot: Status bar item</span>
-    Show the VS Code status bar at the bottom with the Group Code item visible, displaying a group count (e.g., "$(compass) 42 groups"), highlighted or hovered.
-    <span class="sc-caption">Bottom status bar &gt; Group Code item</span>
-  </div>
+  <figure class="screenshot">
+    <a href="images/live-update.jpg" target="_blank" rel="noopener" title="Open full-size screenshot"><img src="images/live-update.jpg" alt="Updated Commerce hierarchy and Group Code compass status item" width="1600" height="1000" loading="lazy" /></a>
+    <figcaption><strong>At-a-glance workspace status</strong>The Group Code status item reports the indexed group count at the bottom of VS Code.</figcaption>
+  </figure>
 
   <!-- ===== KEYBOARD SHORTCUTS ===== -->
   <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
@@ -1613,135 +1635,6 @@ export function validateToken(token: string) {
     Even for unsupported file types, the extension still detects <code>@group</code> comments
     and indexes them — it falls back to <code>// @group</code> style comment detection.
   </p>
-
-  <!-- ===== SCREENSHOTS GUIDE ===== -->
-  <h2 id="screenshots">Screenshots Guide</h2>
-  <p>
-    This section lists all screenshots referenced throughout this guide. Use it as a checklist
-    when capturing screenshots for documentation, marketing, or the VS Code Marketplace listing.
-  </p>
-
-  <table>
-    <thead>
-      <tr><th>#</th><th>Screenshot Title</th><th>What to Capture</th><th>Section</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1</td>
-        <td>Extensions Marketplace search</td>
-        <td>Extensions sidebar with "Group Code" search result and install button</td>
-        <td><a href="#installation">Installation</a></td>
-      </tr>
-      <tr>
-        <td>2</td>
-        <td>Activity Bar and tree view</td>
-        <td>Activity Bar compass icon highlighted, sidebar with sample group tree</td>
-        <td><a href="#quick-start">Quick Start</a></td>
-      </tr>
-      <tr>
-        <td>3</td>
-        <td>@group comment in editor with syntax highlighting</td>
-        <td>TypeScript file with @group annotations showing grammar injection colors</td>
-        <td><a href="#comment-syntax">Comment Syntax</a></td>
-      </tr>
-      <tr>
-        <td>4</td>
-        <td>Hierarchical tree view</td>
-        <td>3-level hierarchy in the explorer sidebar with folder/file icons</td>
-        <td><a href="#hierarchical-groups">Hierarchical Groups</a></td>
-      </tr>
-      <tr>
-        <td>5</td>
-        <td>Both views (Group Code and By File)</td>
-        <td>Activity Bar panel showing both tree view sections with toolbar buttons</td>
-        <td><a href="#tree-views">Tree Views</a></td>
-      </tr>
-      <tr>
-        <td>6</td>
-        <td>Quick-pick group navigator</td>
-        <td>Quick-pick dropdown opened by Ctrl+Shift+G with group list</td>
-        <td><a href="#navigation">Navigation</a></td>
-      </tr>
-      <tr>
-        <td>7</td>
-        <td>Favorite star on tree item</td>
-        <td>Tree item with inline star icon visible on hover and filled star on favorited item</td>
-        <td><a href="#favorites">Favorites</a></td>
-      </tr>
-      <tr>
-        <td>8</td>
-        <td>Inline rename input in tree view</td>
-        <td>Group node in rename mode with editable text input</td>
-        <td><a href="#rename">Rename Groups</a></td>
-      </tr>
-      <tr>
-        <td>9</td>
-        <td>Right-click context menu</td>
-        <td>Context menu open with "Add to Group..." highlighted</td>
-        <td><a href="#quick-add">Quick Add Group</a></td>
-      </tr>
-      <tr>
-        <td>10</td>
-        <td>Group name quick-pick list</td>
-        <td>Quick-pick with "Create New Group" option + existing group list</td>
-        <td><a href="#quick-add">Quick Add Group</a></td>
-      </tr>
-      <tr>
-        <td>11</td>
-        <td>@group autocomplete dropdown</td>
-        <td>IntelliSense dropdown in a comment line showing group name suggestions</td>
-        <td><a href="#autocomplete">Smart Autocomplete</a></td>
-      </tr>
-      <tr>
-        <td>12</td>
-        <td>Hover card on @group annotation</td>
-        <td>Rich hover popup showing breadcrumb, description, file list, sub-groups</td>
-        <td><a href="#hover-cards">Hover Cards</a></td>
-      </tr>
-      <tr>
-        <td>13</td>
-        <td>Active filter in tree view</td>
-        <td>Search input open with a query typed and filtered results shown</td>
-        <td><a href="#filter-search">Filter &amp; Search</a></td>
-      </tr>
-      <tr>
-        <td>14</td>
-        <td>@groupcode in Copilot Chat</td>
-        <td>Copilot Chat panel with @groupcode participant response listing groups</td>
-        <td><a href="#chat-participant">Chat Participant</a></td>
-      </tr>
-      <tr>
-        <td>15</td>
-        <td>AI-generated @group comments in a file</td>
-        <td>File with AI-inserted @group comments above multiple functions</td>
-        <td><a href="#ai-generate">AI Generate Groups</a></td>
-      </tr>
-      <tr>
-        <td>16</td>
-        <td>AI Suggest result</td>
-        <td>Notification or dialog showing the AI's suggested group name for selected code</td>
-        <td><a href="#ai-suggest">AI Suggest</a></td>
-      </tr>
-      <tr>
-        <td>17</td>
-        <td>Analysis command result</td>
-        <td>Duplicate/similar groups result shown in notification or chat response</td>
-        <td><a href="#analysis">Analysis Tools</a></td>
-      </tr>
-      <tr>
-        <td>18</td>
-        <td>Group Code Settings panel</td>
-        <td>Webview settings panel with AI model selector and action buttons</td>
-        <td><a href="#settings">Settings</a></td>
-      </tr>
-      <tr>
-        <td>19</td>
-        <td>Status bar item</td>
-        <td>VS Code status bar showing the Group Code group count item</td>
-        <td><a href="#status-bar">Status Bar</a></td>
-      </tr>
-    </tbody>
-  </table>
 
   <hr />
 

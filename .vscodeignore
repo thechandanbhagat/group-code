@@ -48,6 +48,9 @@ out/tests/**
 resources/groupcode.gif
 resources/groupcode1.gif
 
+# Demo videos belong to the user guide, not the extension runtime
+userguide/videos/**
+
 .groupcode/*
 
 # Previous release packages

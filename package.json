@@ -2,7 +2,7 @@
   "name": "groupcode",
   "displayName": "Group Code",
   "description": "Navigate and organize your codebase by functionality across different file types.",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "icon": "resources/compass-icon.png",
   "publisher": "thechandanbhagat",
   "repository": "https://github.com/thechandanbhagat/group-code",
@@ -34,12 +34,6 @@
           "name": "Group Code",
           "type": "tree",
           "visibility": "visible"
-        },
-        {
-          "id": "groupCodeFileView",
-          "name": "By File",
-          "type": "tree",
-          "visibility": "collapsed"
         }
       ],
       "explorer": [
@@ -58,10 +52,6 @@
       {
         "view": "groupCodeExplorerView",
         "contents": "Filter code groups by typing in the search box above.\n[Search Groups](command:groupCode.filterGroups)"
-      },
-      {
-        "view": "groupCodeFileView",
-        "contents": "Groups organized by file location.\n[Search Groups](command:groupCode.filterGroups)"
       }
     ],
     "commands": [
@@ -70,22 +60,24 @@
         "title": "Search Groups",
         "category": "Group Code",
         "icon": "$(search)",
-        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView || view == groupCodeFileView"
+        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView"
       },
       {
         "command": "groupCode.clearFilter",
         "title": "Clear Filter",
         "category": "Group Code",
         "icon": "$(clear-all)",
-        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView || view == groupCodeFileView"
+        "enablement": "view == groupCodeExplorer || view == groupCodeExplorerView"
       },
       {
         "command": "groupCode.groupCode",
-        "title": "Group Code in Current File"
+        "title": "Group Code in Current File",
+        "icon": "$(symbol-namespace)"
       },
       {
         "command": "groupCode.showGroups",
-        "title": "Show Code Groups"
+        "title": "Show Code Groups",
+        "icon": "$(layers)"
       },
       {
         "command": "groupCode.refreshTreeView",
@@ -94,7 +86,8 @@
       },
       {
         "command": "groupCode.navigateToGroup",
-        "title": "Navigate to Code Group"
+        "title": "Navigate to Code Group",
+        "icon": "$(go-to-file)"
       },
       {
         "command": "groupCode.addCodeGroupDialog",
@@ -116,19 +109,19 @@
         "command": "groupCode.convertToHierarchy",
         "title": "Convert Flat Groups to Hierarchies",
         "category": "Group Code",
-        "icon": "$(arrow-both)"
+        "icon": "$(layers)"
       },
       {
         "command": "groupCode.rescanWorkspace",
         "title": "Rescan Entire Workspace",
         "category": "Group Code",
-        "icon": "$(database)"
+        "icon": "$(refresh)"
       },
       {
         "command": "groupCode.analyzePatterns",
         "title": "Analyze Group Naming Patterns",
         "category": "Group Code",
-        "icon": "$(light-bulb)"
+        "icon": "$(lightbulb)"
       },
       {
         "command": "groupCode.analyzeRefactoring",
@@ -152,7 +145,7 @@
         "command": "groupCode.setPreferredModel",
         "title": "Set Preferred AI Model",
         "category": "Group Code",
-        "icon": "$(hubot)"
+        "icon": "$(sparkle)"
       },
       {
         "command": "groupCode.openSettings",
@@ -355,26 +348,6 @@
         {
           "command": "groupCode.openSettings",
           "when": "view == groupCodeExplorer || view == groupCodeExplorerView",
-          "group": "navigation@2"
-        },
-        {
-          "command": "groupCode.filterGroups",
-          "when": "view == groupCodeFileView",
-          "group": "navigation@0"
-        },
-        {
-          "command": "groupCode.clearFilter",
-          "when": "view == groupCodeFileView",
-          "group": "navigation@0"
-        },
-        {
-          "command": "groupCode.refreshTreeView",
-          "when": "view == groupCodeFileView",
-          "group": "navigation@1"
-        },
-        {
-          "command": "groupCode.openSettings",
-          "when": "view == groupCodeFileView",
           "group": "navigation@2"
         }
       ]

@@ -73,6 +73,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--force', action='store_true')
+    parser.add_argument('--output-dir', type=Path, default=ROOT / 'artifacts/demo',
+                        help='Working directory for narration, alignment and captions.')
     args = parser.parse_args()
     values = configuration()
     narration = (ROOT / 'docs/demo/narration.txt').read_text().strip()
@@ -91,7 +93,7 @@ def main():
         raise ValueError('The voice ID has an unexpected format.')
     payload = {'text': narration, 'model_id': model}
     fingerprint = hashlib.sha256(json.dumps([voice_id, payload], sort_keys=True).encode()).hexdigest()
-    directory = ROOT / 'artifacts/demo'
+    directory = args.output_dir.resolve()
     directory.mkdir(parents=True, exist_ok=True)
     marker = directory / 'voice-generation.json'
     outputs = [directory / name for name in ('narration.mp3', 'alignment.json', 'captions.srt')]
@@ -125,7 +127,7 @@ def main():
     outputs[1].write_text(json.dumps(alignment, indent=2))
     outputs[2].write_text(subtitles(alignment))
     marker.write_text(json.dumps({'fingerprint': fingerprint, 'model': model, 'characters': len(narration)}, indent=2))
-    print('Created narration.mp3, alignment.json and captions.srt in artifacts/demo.')
+    print(f'Created narration.mp3, alignment.json and captions.srt in {directory}.')
 
 
 if __name__ == '__main__':

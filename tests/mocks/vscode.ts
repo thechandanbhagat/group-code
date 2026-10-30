@@ -256,6 +256,10 @@ export class ThemeIcon {
     constructor(public readonly id: string) {}
 }
 
+export class ThemeColor {
+    constructor(public readonly id: string) {}
+}
+
 export class Position {
     constructor(public readonly line: number, public readonly character: number) {}
     translate(lineDelta = 0, characterDelta = 0): Position { return new Position(this.line + lineDelta, this.character + characterDelta); }
@@ -376,6 +380,7 @@ export class MarkdownString {
     value: string;
     isTrusted?: boolean;
     supportHtml?: boolean;
+    supportThemeIcons?: boolean;
     constructor(value?: string) {
         this.value = value || '';
     }

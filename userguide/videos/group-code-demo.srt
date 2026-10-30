@@ -1,0 +1,103 @@
+1
+00:00:01,535 --> 00:00:05,087
+Finding a feature shouldn't mean searching through dozens of files.
+
+2
+00:00:05,529 --> 00:00:09,592
+Meet Group Code, the Visual Studio Code extension that organizes
+
+3
+00:00:09,639 --> 00:00:11,612
+your codebase by what it does.
+
+4
+00:00:12,216 --> 00:00:13,923
+Start with a simple comment.
+
+5
+00:00:14,248 --> 00:00:17,754
+Add an at-group annotation above your code, give it a
+
+6
+00:00:17,824 --> 00:00:20,018
+name, and describe its purpose.
+
+7
+00:00:20,622 --> 00:00:24,709
+Use the greater-than separator to create a hierarchy, like Checkout,
+
+8
+00:00:24,883 --> 00:00:25,986
+then Payments.
+
+9
+00:00:26,590 --> 00:00:28,610
+Your groups appear in the sidebar.
+
+10
+00:00:29,120 --> 00:00:33,765
+Related code can live in TypeScript, SQL, or HTML, while
+
+11
+00:00:33,800 --> 00:00:35,866
+still belonging to the same feature.
+
+12
+00:00:36,470 --> 00:00:40,034
+Expand a feature to explore all of its source files.
+
+13
+00:00:40,475 --> 00:00:42,937
+Click a group to jump straight to its code.
+
+14
+00:00:43,448 --> 00:00:46,338
+Search to narrow the list, and favorite the groups you
+
+15
+00:00:46,455 --> 00:00:47,418
+use most.
+
+16
+00:00:47,859 --> 00:00:49,264
+Need to reorganize?
+
+17
+00:00:49,775 --> 00:00:53,501
+Rename a parent group, and its child annotations follow.
+
+18
+00:00:54,105 --> 00:00:57,217
+Your edits stay available for review and undo.
+
+19
+00:00:57,727 --> 00:01:01,594
+For a faster starting point, the Copilot integration can suggest
+
+20
+00:01:01,663 --> 00:01:02,929
+group annotations.
+
+21
+00:01:03,440 --> 00:01:06,899
+Review the proposed changes, then save when you're ready.
+
+22
+00:01:07,503 --> 00:01:10,417
+Group Code keeps its index up to date as eligible
+
+23
+00:01:10,463 --> 00:01:14,620
+files change, and respects your workspace's ignore rules.
+
+24
+00:01:15,223 --> 00:01:17,522
+Turn a collection of files into a map of your
+
+25
+00:01:17,580 --> 00:01:18,381
+features.
+
+26
+00:01:18,764 --> 00:01:22,236
+Find Group Code in the Visual Studio Code Marketplace.

@@ -6,12 +6,14 @@ import argparse
 import bisect
 import json
 import math
+import re
 from pathlib import Path
 import subprocess
+import sys
 import textwrap
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / 'artifacts/demo'
@@ -52,14 +54,14 @@ def rounded_label(draw, text, xy, color=ACCENT):
 def capture(name):
     path = next((OUTPUT / 'frames').glob(name + '.*'))
     image = Image.open(path).convert('RGB')
-    # Keep the real editor and extension; remove only the macOS window title/status bands.
-    return image.crop((0, 29, image.width, image.height - 20))
+    # Keep the full workbench, including its source location and status bar.
+    return image
 
 
 SCENES = [
     # Starts are relative to speech; the title starts before narration.
     (-LEAD, None, 'YOUR CODE.\nYOUR FEATURES.', 'A clearer way to find your way around.', 'intro'),
-    (4.17, '06-annotated', 'Group Code', 'Organize your codebase\nby what it does.', 'brand'),
+    (4.17, '01-overview', 'Group Code', 'Organize your codebase\nby what it does.', 'brand'),
     (10.98, '02-select-code', 'Start with\nyour code.', 'Select a function or place\nyour cursor on a line.', '01 / ADD'),
     (13.11, '03-add-dialog', 'Add a\ngroup.', 'Choose an existing group\nor create a new one.', '01 / ADD'),
     (16.20, '05-description', 'Give it\na purpose.', 'A name and a short\ndescription make code\neasier to find.', '01 / ADD'),
@@ -67,8 +69,8 @@ SCENES = [
     (23.2, '06-annotated', 'One comment.\nA useful map.', 'Your annotations become\na navigable feature tree.', '02 / ORGANIZE'),
     (27.61, '07-sql-navigation', 'Across\nyour files.', 'TypeScript. SQL. HTML.\n\nRelated code stays\nunder the same feature.', '03 / EXPLORE'),
     (31.0, '08-html-navigation', 'One feature.\nMany places.', 'Follow Payments from\nthe data layer to the UI.', '03 / EXPLORE'),
-    (34.96, '09-by-file', 'Prefer the\nfile view?', 'Explore each file and\nthe groups inside it.', '03 / EXPLORE'),
-    (38.71, '10-jump-to-code', 'Jump straight\nto the code.', 'Select a location in\neither tree to navigate.', '04 / FIND'),
+    (34.96, '08-html-navigation', 'Explore the\nhierarchy.', 'Expand a feature to find\nall its source entries.', '03 / EXPLORE'),
+    (38.71, '10-jump-to-code', 'Jump straight\nto the code.', 'Select a source entry\nin the hierarchy.', '04 / FIND'),
     (41.52, '11-search-input', 'Find your\nfocus.', 'Search by group name,\nfile type or description.', '04 / FIND'),
     (42.9, '12-search-results', 'Keep the\nrelevant code.', 'A focused feature view,\nready to explore.', '04 / FIND'),
     (44.1, '13-favorite', 'Keep favorites\nclose.', 'Star the groups\nyou return to most.', '04 / FIND'),
@@ -114,9 +116,9 @@ def make_scene(base, scene):
     title_lines = title.count('\n') + 1
     lines(draw, body, (57, 252 + title_lines * 64), 26, color=MUTED, spacing=12)
     shot_image = capture(shot)
-    shot_image = shot_image.resize((1414, 827), Image.Resampling.LANCZOS)
+    shot_image = ImageOps.contain(shot_image, (1414, 827), Image.Resampling.LANCZOS)
     draw.rounded_rectangle((434, 117, 1868, 964), radius=14, fill=(8, 13, 21), outline=(67, 92, 113), width=2)
-    canvas.paste(shot_image, (444, 127))
+    canvas.paste(shot_image, (444 + (1414 - shot_image.width) // 2, 127))
     draw.text((57, 891), 'REAL EXTENSION WORKFLOW', font=font(17, True), fill=ACCENT)
     return canvas
 
@@ -126,7 +128,6 @@ def cues_from_alignment():
     text = ''.join(alignment['characters'])
     starts = alignment['character_start_times_seconds']
     ends = alignment['character_end_times_seconds']
-    import re
     cues, words = [], []
     for match in re.finditer(r'\S+', text):
         words.append(match)
@@ -161,10 +162,6 @@ def compose(t, bases, starts, cues, duration):
     draw = ImageDraw.Draw(image)
     # A quiet progress rail gives still captures an explicit temporal structure.
     draw.rectangle((0, H - 4, int(W * t / duration), H), fill=ACCENT)
-    # Pulse a guidance line alongside the active step, without simulating a mouse click.
-    if SCENES[index][4] not in ('intro', 'outro'):
-        strength = 150 + int(50 * (1 + math.sin(elapsed * 2)) / 2)
-        draw.rounded_rectangle((30, 226, 35, 390), radius=2, fill=(72, strength, 232))
     for start, end, text in cues:
         if start <= t <= end + .07:
             subtitle(draw, text)
@@ -177,9 +174,29 @@ def compose(t, bases, starts, cues, duration):
 
 
 def main():
+    global OUTPUT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--preview', action='store_true')
+    parser.add_argument('--webm', action='store_true', help='Also export VP9/Opus for the user-guide player.')
+    parser.add_argument('--output-dir', type=Path, default=OUTPUT)
     args = parser.parse_args()
+    OUTPUT = args.output_dir.resolve()
+    alignment = json.loads((OUTPUT / 'alignment.json').read_text())
+    aligned_text = ''.join(alignment['characters']).lower()
+    anchors = [None, 'meet group code', 'start with a simple comment', 'add an at-group',
+               'give it a name', 'use the greater-than', 'your groups appear', 'related code',
+               'while still belonging', 'expand a feature', 'click a group', 'search to narrow',
+               'search to narrow', 'favorite the groups', 'need to reorganize', 'its child annotations follow',
+               'your edits', 'for a faster', 'review the proposed', 'group code keeps', 'turn a collection']
+    for index, anchor in enumerate(anchors):
+        if anchor is not None:
+            character = aligned_text.find(anchor)
+            if character < 0:
+                raise ValueError(f'Missing narration timing anchor: {anchor}')
+            time = alignment['character_start_times_seconds'][character]
+            if index == 12:
+                time += 1.05
+            SCENES[index] = (time, *SCENES[index][1:])
     audio = OUTPUT / 'narration.mp3'
     duration = float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', str(audio)])) + LEAD + 2.5
     base = background()
@@ -192,9 +209,12 @@ def main():
         minutes, value = divmod(value, 60000)
         seconds, milliseconds = divmod(value, 1000)
         return f'{hours:02}:{minutes:02}:{seconds:02},{milliseconds:03}'
-    (OUTPUT / 'group-code-demo.srt').write_text('\n\n'.join(
+    captions = '\n\n'.join(
         f'{i+1}\n{stamp(start)} --> {stamp(end)}\n{textwrap.fill(text, width=70)}'
-        for i, (start, end, text) in enumerate(cues)) + '\n')
+        for i, (start, end, text) in enumerate(cues)) + '\n'
+    (OUTPUT / 'group-code-demo.srt').write_text(captions)
+    (OUTPUT / 'group-code-demo.vtt').write_text('WEBVTT\n\n' + re.sub(
+        r'(\d{2}:\d{2}:\d{2}),(\d{3})', r'\1.\2', captions))
     qa = OUTPUT / 'qa'
     qa.mkdir(exist_ok=True)
     preview_times = [3, 9, 16, 23, 30, 37, 44.7, 51, 59, 65, 71, 80]
@@ -211,9 +231,17 @@ def main():
         print('Preview frames and storyboard created. No video rendered.', flush=True)
         return
     output = OUTPUT / 'group-code-demo.mp4'
+    music = OUTPUT / 'music.wav'
+    subprocess.run([sys.executable, str(ROOT / 'scripts/demo/make_music.py'), '--duration', str(duration),
+                    '--output', str(music)], check=True)
+    filters = (f'[1:a]adelay={int(LEAD*1000)}:all=1,apad=pad_dur=2.5,'
+               f'loudnorm=I=-16:TP=-1.5:LRA=11,asplit=2[voice][key];'
+               f'[2:a]volume=0.22,afade=t=in:d=1.5,afade=t=out:st={duration-2.5}:d=2.5[bed];'
+               '[bed][key]sidechaincompress=threshold=0.025:ratio=6:attack=20:release=450[ducked];'
+               '[voice][ducked]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.95:level=false[a]')
     command = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24',
-               '-s', f'{W}x{H}', '-r', str(FPS), '-i', 'pipe:0', '-i', str(audio),
-               '-filter_complex', f'[1:a]adelay={int(LEAD*1000)}:all=1,apad=pad_dur=2.5,loudnorm=I=-16:TP=-1.5:LRA=11[a]',
+               '-s', f'{W}x{H}', '-r', str(FPS), '-i', 'pipe:0', '-i', str(audio), '-i', str(music),
+               '-filter_complex', filters,
                '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p',
                '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-t', str(duration), '-movflags', '+faststart',
                '-metadata', 'title=Group Code — feature walkthrough', str(output)]
@@ -230,6 +258,12 @@ def main():
         process.kill()
         raise
     print(f'Created {output} ({duration:.2f}s, 1920x1080, 30 fps).', flush=True)
+    if args.webm:
+        webm = OUTPUT / 'group-code-demo.webm'
+        subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', str(output),
+                        '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '32', '-cpu-used', '4',
+                        '-row-mt', '1', '-c:a', 'libopus', '-b:a', '96k', str(webm)], check=True)
+        print(f'Created {webm}.', flush=True)
 
 
 if __name__ == '__main__':

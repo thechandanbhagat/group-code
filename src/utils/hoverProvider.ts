@@ -4,6 +4,7 @@ import { CodeGroup } from '../groupDefinition';
 import * as path from 'path';
 import logger from './logger';
 import { LanguageConfig, LanguageInfo, getLanguageConfig } from './commentParser';
+import { groupIcon, iconMarkdown, uiIcons } from './uiIcons';
 
 // @group HoverProvider : Hover card provider for @group comment annotations
 export class GroupHoverProvider implements vscode.HoverProvider {
@@ -93,12 +94,15 @@ export class GroupHoverProvider implements vscode.HoverProvider {
         groups: CodeGroup[],
         allGroupsMap: Map<string, CodeGroup[]>
     ): vscode.MarkdownString {
-        const md = new vscode.MarkdownString();
+        const md = iconMarkdown();
         md.supportHtml = false;
+        const allGroups: CodeGroup[] = [];
+        allGroupsMap.forEach(grps => allGroups.push(...grps));
+        const children = this.findDirectChildren(rawFunctionality, allGroups);
 
         // --- Header: hierarchy path ---
         const hierarchyLabel = this.formatHierarchyLabel(rawFunctionality);
-        md.appendMarkdown(`### $(symbol-namespace) ${hierarchyLabel}\n\n`);
+        md.appendMarkdown(`### $(${groupIcon(children.length > 0)}) ${hierarchyLabel}\n\n`);
 
         // --- Description ---
         const description = inlineDescription ||
@@ -120,8 +124,8 @@ export class GroupHoverProvider implements vscode.HoverProvider {
         const totalOccurrences = groups.reduce((sum, g) => sum + g.lineNumbers.length, 0);
 
         md.appendMarkdown(
-            `$(file-directory) **${uniqueFiles.length}** ${uniqueFiles.length === 1 ? 'file' : 'files'}` +
-            `  ·  $(location) **${totalOccurrences}** ${totalOccurrences === 1 ? 'occurrence' : 'occurrences'}\n\n`
+            `$(${uiIcons.source}) **${uniqueFiles.length}** ${uniqueFiles.length === 1 ? 'file' : 'files'}` +
+            `  ·  $(${uiIcons.location}) **${totalOccurrences}** ${totalOccurrences === 1 ? 'occurrence' : 'occurrences'}\n\n`
         );
 
         // --- File list ---
@@ -137,9 +141,6 @@ export class GroupHoverProvider implements vscode.HoverProvider {
         }
 
         // --- Hierarchy children (if this is a parent group) ---
-        const allGroups: CodeGroup[] = [];
-        allGroupsMap.forEach(grps => allGroups.push(...grps));
-        const children = this.findDirectChildren(rawFunctionality, allGroups);
         if (children.length > 0) {
             md.appendMarkdown('\n---\n\n');
             md.appendMarkdown('**Sub-groups:**\n\n');

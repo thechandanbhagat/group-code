@@ -4,6 +4,7 @@ import { copilotIntegration } from './copilotIntegration';
 import logger from './logger';
 
 import { insertAnnotation } from './annotationEdits';
+import { functionalityIcon, parentGroupPaths, uiIcons } from './uiIcons';
 
 /**
  * Utility class for quick adding groups via context menu
@@ -21,15 +22,16 @@ export class QuickAddGroupUtility {
         try {
             // Get existing functionalities for autocomplete
             const existingGroups = codeGroupProvider.getFunctionalities();
+            const parents = parentGroupPaths(existingGroups);
             
             // Step 1: Select or create group name
             let groupName: string | undefined;
             
             if (existingGroups.length > 0) {
                 const options = [
-                    { label: '$(add) Create New Group', description: 'Enter a custom group name', value: '__NEW__' },
+                    { label: `$(${uiIcons.add}) Create New Group`, description: 'Enter a custom group name', value: '__NEW__' },
                     { label: '', kind: vscode.QuickPickItemKind.Separator },
-                    ...existingGroups.map(g => ({ label: `$(folder) ${g}`, description: 'Existing group', value: g }))
+                    ...existingGroups.map(g => ({ label: `$(${functionalityIcon(g, parents)}) ${g}`, description: 'Existing group', value: g }))
                 ];
                 
                 const selected = await vscode.window.showQuickPick(options, {
@@ -253,7 +255,7 @@ export class QuickAddGroupUtility {
             // Show options
             const options: vscode.QuickPickItem[] = [
                 {
-                    label: '$(edit) Manual Entry',
+                    label: `$(${uiIcons.edit}) Manual Entry`,
                     description: 'Create group with manual input',
                     detail: 'Choose this to enter group name, description, and tags yourself'
                 }
@@ -261,7 +263,7 @@ export class QuickAddGroupUtility {
             
             if (aiAvailable) {
                 options.push({
-                    label: '$(sparkle) AI-Powered',
+                    label: `$(${uiIcons.ai}) AI-Powered`,
                     description: 'Let AI suggest group details',
                     detail: 'Uses GitHub Copilot to analyze code and suggest group name and description'
                 });

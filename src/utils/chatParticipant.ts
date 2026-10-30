@@ -11,6 +11,7 @@ import { checkCancellation } from './aiModels';
 import { parseAnnotations } from './annotations';
 import { chatCommand } from './chatRouting';
 import { scanProgressMessage } from './workspaceScanner';
+import { functionalityIcon, iconMarkdown, parentGroupPaths } from './uiIcons';
 
 /**
  * GitHub Copilot Chat Participant for Code Grouping Extension
@@ -18,6 +19,10 @@ import { scanProgressMessage } from './workspaceScanner';
  */
 export class GroupCodeChatParticipant {
     private participant: vscode.ChatParticipant;
+
+    private markdown(stream: vscode.ChatResponseStream, value: string): void {
+        stream.markdown(iconMarkdown(value));
+    }
 
     constructor(
         private codeGroupProvider: CodeGroupProvider,
@@ -63,7 +68,7 @@ export class GroupCodeChatParticipant {
             }
         } catch (error) {
             logger.error('Error handling chat request', error);
-            stream.markdown('❌ An error occurred while processing your request. Please try again.\n');
+            this.markdown(stream, '$(error) An error occurred while processing your request. Please try again.\n');
             return { errorDetails: { message: String(error) } };
         }
     }
@@ -92,16 +97,17 @@ export class GroupCodeChatParticipant {
                 update => stream.progress(scanProgressMessage(update)));
             checkCancellation(token);
             if (result.status === 'cancelled') {
-                stream.markdown('The scan was superseded or cancelled. Previous results remain available.\n');
+                this.markdown(stream, 'The scan was superseded or cancelled. Previous results remain available.\n');
                 return {};
             }
             this.treeProvider.refresh();
             
             const allGroups = this.codeGroupProvider.getAllGroups();
             const fileCount = new Set(allGroups.map(g => g.filePath)).size;
+            const parents = parentGroupPaths(allGroups.map(group => group.functionality));
             
-            stream.markdown(`✅ **Workspace scan complete!**\n\n`);
-            stream.markdown(`Found **${allGroups.length}** code group(s) across **${fileCount}** file(s).\n\n`);
+            this.markdown(stream, `$(check) **Workspace scan complete!**\n\n`);
+            this.markdown(stream, `Found **${allGroups.length}** code ${allGroups.length === 1 ? 'group' : 'groups'} across **${fileCount}** ${fileCount === 1 ? 'file' : 'files'}.\n\n`);
             
             if (allGroups.length > 0) {
                 // Group by functionality for a summary
@@ -111,14 +117,14 @@ export class GroupCodeChatParticipant {
                     byFunctionality.set(g.functionality, count + 1);
                 });
                 
-                stream.markdown('**Top groups found:**\n');
+                this.markdown(stream, '**Top groups found:**\n');
                 const sortedGroups = [...byFunctionality.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
                 sortedGroups.forEach(([name, count]) => {
-                    stream.markdown(`- 📁 **${name}** (${count} occurrence${count > 1 ? 's' : ''})\n`);
+                    this.markdown(stream, `- $(${functionalityIcon(name, parents)}) **${name}** (${count} occurrence${count > 1 ? 's' : ''})\n`);
                 });
                 
                 if (byFunctionality.size > 10) {
-                    stream.markdown(`\n*...and ${byFunctionality.size - 10} more groups*\n`);
+                    this.markdown(stream, `\n*...and ${byFunctionality.size - 10} more groups*\n`);
                 }
             }
         } else {
@@ -126,8 +132,8 @@ export class GroupCodeChatParticipant {
             stream.progress('Scanning active file for code groups...');
             
             if (!editor) {
-                stream.markdown('⚠️ No active file found. Please open a file first.\n\n');
-                stream.markdown('💡 **Tip:** Use `@groupcode /scan workspace` to scan the entire workspace.\n');
+                this.markdown(stream, '$(warning) No active file found. Please open a file first.\n\n');
+                this.markdown(stream, '$(lightbulb) **Tip:** Use `@groupcode /scan workspace` to scan the entire workspace.\n');
                 return {};
             }
             
@@ -138,21 +144,22 @@ export class GroupCodeChatParticipant {
             
             const allGroups = this.codeGroupProvider.getAllGroups();
             const groups = allGroups.filter(g => g.filePath === editor.document.uri.fsPath);
+            const parents = parentGroupPaths(allGroups.map(group => group.functionality));
             
-            stream.markdown(`✅ **Scanned \`${fileName}\`**\n\n`);
-            stream.markdown(`Found **${groups.length}** code group(s).\n\n`);
+            this.markdown(stream, `$(check) **Scanned \`${fileName}\`**\n\n`);
+            this.markdown(stream, `Found **${groups.length}** code ${groups.length === 1 ? 'group' : 'groups'}.\n\n`);
             
             if (groups.length > 0) {
-                stream.markdown('**Groups found:**\n');
+                this.markdown(stream, '**Groups found:**\n');
                 groups.forEach((group: CodeGroup) => {
-                    stream.markdown(`- 📁 **${group.functionality}**${group.description ? ` - ${group.description}` : ''}\n`);
+                    this.markdown(stream, `- $(${functionalityIcon(group.functionality, parents)}) **${group.functionality}**${group.description ? ` - ${group.description}` : ''}\n`);
                 });
             } else {
-                stream.markdown('No `@group` comments found in this file.\n\n');
-                stream.markdown('💡 **Tip:** Use `@groupcode /generate` to automatically add group comments using AI.\n');
+                this.markdown(stream, 'No `@group` comments found in this file.\n\n');
+                this.markdown(stream, '$(lightbulb) **Tip:** Use `@groupcode /generate` to automatically add group comments using AI.\n');
             }
             
-            stream.markdown(`\n---\n💡 Use \`@groupcode /scan workspace\` to scan all files in the workspace.\n`);
+            this.markdown(stream, `\n---\n$(lightbulb) Use \`@groupcode /scan workspace\` to scan all files in the workspace.\n`);
         }
 
         return {};
@@ -169,7 +176,7 @@ export class GroupCodeChatParticipant {
         const editor = vscode.window.activeTextEditor;
         
         if (!editor) {
-            stream.markdown('⚠️ No active file found. Please open a file first.\n');
+            this.markdown(stream, '$(warning) No active file found. Please open a file first.\n');
             return {};
         }
 
@@ -181,7 +188,7 @@ export class GroupCodeChatParticipant {
         );
 
         if (!selectedText.trim()) {
-            stream.markdown('⚠️ No code selected. Please select some code to analyze.\n');
+            this.markdown(stream, '$(warning) No code selected. Please select some code to analyze.\n');
             return {};
         }
 
@@ -193,14 +200,14 @@ export class GroupCodeChatParticipant {
         const description = groupName ? await copilotIntegration.suggestDescription(selectedText, groupName, token, request.model) : undefined;
 
         if (groupName) {
-            stream.markdown('### 💡 AI Suggestion\n\n');
-            stream.markdown(`**Group Name:** \`${groupName}\`\n\n`);
+            this.markdown(stream, '### $(sparkle) AI Suggestion\n\n');
+            this.markdown(stream, `**Group Name:** \`${groupName}\`\n\n`);
             if (description) {
-                stream.markdown(`**Description:** ${description}\n\n`);
+                this.markdown(stream, `**Description:** ${description}\n\n`);
             }
-            stream.markdown('You can add this group by using the "Add Code Group" command in the editor.\n');
+            this.markdown(stream, 'You can add this group by using the "Add Code Group" command in the editor.\n');
         } else {
-            stream.markdown('⚠️ Could not generate suggestions. Make sure GitHub Copilot is enabled.\n');
+            this.markdown(stream, '$(warning) Could not generate suggestions. Make sure GitHub Copilot is enabled.\n');
         }
 
         return {};
@@ -211,13 +218,14 @@ export class GroupCodeChatParticipant {
      */
     private async handleShowGroupsCommand(stream: vscode.ChatResponseStream): Promise<vscode.ChatResult> {
         const allGroups = this.codeGroupProvider.getAllGroups();
+        const parents = parentGroupPaths(allGroups.map(group => group.functionality));
         
         if (allGroups.length === 0) {
-            stream.markdown('📂 No code groups found. Use `@groupcode scan` to find code groups in your workspace.\n');
+            this.markdown(stream, '$(symbol-namespace) No code groups found. Use `@groupcode scan` to find code groups in your workspace.\n');
             return {};
         }
 
-        stream.markdown(`### 📚 All Code Groups (${allGroups.length})\n\n`);
+        this.markdown(stream, `### $(layers) All Code Groups (${allGroups.length})\n\n`);
 
         // Group by functionality
         const groupedByName = new Map<string, typeof allGroups>();
@@ -228,17 +236,17 @@ export class GroupCodeChatParticipant {
         });
 
         groupedByName.forEach((groups, name) => {
-            stream.markdown(`#### 📁 ${name}\n`);
+            this.markdown(stream, `#### $(${functionalityIcon(name, parents)}) ${name}\n`);
             if (groups[0].description) {
-                stream.markdown(`*${groups[0].description}*\n\n`);
+                this.markdown(stream, `*${groups[0].description}*\n\n`);
             }
-            stream.markdown(`Found in **${groups.length}** location(s):\n`);
+            this.markdown(stream, `Found in **${groups.length}** ${groups.length === 1 ? 'location' : 'locations'}:\n`);
             groups.forEach((group: CodeGroup) => {
                 const fileName = group.filePath.split(/[\\/]/).pop();
                 const startLine = group.lineNumbers && group.lineNumbers.length > 0 ? group.lineNumbers[0] : 0;
-                stream.markdown(`- 📄 \`${fileName}\` (line ${startLine})\n`);
+                this.markdown(stream, `- $(file) \`${fileName}\` (line ${startLine})\n`);
             });
-            stream.markdown('\n');
+            this.markdown(stream, '\n');
         });
 
         return {};
@@ -256,12 +264,13 @@ export class GroupCodeChatParticipant {
         const searchMatch = (request.command === 'find' ? 'find ' + prompt : prompt).match(/(?:find|search)\s+(?:group\s+)?["']?([^"']+)["']?/i);
         
         if (!searchMatch) {
-            stream.markdown('⚠️ Please specify a group name to search for. Example: `@groupcode find authentication` or `@groupcode find Auth > Login`\n');
+            this.markdown(stream, '$(warning) Please specify a group name to search for. Example: `@groupcode find authentication` or `@groupcode find Auth > Login`\n');
             return {};
         }
 
         const searchTerm = searchMatch[1].trim();
         const allGroups = this.codeGroupProvider.getAllGroups();
+        const parents = parentGroupPaths(allGroups.map(group => group.functionality));
         
         // Check if search term contains hierarchy separator
         const isHierarchicalSearch = searchTerm.includes('>');
@@ -284,11 +293,11 @@ export class GroupCodeChatParticipant {
 
         matchingGroups = matchingGroups.slice(0, await getSearchLimit());
         if (matchingGroups.length === 0) {
-            stream.markdown(`❌ No groups found matching "${searchTerm}".\n`);
+            this.markdown(stream, `$(error) No groups found matching "${searchTerm}".\n`);
             return {};
         }
 
-        stream.markdown(`### 🔍 Found ${matchingGroups.length} group(s) matching "${searchTerm}"\n\n`);
+        this.markdown(stream, `### $(search) Found ${matchingGroups.length} ${matchingGroups.length === 1 ? 'group' : 'groups'} matching "${searchTerm}"\n\n`);
         
         // Group by hierarchy level for better display
         const enrichedMatches = matchingGroups.map((g: CodeGroup) => enrichWithHierarchy(g));
@@ -303,24 +312,24 @@ export class GroupCodeChatParticipant {
         let currentFunc = '';
         enrichedMatches.forEach((group: CodeGroup) => {
             if (group.functionality !== currentFunc) {
-                if (currentFunc) stream.markdown('\n');
+                if (currentFunc) this.markdown(stream, '\n');
                 currentFunc = group.functionality;
                 
                 // Display hierarchy breadcrumb
                 if (group.hierarchyPath && group.hierarchyPath.length > 1) {
-                    stream.markdown(`#### 📂 ${group.hierarchyPath.join(' → ')}\n`);
+                    this.markdown(stream, `#### $(${functionalityIcon(group.functionality, parents)}) ${group.hierarchyPath.join(' → ')}\n`);
                 } else {
-                    stream.markdown(`#### 📁 ${group.functionality}\n`);
+                    this.markdown(stream, `#### $(${functionalityIcon(group.functionality, parents)}) ${group.functionality}\n`);
                 }
             }
             
             const fileName = group.filePath.split(/[\\/]/).pop();
             const startLine = group.lineNumbers && group.lineNumbers.length > 0 ? group.lineNumbers[0] : 0;
-            stream.markdown(`  - 📄 \`${fileName}\` (line ${startLine})`);
+            this.markdown(stream, `  - $(file) \`${fileName}\` (line ${startLine})`);
             if (group.description) {
-                stream.markdown(` - *${group.description}*`);
+                this.markdown(stream, ` - *${group.description}*`);
             }
-            stream.markdown('\n');
+            this.markdown(stream, '\n');
         });
 
         return {};
@@ -337,7 +346,7 @@ export class GroupCodeChatParticipant {
         const searchMatch = (request.command === 'navigate' ? 'navigate ' + prompt : prompt).match(/(?:navigate|go to)\s+(?:group\s+)?["']?([^"']+)["']?/i);
         
         if (!searchMatch) {
-            stream.markdown('⚠️ Please specify a group name. Example: `@groupcode navigate to authentication`\n');
+            this.markdown(stream, '$(warning) Please specify a group name. Example: `@groupcode navigate to authentication`\n');
             return {};
         }
 
@@ -348,13 +357,13 @@ export class GroupCodeChatParticipant {
         );
 
         if (!matchingGroup) {
-            stream.markdown(`❌ No group found named "${searchTerm}".\n`);
+            this.markdown(stream, `$(error) No group found named "${searchTerm}".\n`);
             return {};
         }
 
         // Navigate to the group
         this.codeGroupProvider.navigateToGroup(matchingGroup);
-        stream.markdown(`✅ Navigated to **${(matchingGroup as any).functionality}** in \`${matchingGroup.filePath.split(/[\\/]/).pop()}\`\n`);
+        this.markdown(stream, `$(check) Navigated to **${(matchingGroup as any).functionality}** in \`${matchingGroup.filePath.split(/[\\/]/).pop()}\`\n`);
 
         return {};
     }
@@ -389,16 +398,16 @@ export class GroupCodeChatParticipant {
                         modified++;
                         await this.codeGroupProvider.processFileOnSave(document);
                         stream.anchor(file, `${plan.count} annotations`);
-                        stream.markdown('\n');
+                        this.markdown(stream, '\n');
                     }
                 } catch (error) {
                     checkCancellation(token);
                     failed++;
                     logger.error(`Generation failed for ${file.fsPath}`, error);
-                    stream.markdown(`Could not generate annotations for ${vscode.workspace.asRelativePath(file)}: ${String(error)}\n`);
+                    this.markdown(stream, `Could not generate annotations for ${vscode.workspace.asRelativePath(file)}: ${String(error)}\n`);
                 }
             }
-            stream.markdown(`Updated ${modified} file(s); ${failed} failed. Changes are open for review and undo. Save edited documents to keep them.\n`);
+            this.markdown(stream, `Updated ${modified} file(s); ${failed} failed. Changes are open for review and undo. Save edited documents to keep them.\n`);
             return {};
         }
         const document = vscode.window.activeTextEditor?.document;
@@ -410,14 +419,14 @@ export class GroupCodeChatParticipant {
         const version = document.version;
         const plan = await generatePlan(source, document.languageId, document.fileName, token, request.model, update);
         checkCancellation(token);
-        if (!plan.count) { stream.markdown('No additional annotations were suggested.\n'); return {}; }
-        stream.markdown(`Prepared ${plan.count} annotations. Choose Show Diff to review the complete changes.\n`);
+        if (!plan.count) { this.markdown(stream, 'No additional annotations were suggested.\n'); return {}; }
+        this.markdown(stream, `Prepared ${plan.count} annotations. Choose Show Diff to review the complete changes.\n`);
         const choice = await vscode.window.showInformationMessage(`Add ${plan.count} code group annotations?`, 'Apply', 'Show Diff');
         checkCancellation(token);
         if (choice === 'Apply') {
             await applyGeneration(document, plan, version, token);
             await this.codeGroupProvider.processFileOnSave(document);
-            stream.markdown('Annotations applied. Save the edited document to keep the changes.\n');
+            this.markdown(stream, 'Annotations applied. Save the edited document to keep the changes.\n');
         } else if (choice === 'Show Diff') {
             const preview = await vscode.workspace.openTextDocument({content: plan.generated, language: document.languageId});
             await vscode.commands.executeCommand('vscode.diff', document.uri, preview.uri, 'Proposed group annotations');
@@ -435,13 +444,13 @@ export class GroupCodeChatParticipant {
             update => stream.progress(scanProgressMessage(update)));
         checkCancellation(token);
         if (result.status === 'cancelled') {
-            stream.markdown('The refresh was superseded or cancelled. Previous results remain available.\n');
+            this.markdown(stream, 'The refresh was superseded or cancelled. Previous results remain available.\n');
             return {};
         }
         this.treeProvider.refresh();
         
         const allGroups = this.codeGroupProvider.getAllGroups();
-        stream.markdown(`✅ Refreshed! Found **${allGroups.length}** code group(s).\n`);
+        this.markdown(stream, `$(check) Refreshed! Found **${allGroups.length}** code ${allGroups.length === 1 ? 'group' : 'groups'}.\n`);
 
         return {};
     }
@@ -463,13 +472,13 @@ export class GroupCodeChatParticipant {
             const issues = await analyzer.analyzeGroups(groups);
             
             if (issues.length === 0) {
-                stream.markdown('✅ No refactoring issues found! Your code groups are well organized.\n\n');
-                stream.markdown('💡 All group names are consistent, no duplicates detected, and all groups are actively used.\n');
+                this.markdown(stream, '$(check) No refactoring issues found! Your code groups are well organized.\n\n');
+                this.markdown(stream, '$(lightbulb) All group names are consistent, no duplicates detected, and all groups are actively used.\n');
                 return {};
             }
             
-            stream.markdown(`# 🔧 Code Group Refactoring Analysis\n\n`);
-            stream.markdown(`Found **${issues.length}** potential improvements:\n\n`);
+            this.markdown(stream, `# $(wrench) Code Group Refactoring Analysis\n\n`);
+            this.markdown(stream, `Found **${issues.length}** potential improvements:\n\n`);
             
             // Group issues by type
             const issuesByType = new Map<string, typeof issues>();
@@ -482,28 +491,28 @@ export class GroupCodeChatParticipant {
             
             // Display each type
             issuesByType.forEach((typeIssues, type) => {
-                stream.markdown(`### ${this.getIssueTypeEmoji(type)} ${this.getIssueTypeLabel(type)} (${typeIssues.length})\n\n`);
+                this.markdown(stream, `### ${this.getIssueTypeIcon(type)} ${this.getIssueTypeLabel(type)} (${typeIssues.length})\n\n`);
                 
                 typeIssues.slice(0, 5).forEach(issue => { // Show max 5 per type
-                    stream.markdown(`**${issue.groupName}**\n`);
-                    stream.markdown(`- ${issue.message}\n`);
-                    stream.markdown(`- 💡 *${issue.suggestion}*\n\n`);
+                    this.markdown(stream, `**${issue.groupName}**\n`);
+                    this.markdown(stream, `- ${issue.message}\n`);
+                    this.markdown(stream, `- $(lightbulb) *${issue.suggestion}*\n\n`);
                 });
                 
                 if (typeIssues.length > 5) {
-                    stream.markdown(`*...and ${typeIssues.length - 5} more*\n\n`);
+                    this.markdown(stream, `*...and ${typeIssues.length - 5} more*\n\n`);
                 }
             });
             
-            stream.markdown('\n---\n');
-            stream.markdown('💡 **Next Steps:**\n');
-            stream.markdown('- Run `Group Code: Analyze Code Group Refactoring` command for detailed report\n');
-            stream.markdown('- Use `@groupcode find duplicates` to focus on duplicates\n');
-            stream.markdown('- Use `@groupcode find orphaned` to find unused groups\n');
+            this.markdown(stream, '\n---\n');
+            this.markdown(stream, '$(lightbulb) **Next Steps:**\n');
+            this.markdown(stream, '- Run `Group Code: Analyze Code Group Refactoring` command for detailed report\n');
+            this.markdown(stream, '- Use `@groupcode find duplicates` to focus on duplicates\n');
+            this.markdown(stream, '- Use `@groupcode find orphaned` to find unused groups\n');
             
             return {};
         } catch (error) {
-            stream.markdown(`❌ Error analyzing refactoring: ${error}\n`);
+            this.markdown(stream, `$(error) Error analyzing refactoring: ${error}\n`);
             return { errorDetails: { message: String(error) } };
         }
     }
@@ -527,39 +536,39 @@ export class GroupCodeChatParticipant {
             const issues = await analyzer.analyzeGroups(groups);
             
             if (issues.length === 0) {
-                stream.markdown('✅ No duplicate or similar groups found!\n\n');
-                stream.markdown('All your group names are unique and distinct.\n');
+                this.markdown(stream, '$(check) No duplicate or similar groups found!\n\n');
+                this.markdown(stream, 'All your group names are unique and distinct.\n');
                 return {};
             }
             
-            stream.markdown(`# 📋 Duplicate & Similar Groups Analysis\n\n`);
-            stream.markdown(`Found **${issues.length}** potential duplicates or similar groups:\n\n`);
+            this.markdown(stream, `# $(copy) Duplicate & Similar Groups Analysis\n\n`);
+            this.markdown(stream, `Found **${issues.length}** potential duplicates or similar groups:\n\n`);
             
             issues.forEach((issue, index) => {
                 if (index < 10) { // Show max 10
-                    stream.markdown(`### ${index + 1}. ${issue.groupName}\n`);
-                    stream.markdown(`**Issue:** ${issue.message}\n\n`);
-                    stream.markdown(`**Suggestion:** ${issue.suggestion}\n\n`);
+                    this.markdown(stream, `### ${index + 1}. ${issue.groupName}\n`);
+                    this.markdown(stream, `**Issue:** ${issue.message}\n\n`);
+                    this.markdown(stream, `**Suggestion:** ${issue.suggestion}\n\n`);
                     
                     if (issue.affectedGroups && issue.affectedGroups.length > 1) {
-                        stream.markdown(`**Related groups:** ${issue.affectedGroups.join(', ')}\n\n`);
+                        this.markdown(stream, `**Related groups:** ${issue.affectedGroups.join(', ')}\n\n`);
                     }
                     
                     if (issue.metrics?.similarity) {
-                        stream.markdown(`**Similarity:** ${Math.round(issue.metrics.similarity * 100)}%\n\n`);
+                        this.markdown(stream, `**Similarity:** ${Math.round(issue.metrics.similarity * 100)}%\n\n`);
                     }
                     
-                    stream.markdown('---\n\n');
+                    this.markdown(stream, '---\n\n');
                 }
             });
             
             if (issues.length > 10) {
-                stream.markdown(`*...and ${issues.length - 10} more issues*\n\n`);
+                this.markdown(stream, `*...and ${issues.length - 10} more issues*\n\n`);
             }
             
             return {};
         } catch (error) {
-            stream.markdown(`❌ Error finding duplicates: ${error}\n`);
+            this.markdown(stream, `$(error) Error finding duplicates: ${error}\n`);
             return { errorDetails: { message: String(error) } };
         }
     }
@@ -584,48 +593,48 @@ export class GroupCodeChatParticipant {
             const issues = await analyzer.analyzeGroups(groups);
             
             if (issues.length === 0) {
-                stream.markdown('✅ No orphaned groups found!\n\n');
-                stream.markdown('All groups have been recently modified.\n');
+                this.markdown(stream, '$(check) No orphaned groups found!\n\n');
+                this.markdown(stream, 'All groups have been recently modified.\n');
                 return {};
             }
             
-            stream.markdown(`# 📦 Orphaned Groups Analysis\n\n`);
-            stream.markdown(`Found **${issues.length}** groups that haven't been modified recently:\n\n`);
+            this.markdown(stream, `# $(archive) Orphaned Groups Analysis\n\n`);
+            this.markdown(stream, `Found **${issues.length}** groups that haven't been modified recently:\n\n`);
             
             issues.forEach((issue, index) => {
                 if (index < 10) { // Show max 10
-                    stream.markdown(`### ${index + 1}. ${issue.groupName}\n`);
-                    stream.markdown(`**Status:** ${issue.message}\n\n`);
-                    stream.markdown(`**Files:** ${issue.metrics?.fileCount || 0} file(s)\n\n`);
-                    stream.markdown(`**Suggestion:** ${issue.suggestion}\n\n`);
-                    stream.markdown('---\n\n');
+                    this.markdown(stream, `### ${index + 1}. ${issue.groupName}\n`);
+                    this.markdown(stream, `**Status:** ${issue.message}\n\n`);
+                    this.markdown(stream, `**Files:** ${issue.metrics?.fileCount || 0} file(s)\n\n`);
+                    this.markdown(stream, `**Suggestion:** ${issue.suggestion}\n\n`);
+                    this.markdown(stream, '---\n\n');
                 }
             });
             
             if (issues.length > 10) {
-                stream.markdown(`*...and ${issues.length - 10} more groups*\n\n`);
+                this.markdown(stream, `*...and ${issues.length - 10} more groups*\n\n`);
             }
             
-            stream.markdown('💡 **Tip:** Consider reviewing these groups to see if they\'re still relevant or need updates.\n');
+            this.markdown(stream, '$(lightbulb) **Tip:** Consider reviewing these groups to see if they\'re still relevant or need updates.\n');
             
             return {};
         } catch (error) {
-            stream.markdown(`❌ Error finding orphaned groups: ${error}\n`);
+            this.markdown(stream, `$(error) Error finding orphaned groups: ${error}\n`);
             return { errorDetails: { message: String(error) } };
         }
     }
 
-    private getIssueTypeEmoji(type: string): string {
-        const emojis: Record<string, string> = {
-            'duplicate': '📋',
-            'similar': '🔄',
-            'orphaned': '📦',
-            'inconsistent_naming': '📝',
-            'single_use': '🔢',
-            'too_large': '📈',
-            'too_small': '📉'
+    private getIssueTypeIcon(type: string): string {
+        const icons: Record<string, string> = {
+            'duplicate': '$(copy)',
+            'similar': '$(refresh)',
+            'orphaned': '$(archive)',
+            'inconsistent_naming': '$(edit)',
+            'single_use': '$(symbol-numeric)',
+            'too_large': '$(arrow-up)',
+            'too_small': '$(arrow-down)'
         };
-        return emojis[type] || '❓';
+        return icons[type] || '$(question)';
     }
 
     private getIssueTypeLabel(type: string): string {
@@ -645,52 +654,52 @@ export class GroupCodeChatParticipant {
      * Handle help command
      */
     private async handleHelpCommand(stream: vscode.ChatResponseStream): Promise<vscode.ChatResult> {
-        stream.markdown('# 📚 GroupCode Chat Commands\n\n');
-        stream.markdown('I can help you manage code groups in your workspace. Here are the available commands:\n\n');
+        this.markdown(stream, '# $(layers) GroupCode Chat Commands\n\n');
+        this.markdown(stream, 'I can help you manage code groups in your workspace. Here are the available commands:\n\n');
         
-        stream.markdown('###  AI-Powered Generation\n');
-        stream.markdown('- `@groupcode generate` - Auto-generate @group comments for current file\n');
-        stream.markdown('- `@groupcode auto group` - AI analyzes and adds group comments\n');
-        stream.markdown('- `@groupcode add groups` - Automatically organize code with groups\n\n');
+        this.markdown(stream, '###  AI-Powered Generation\n');
+        this.markdown(stream, '- `@groupcode generate` - Auto-generate @group comments for current file\n');
+        this.markdown(stream, '- `@groupcode auto group` - AI analyzes and adds group comments\n');
+        this.markdown(stream, '- `@groupcode add groups` - Automatically organize code with groups\n\n');
         
-        stream.markdown('### 🔍 Scanning & Analysis\n');
-        stream.markdown('- `@groupcode scan` - Scan entire workspace for code groups\n');
-        stream.markdown('- `@groupcode scan this file` - Scan only the current file\n');
-        stream.markdown('- `@groupcode analyze` - Analyze workspace structure\n\n');
+        this.markdown(stream, '### $(search) Scanning & Analysis\n');
+        this.markdown(stream, '- `@groupcode scan` - Scan entire workspace for code groups\n');
+        this.markdown(stream, '- `@groupcode scan this file` - Scan only the current file\n');
+        this.markdown(stream, '- `@groupcode analyze` - Analyze workspace structure\n\n');
         
-        stream.markdown('### 💡 AI Suggestions\n');
-        stream.markdown('- `@groupcode suggest` - Get AI suggestions for selected code\n');
-        stream.markdown('- `@groupcode recommendation` - Get group recommendations\n\n');
+        this.markdown(stream, '### $(sparkle) AI Suggestions\n');
+        this.markdown(stream, '- `@groupcode suggest` - Get AI suggestions for selected code\n');
+        this.markdown(stream, '- `@groupcode recommendation` - Get group recommendations\n\n');
         
-        stream.markdown('### 📋 Viewing Groups\n');
-        stream.markdown('- `@groupcode show all groups` - List all code groups\n');
-        stream.markdown('- `@groupcode list` - Show all groups\n\n');
+        this.markdown(stream, '### $(copy) Viewing Groups\n');
+        this.markdown(stream, '- `@groupcode show all groups` - List all code groups\n');
+        this.markdown(stream, '- `@groupcode list` - Show all groups\n\n');
         
-        stream.markdown('### 🔎 Finding Groups\n');
-        stream.markdown('- `@groupcode find authentication` - Search for specific group\n');
-        stream.markdown('- `@groupcode search api` - Find groups matching keyword\n\n');
+        this.markdown(stream, '### $(search) Finding Groups\n');
+        this.markdown(stream, '- `@groupcode find authentication` - Search for specific group\n');
+        this.markdown(stream, '- `@groupcode search api` - Find groups matching keyword\n\n');
         
-        stream.markdown('### 🧭 Navigation\n');
-        stream.markdown('- `@groupcode navigate to authentication` - Jump to a specific group\n');
-        stream.markdown('- `@groupcode go to database` - Navigate to group\n\n');
+        this.markdown(stream, '### $(compass) Navigation\n');
+        this.markdown(stream, '- `@groupcode navigate to authentication` - Jump to a specific group\n');
+        this.markdown(stream, '- `@groupcode go to database` - Navigate to group\n\n');
         
-        stream.markdown('### 🔄 Maintenance\n');
-        stream.markdown('- `@groupcode refresh` - Rescan all files\n');
-        stream.markdown('- `@groupcode rescan` - Refresh code groups\n\n');
+        this.markdown(stream, '### $(refresh) Maintenance\n');
+        this.markdown(stream, '- `@groupcode refresh` - Rescan all files\n');
+        this.markdown(stream, '- `@groupcode rescan` - Refresh code groups\n\n');
         
-        stream.markdown('### 🔧 Refactoring & Quality\n');
-        stream.markdown('- `@groupcode refactor` - Analyze refactoring opportunities\n');
-        stream.markdown('- `@groupcode analyze refactoring` - Get improvement suggestions\n');
-        stream.markdown('- `@groupcode find duplicates` - Find duplicate/similar groups\n');
-        stream.markdown('- `@groupcode find orphaned` - Find unused or old groups\n');
-        stream.markdown('- `@groupcode improve` - Suggestions for better organization\n\n');
+        this.markdown(stream, '### $(wrench) Refactoring & Quality\n');
+        this.markdown(stream, '- `@groupcode refactor` - Analyze refactoring opportunities\n');
+        this.markdown(stream, '- `@groupcode analyze refactoring` - Get improvement suggestions\n');
+        this.markdown(stream, '- `@groupcode find duplicates` - Find duplicate/similar groups\n');
+        this.markdown(stream, '- `@groupcode find orphaned` - Find unused or old groups\n');
+        this.markdown(stream, '- `@groupcode improve` - Suggestions for better organization\n\n');
         
-        stream.markdown('### ❓ Help\n');
-        stream.markdown('- `@groupcode help` - Show this help message\n\n');
+        this.markdown(stream, '### $(question) Help\n');
+        this.markdown(stream, '- `@groupcode help` - Show this help message\n\n');
         
-        stream.markdown('---\n');
-        stream.markdown('💡 **Tip:** Code groups are special comments in your code that help organize functionality.\n');
-        stream.markdown('Format: `@group <name> - <description>`\n');
+        this.markdown(stream, '---\n');
+        this.markdown(stream, '$(lightbulb) **Tip:** Code groups are special comments in your code that help organize functionality.\n');
+        this.markdown(stream, 'Format: `@group <name> - <description>`\n');
 
         return {};
     }

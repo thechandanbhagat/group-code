@@ -1,0 +1,19 @@
+{
+  "title": "Group Code for VS Code — Navigate by Functionality | 85-Second Demo",
+  "description": "Find related code by functionality across files and languages with Group Code for Visual Studio Code.\n\nThis 85-second walkthrough shows adding @group annotations, browsing the functionality hierarchy, jumping directly to TypeScript/SQL/HTML source entries, searching, favorites, hierarchy renaming, the Copilot suggestion command, and automatic index updates.\n\nGet the extension:\nhttps://marketplace.visualstudio.com/items?itemName=thechandanbhagat.groupcode\n\nSource code and documentation:\nhttps://github.com/thechandanbhagat/group-code\n\nChapters\n0:00 Meet Group Code\n0:12 Add annotations and a hierarchy\n0:27 Browse related source files\n0:40 Navigation, search, favorites and rename\n0:58 Copilot suggestion workflow\n1:08 Live updates and closing\n\nCaptured from the real VS Code extension in an isolated sample project. The Copilot segment shows the suggestion command; live suggestions require an available GitHub Copilot model.\n\nEnglish narration and captions, with original instrumental background music kept quiet beneath speech.\n\n#VSCode #DeveloperTools #CodeNavigation",
+  "visibility": "public",
+  "language": "English",
+  "madeForKids": false,
+  "videoFile": "userguide/videos/group-code-demo.mp4",
+  "thumbnailFile": "userguide/images/demo-poster.jpg",
+  "captionFile": "userguide/videos/group-code-demo.srt",
+  "youtubeUrl": "https://youtu.be/DfgPVLwPMK4",
+  "channelName": "Mr. Chandan Bhagat",
+  "channelId": "UCTsYLMZ8PUuzfIk39z8Z2-A",
+  "videoId": "DfgPVLwPMK4",
+  "paidPromotion": false,
+  "aiUsed": true,
+  "captionStatus": "published",
+  "publishedDate": "2026-10-30",
+  "status": "published"
+}

@@ -8,6 +8,7 @@ import { parseHierarchy, getAncestorPaths, enrichWithHierarchy } from './hierarc
 import { loadFunctionalities, getSuggestedChildren, getSimilarFunctionalities, getFunctionalityStats, FunctionalitiesData } from './fileUtils';
 import { patternAnalyzer } from './patternAnalyzer';
 import { LanguageConfig, LanguageInfo, getLanguageConfig } from './commentParser';
+import { iconMarkdown, uiIcons } from './uiIcons';
 
 export class GroupCompletionProvider implements vscode.CompletionItemProvider {
     private readonly triggerCharacters = ['@', ' ', '>'];
@@ -123,13 +124,13 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
                         partial.includes(originalLower) || partial.includes(suggestedLower)) {
                         const completion = new vscode.CompletionItem(
                             suggestion.suggestedName,
-                            vscode.CompletionItemKind.Issue
+                            vscode.CompletionItemKind.Module
                         );
                         completion.sortText = `00_similar_${suggestion.suggestedName}`;
                         completion.insertText = suggestion.suggestedName;
-                        completion.detail = `⚠️ Similar group exists - use this instead`;
-                        completion.documentation = new vscode.MarkdownString(
-                            `**🔄 Similar Group Found**\n\n` +
+                        completion.detail = 'Similar group exists - use this instead';
+                        completion.documentation = iconMarkdown(
+                            `**$(${uiIcons.duplicate}) Similar Group Found**\n\n` +
                             `Your input: \`${partial}\`\n\n` +
                             `Existing group: \`${suggestion.suggestedName}\`\n\n` +
                             `**Similarity:** ${Math.round(suggestion.confidence * 100)}%\n\n` +
@@ -150,13 +151,13 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
                     if (!partial || originalLower.includes(partial) || suggestionLower.includes(partial)) {
                         const completion = new vscode.CompletionItem(
                             suggestion.suggestedName,
-                            vscode.CompletionItemKind.Snippet
+                            vscode.CompletionItemKind.Module
                         );
                         completion.sortText = `0_hierarchy_${(1 - suggestion.confidence).toFixed(3)}_${suggestion.suggestedName}`;
                         completion.insertText = suggestion.suggestedName;
-                        completion.detail = `💡 ${Math.round(suggestion.confidence * 100)}% confidence - ${suggestion.reason}`;
-                        completion.documentation = new vscode.MarkdownString(
-                            `**✨ Smart Hierarchy Suggestion**\n\n` +
+                        completion.detail = `${Math.round(suggestion.confidence * 100)}% confidence - ${suggestion.reason}`;
+                        completion.documentation = iconMarkdown(
+                            `**$(${uiIcons.ai}) Smart Hierarchy Suggestion**\n\n` +
                             `You typed: \`${suggestion.originalName}\`\n\n` +
                             `Suggested: \`${suggestion.suggestedName}\`\n\n` +
                             `**Why?** ${suggestion.reason}\n\n` +
@@ -221,10 +222,9 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
 
             uniqueFunctionalities.forEach(item => {
                 if (!suggestions.some(s => s.label === item.functionality)) {
-                    const hierarchy = parseHierarchy(item.functionality);
                     const completion = new vscode.CompletionItem(
                         item.functionality, 
-                        hierarchy.level > 1 ? vscode.CompletionItemKind.Module : vscode.CompletionItemKind.Value
+                        vscode.CompletionItemKind.Module
                     );
                     
                     completion.filterText = item.functionality.toLowerCase();
@@ -249,7 +249,7 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
         
         const completion = new vscode.CompletionItem(
             funcPath,
-            hierarchy.level > 1 ? vscode.CompletionItemKind.Module : vscode.CompletionItemKind.Value
+            vscode.CompletionItemKind.Module
         );
         
         completion.filterText = funcPath.toLowerCase();
@@ -260,10 +260,10 @@ export class GroupCompletionProvider implements vscode.CompletionItemProvider {
         const details: string[] = [];
         if (stats) {
             if (stats.groupCount > 0) {
-                details.push(`${stats.groupCount} group(s)`);
+                details.push(`${stats.groupCount} ${stats.groupCount === 1 ? 'group' : 'groups'}`);
             }
             if (stats.children && stats.children.length > 0) {
-                details.push(`${stats.children.length} child(ren)`);
+                details.push(`${stats.children.length} ${stats.children.length === 1 ? 'child' : 'children'}`);
             }
             if (hierarchy.level > 1) {
                 details.push(`Level ${hierarchy.level}`);

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { functionalityIcon, parentGroupPaths, uiIcons } from './utils/uiIcons';
 import { CodeGroup } from './groupDefinition';
 import { parseLanguageSpecificComments, parseSourceComments } from './utils/commentParser';
 import { getFileType, getFileName, isSupportedFileType, getWorkspaceFolders, loadCodeGroups, saveCodeGroups,
@@ -440,7 +441,7 @@ export class CodeGroupProvider implements vscode.Disposable {
                     : 1;
                 
                 items.push({
-                    label: `${fileType.toUpperCase()}: Line ${lineNumber}`,
+                    label: `$(${uiIcons.source}) ${fileType.toUpperCase()}: Line ${lineNumber}`,
                     description: group.description || '',
                     detail: `${group.filePath} (${group.lineNumbers?.length || 0} lines)`
                 });
@@ -495,19 +496,24 @@ export class CodeGroupProvider implements vscode.Disposable {
             return;
         }
         
-        const selectedFunctionality = await vscode.window.showQuickPick(functionalities, {
+        const parents = parentGroupPaths(functionalities);
+        const items = functionalities.map(functionality => ({
+            label: `$(${functionalityIcon(functionality, parents)}) ${functionality}`,
+            functionality
+        }));
+        const selectedFunctionality = await vscode.window.showQuickPick(items, {
             placeHolder: 'Select a functionality to navigate to'
         });
         
         if (selectedFunctionality) {
-            await this.showFunctionalityGroups(selectedFunctionality);
+            await this.showFunctionalityGroups(selectedFunctionality.functionality);
         }
     }
     
     // @group UI > StatusBar: Update status bar with current functionality count
     private updateStatusBar(): void {
         const functionalities = this.getFunctionalities();
-        this.statusBarItem.text = `$(map) Group Code (${functionalities.length})`;  // Changed from "$(compass) Code Compass" to "$(map) Group Code"
+        this.statusBarItem.text = `$(${uiIcons.brand}) Group Code (${functionalities.length})`;
         this.statusBarItem.tooltip = 'View and navigate code groups';
     }
 

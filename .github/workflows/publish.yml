@@ -1,10 +1,12 @@
 name: Publish extension
 
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       version:
-        description: Version in package.json to publish (for example, 1.9.1)
+        description: Version in package.json to publish (for example, 1.10.0)
         required: true
         type: string
       registry:
@@ -37,11 +39,20 @@ jobs:
     timeout-minutes: 20
     outputs:
       version: ${{ steps.release.outputs.version }}
+      registry: ${{ steps.release.outputs.registry }}
+      dry_run: ${{ steps.release.outputs.dry_run }}
     steps:
-      - name: Require the release branch
+      - name: Require a release tag or manual run from main
         run: |
-          if [[ "$GITHUB_REF" != refs/heads/main || "$GITHUB_REPOSITORY" != thechandanbhagat/group-code ]]; then
-            echo '::error::Run this workflow from main in thechandanbhagat/group-code.'
+          if [[ "$GITHUB_REPOSITORY" != thechandanbhagat/group-code ]]; then
+            echo '::error::Release only from thechandanbhagat/group-code.'
+            exit 1
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/v* ]]; then
+            exit 0
+          fi
+          if [[ "$GITHUB_EVENT_NAME" != workflow_dispatch || "$GITHUB_REF" != refs/heads/main ]]; then
+            echo '::error::Push a version tag or manually run this workflow from main.'
             exit 1
           fi
 
@@ -49,25 +60,37 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Require tagged source to belong to main
+        if: github.event_name == 'push'
+        run: git merge-base --is-ancestor HEAD origin/main
 
       - name: Validate release identity and version
         id: release
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
+          REQUESTED_REGISTRY: ${{ inputs.registry }}
+          REQUESTED_DRY_RUN: ${{ inputs.dry_run }}
         run: |
           node <<'NODE'
           const assert = require('node:assert/strict');
           const fs = require('node:fs');
           const manifest = require('./package.json');
           const lock = require('./package-lock.json');
-          const version = process.env.REQUESTED_VERSION;
-          assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, 'Use a stable version, for example 1.9.1');
+          const tagRelease = process.env.GITHUB_EVENT_NAME === 'push';
+          const version = tagRelease ? process.env.GITHUB_REF.replace(/^refs\/tags\/v/, '') : process.env.REQUESTED_VERSION;
+          const registry = tagRelease ? 'both' : process.env.REQUESTED_REGISTRY;
+          const dryRun = tagRelease ? 'false' : process.env.REQUESTED_DRY_RUN;
+          assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, 'Use a stable version, for example 1.10.0');
           assert.equal(manifest.version, version, 'Requested version must match package.json');
           assert.equal(lock.version, version, 'Lockfile version must match');
           assert.equal(lock.packages[''].version, version, 'Root lockfile package version must match');
           assert.equal(manifest.publisher, 'thechandanbhagat');
           assert.equal(manifest.name, 'groupcode');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          assert.ok(['both', 'marketplace', 'open-vsx'].includes(registry), 'Select a supported registry');
+          assert.ok(['true', 'false'].includes(dryRun), 'Select whether this is a dry run');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\nregistry=${registry}\ndry_run=${dryRun}\n`);
           NODE
 
       - name: Setup Node.js
@@ -98,11 +121,12 @@ jobs:
       - name: Prepare the tested release artifact
         env:
           VERSION: ${{ steps.release.outputs.version }}
+          DRY_RUN: ${{ steps.release.outputs.dry_run }}
         working-directory: artifacts
         run: |
           cp groupcode-review.vsix "groupcode-${VERSION}.vsix"
           sha256sum "groupcode-${VERSION}.vsix" > "groupcode-${VERSION}.vsix.sha256"
-          echo "Tested version ${VERSION}; dry run: ${{ inputs.dry_run }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tested version ${VERSION}; dry run: ${DRY_RUN}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the tested VSIX and checksum
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -118,9 +142,8 @@ jobs:
     name: Publish to VS Code Marketplace
     needs: build
     if: >-
-      github.ref == 'refs/heads/main' &&
       github.repository == 'thechandanbhagat/group-code' &&
-      (inputs.registry == 'both' || inputs.registry == 'marketplace')
+      (needs.build.outputs.registry == 'both' || needs.build.outputs.registry == 'marketplace')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -153,7 +176,7 @@ jobs:
         run: sha256sum --check "groupcode-${VERSION}.vsix.sha256"
 
       - name: Publish the tested VSIX
-        if: ${{ !inputs.dry_run }}
+        if: needs.build.outputs.dry_run == 'false'
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: |
@@ -167,9 +190,8 @@ jobs:
     name: Publish to Open VSX
     needs: build
     if: >-
-      github.ref == 'refs/heads/main' &&
       github.repository == 'thechandanbhagat/group-code' &&
-      (inputs.registry == 'both' || inputs.registry == 'open-vsx')
+      (needs.build.outputs.registry == 'both' || needs.build.outputs.registry == 'open-vsx')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -196,7 +218,7 @@ jobs:
         run: sha256sum --check "groupcode-${VERSION}.vsix.sha256"
 
       - name: Publish the tested VSIX
-        if: ${{ !inputs.dry_run }}
+        if: needs.build.outputs.dry_run == 'false'
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         run: |

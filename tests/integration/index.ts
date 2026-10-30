@@ -33,6 +33,16 @@ export async function run(): Promise<void> {
     const deleteFile = (uri: vscode.Uri) => retry(
         () => vscode.workspace.fs.delete(uri), `delete ${uri.fsPath}`);
     const indexFile = async (uri: vscode.Uri) => provider.processFileOnSave(await vscode.workspace.openTextDocument(uri));
+    const waitForGroup = async (name: string, present: boolean) => {
+        // A native watcher or edit refresh can supersede a direct update while
+        // it awaits filesystem checks. Observe the resulting index instead.
+        const deadline = Date.now() + 10000;
+        while (provider.getFunctionalities().includes(name) !== present && Date.now() < deadline) {
+            await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        assert.strictEqual(provider.getFunctionalities().includes(name), present,
+            `Index must ${present ? 'include' : 'remove'} ${name} after incremental processing`);
+    };
     const root = vscode.workspace.workspaceFolders![0].uri;
     for (const name of ['sql', 'yaml', 'powershell', 'html', 'docker']) {
         assert.ok(provider.getFunctionalities().includes(name), `Packaged parser must support ${name}`);
@@ -42,11 +52,11 @@ export async function run(): Promise<void> {
     // VS Code 1.99 does not raise watcher events for workspace.fs writes in its
     // test host. Exercise the same index lifecycle directly instead.
     await indexFile(watched);
-    assert.ok(provider.getFunctionalities().includes('watched'));
+    await waitForGroup('watched', true);
     const liveDocument = await vscode.workspace.openTextDocument(watched);
     await removeAnnotations(liveDocument);
     await provider.processFileOnSave(liveDocument);
-    assert.ok(!provider.getFunctionalities().includes('watched'));
+    await waitForGroup('watched', false);
     await provider.processWorkspace();
     assert.ok(!provider.getFunctionalities().includes('watched'), 'Full scans must use the unsaved editor buffer');
     assert.ok(await liveDocument.save());
@@ -56,10 +66,10 @@ export async function run(): Promise<void> {
     const removable = vscode.Uri.joinPath(root, 'remove.js');
     await writeFile(removable, '// @group remove: deleted\nfunction remove() {}');
     await indexFile(removable);
-    assert.ok(provider.getFunctionalities().includes('remove'));
+    await waitForGroup('remove', true);
     await deleteFile(removable);
     await provider.removeFile(removable);
-    assert.ok(!provider.getFunctionalities().includes('remove'));
+    await waitForGroup('remove', false);
     const css = vscode.Uri.joinPath(root, 'style.css');
     await vscode.workspace.fs.writeFile(css, Buffer.from('  body { color: red; }\r\n'));
     const document = await vscode.workspace.openTextDocument(css);
@@ -70,11 +80,11 @@ export async function run(): Promise<void> {
     await editAnnotations(document, renameEdits(document, 'style', 'appearance'));
     assert.ok(document.getText().includes('@group appearance > theme:'));
     await provider.processFileOnSave(document);
-    assert.ok(provider.getFunctionalities().includes('appearance > theme'));
+    await waitForGroup('appearance > theme', true);
     await removeAnnotations(document);
     assert.strictEqual(document.getText(), '  body { color: red; }\r\n');
     await provider.processFileOnSave(document);
-    assert.ok(!provider.getFunctionalities().includes('appearance > theme'));
+    await waitForGroup('appearance > theme', false);
 
     const js = await vscode.workspace.openTextDocument({content: '// @group auth > login: first\n// @group auth > login: EOF', language: 'javascript'});
     await editAnnotations(js, renameEdits(js, 'auth', 'security'));

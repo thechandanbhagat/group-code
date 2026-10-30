@@ -3,7 +3,7 @@
 [![CI](https://github.com/thechandanbhagat/group-code/actions/workflows/ci.yml/badge.svg)](https://github.com/thechandanbhagat/group-code/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/thechandanbhagat.groupcode?label=VS%20Code%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=thechandanbhagat.groupcode)
 
-[Watch the demo on YouTube](https://youtu.be/DfgPVLwPMK4) (1:25, with English captions and quiet background music) · [Download MP4](userguide/videos/group-code-demo.mp4) · [Read the user guide](userguide/index.html)
+[Watch the demo on YouTube](https://youtu.be/DfgPVLwPMK4) · [Download MP4](userguide/videos/group-code-demo.mp4) · [Read the user guide](userguide/index.html)
 
 ![Group Code functionality hierarchy with direct source navigation](userguide/images/group-explorer.jpg)
 

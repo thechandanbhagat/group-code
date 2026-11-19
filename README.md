@@ -238,11 +238,13 @@ updateUI(userData); // @group UserInterface: Update display with user data
 2. Expand a functionality group to see all related code sections
 3. Click on any code section to navigate directly to that file and line
 
+Star a subgroup to move its entries into **Favorites**. Its unstarred siblings and any source entries attached directly to its parent stay in the main tree.
+
 #### Using the Status Bar
 
 1. Click on the Group Code indicator in the status bar (or press `Ctrl+Shift+G` / `Cmd+Shift+G`)
 2. Select a functionality from the dropdown
-3. Choose which specific code section to navigate to
+3. Choose an occurrence by file and line. If a file contains the same group on lines 1 and 10, choosing **Line 10** opens the annotation on line 10.
 
 #### Using Chat Participant
 

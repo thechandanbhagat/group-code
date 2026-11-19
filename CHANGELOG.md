@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-11-19
+
+### Fixed
+
+- Starring a subgroup keeps its unstarred siblings and its parent’s own source entries visible in the Group Code sidebar and Explorer.
+- Show Groups opens the exact file and line selected, including when a group appears on both line 1 and line 10 of the same file.
+
 ## [1.10.0] - 2026-10-30
 
 ### Added

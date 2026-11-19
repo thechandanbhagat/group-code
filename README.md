@@ -436,6 +436,8 @@ Pushing a stable version tag such as `v1.10.0` runs the release workflow and pub
 
 ## Contributing
 
+See the [project backlog](docs/BACKLOG.md) for known bugs and proposed features.
+
 Found a bug or have a feature request? Please open an issue on the [GitHub repository](https://github.com/thechandanbhagat/group-code).
 
 ## Changelog

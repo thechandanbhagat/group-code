@@ -427,7 +427,7 @@ export class CodeGroupProvider implements vscode.Disposable {
             return;
         }
         
-        const items: vscode.QuickPickItem[] = [];
+        const items: Array<vscode.QuickPickItem & { group: CodeGroup }> = [];
         
         functionalityGroups.forEach((groups, fileType) => {
             groups.forEach(group => {
@@ -443,7 +443,8 @@ export class CodeGroupProvider implements vscode.Disposable {
                 items.push({
                     label: `$(${uiIcons.source}) ${fileType.toUpperCase()}: Line ${lineNumber}`,
                     description: group.description || '',
-                    detail: `${group.filePath} (${group.lineNumbers?.length || 0} lines)`
+                    detail: `${group.filePath} (${group.lineNumbers?.length || 0} lines)`,
+                    group
                 });
             });
         });
@@ -455,34 +456,7 @@ export class CodeGroupProvider implements vscode.Disposable {
         });
         
         if (selectedItem) {
-            // Find the selected group
-            let selectedGroup: CodeGroup | undefined;
-            
-            functionalityGroups.forEach((groups) => {
-                const group = groups.find(g => {
-                    if (!g || !g.lineNumbers || !g.filePath) {
-                        return false;
-                    }
-                    
-                    const lineNumber = g.lineNumbers.length > 0 ? g.lineNumbers[0] : -1;
-                    
-                    // Add null checks for selectedItem.label and selectedItem.detail
-                    return selectedItem && 
-                           typeof selectedItem.label === 'string' && 
-                           selectedItem.label.includes(`Line ${lineNumber}`) && 
-                           selectedItem.detail && 
-                           typeof selectedItem.detail === 'string' && 
-                           selectedItem.detail.includes(g.filePath);
-                });
-                
-                if (group) {
-                    selectedGroup = group;
-                }
-            });
-            
-            if (selectedGroup) {
-                await this.navigateToGroup(selectedGroup);
-            }
+            await this.navigateToGroup(selectedItem.group);
         }
     }
     

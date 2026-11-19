@@ -1,8 +1,10 @@
 // @group UnitTests > CodeGroupProvider : Tests for in-memory group management logic
 
 import * as assert from 'assert';
+import type { QuickPickItem } from 'vscode';
 import { CodeGroupProvider } from '../../src/codeGroupProvider';
 import { CodeGroup } from '../../src/groupDefinition';
+import { window } from '../mocks/vscode';
 
 // @group TestHelpers : Build minimal CodeGroup fixtures
 function makeGroup(functionality: string, filePath: string, lineNumbers: number[] = [1], description?: string): CodeGroup {
@@ -88,6 +90,25 @@ describe('CodeGroupProvider', () => {
             const upper = provider.getFunctionalityGroups('AUTH');
             const lower = provider.getFunctionalityGroups('auth');
             assert.strictEqual(upper.size, lower.size);
+        });
+    });
+
+    describe('showFunctionalityGroups()', () => {
+        it('navigates to line 10 when the same file also has the group on line 1', async () => {
+            const line1 = makeGroup('Auth', '/workspace/auth.ts', [1]);
+            const line10 = makeGroup('Auth', '/workspace/auth.ts', [10]);
+            provider.getFunctionalityGroups = () => new Map([['ts', [line1, line10]]]);
+            const navigated: CodeGroup[] = [];
+            provider.navigateToGroup = async group => { navigated.push(group); };
+            const picker: { showQuickPick(items: QuickPickItem[]): Promise<QuickPickItem | undefined> } = window;
+            const originalPick = picker.showQuickPick;
+            try {
+                picker.showQuickPick = async items => items.find(item => item.label.endsWith('Line 10'));
+                await provider.showFunctionalityGroups('Auth');
+                assert.deepStrictEqual(navigated, [line10]);
+            } finally {
+                picker.showQuickPick = originalPick;
+            }
         });
     });
 

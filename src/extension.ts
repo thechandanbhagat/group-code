@@ -494,7 +494,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            await codeGroupProvider.toggleFavorite(item.functionality);
+            await codeGroupProvider.toggleFavorite(item.functionality, item.isFavorite);
             codeGroupTreeProvider.refresh();
 
             const isFav = codeGroupProvider.isFavorite(item.functionality);

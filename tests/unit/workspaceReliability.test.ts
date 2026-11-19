@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { CodeGroupProvider } from '../../src/codeGroupProvider';
+import { CodeGroupTreeItem, CodeGroupTreeProvider } from '../../src/codeGroupTreeProvider';
 import { FileSelection, relativeUriPath } from '../../src/utils/fileSelection';
 import { configureStorage, defaultSettings, loadGroupCodeSettings, normalizeSettings, saveGroupCodeSettings, getSearchLimit } from '../../src/utils/fileUtils';
 import { SnapshotWriter } from '../../src/utils/snapshotWriter';
@@ -169,6 +170,48 @@ describe('Workspace reliability (GC-007–012/017/019)', () => {
         provider.dispose(); provider = new CodeGroupProvider();
         await provider.initialize();
         assert.ok(provider.isFavorite('security'));
+    });
+    it('keeps sibling and parent sources navigable when toggling a favorite subgroup', async () => {
+        const uri = await write('auth.js', '// @group Auth\n// @group Auth > Login\n// @group Auth > Logout');
+        await provider.processWorkspace();
+        const tree = new CodeGroupTreeProvider(provider);
+
+        async function sourcePaths(parent?: CodeGroupTreeItem, prefix = ''): Promise<string[]> {
+            const paths: string[] = [];
+            for (const item of await tree.getChildren(parent)) {
+                const itemPath = prefix + item.label;
+                if (item.codeGroup) {
+                    assert.strictEqual(item.command?.command, 'groupCode.navigateToGroup');
+                    const target = item.command!.arguments![0];
+                    assert.strictEqual(target.filePath, uri.fsPath);
+                    paths.push(itemPath + '#' + target.lineNumbers[0]);
+                } else {
+                    paths.push(...await sourcePaths(item, itemPath + '/'));
+                }
+            }
+            return paths.sort();
+        }
+
+        try {
+            await provider.toggleFavorite('auth > login');
+            assert.deepStrictEqual(await sourcePaths(), [
+                'Favorites/auth/login/auth.js#2', 'auth/auth.js#1', 'auth/logout/auth.js#3'
+            ]);
+            tree.updateSearch('Logout');
+            assert.deepStrictEqual((await tree.getChildren()).map(item => item.label), ['auth']);
+            assert.deepStrictEqual(await sourcePaths(), ['auth/logout/auth.js#3']);
+            tree.updateSearch('');
+            const [favorites, regularParent] = await tree.getChildren();
+            const [starredParent] = await tree.getChildren(favorites);
+            assert.strictEqual(regularParent.isFavorite, false);
+            assert.strictEqual(starredParent.isFavorite, true);
+            await provider.toggleFavorite(starredParent.functionality!, starredParent.isFavorite);
+            assert.deepStrictEqual(await sourcePaths(), [
+                'auth/auth.js#1', 'auth/login/auth.js#2', 'auth/logout/auth.js#3'
+            ]);
+        } finally {
+            tree.dispose();
+        }
     });
     it('honors autoScan and file size settings', async () => {
         await saveGroupCodeSettings(root, {autoScan: false, maxFileSizeKB: 1});

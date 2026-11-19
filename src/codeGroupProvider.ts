@@ -547,9 +547,9 @@ export class CodeGroupProvider implements vscode.Disposable {
         }
         await this.persistFavorites();
     }
-    async toggleFavorite(functionality: string): Promise<void> {
+    async toggleFavorite(functionality: string, wasFavorite?: boolean): Promise<void> {
         const groups = this.getAllGroups().filter(group => group.functionality === functionality || group.functionality.startsWith(functionality + ' > '));
-        const favorite = !groups.every(group => group.isFavorite);
+        const favorite = !(wasFavorite ?? groups.every(group => group.isFavorite));
         for (const group of groups) {
             const key = this.key(group.filePath, group.functionality);
             if (favorite) { this.favorites.add(key); } else { this.favorites.delete(key); }

@@ -1,13 +1,13 @@
 # Group Code backlog
 
-## Open bug
-
-- [ ] **Count annotations correctly on hover.** A single `@group` tag above a multiline function can appear as several occurrences because the hover counts every indexed source line. A regression test should show “1 file · 1 occurrence” for one tag above a seven-line block. Adding a second tag for the same group in that file should show “1 file · 2 occurrences”. [Hover provider](../src/utils/hoverProvider.ts)
-
 ## Proposed features
 
 - [ ] **Peek Group Locations.** From a group in the editor, open VS Code’s Peek view to browse its indexed annotations across files. Each result should preview the matching source and open the exact annotation when selected. [Group navigation](../src/codeGroupProvider.ts)
 - [ ] **Review generated annotations per file.** After workspace generation, let the user preview each file’s diff and apply or skip that file. Applying should use the proposal shown in the diff and detect edits made since the preview. [Workspace generation](../src/utils/chatParticipant.ts)
+
+## Completed for 1.10.2
+
+- [x] Count each `@group` annotation once in hover cards, including when multiple annotations for a group appear in the same file. [Hover regression tests](../tests/unit/hoverProvider.test.ts)
 
 ## Completed for 1.10.1
 

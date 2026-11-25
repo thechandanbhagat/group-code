@@ -121,7 +121,7 @@ export class GroupHoverProvider implements vscode.HoverProvider {
 
         // --- Stats ---
         const uniqueFiles = this.getUniqueFiles(groups);
-        const totalOccurrences = groups.reduce((sum, g) => sum + g.lineNumbers.length, 0);
+        const totalOccurrences = groups.length;
 
         md.appendMarkdown(
             `$(${uiIcons.source}) **${uniqueFiles.length}** ${uniqueFiles.length === 1 ? 'file' : 'files'}` +

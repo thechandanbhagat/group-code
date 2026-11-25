@@ -1,6 +1,7 @@
 // @group UnitTests > HoverProvider : Tests for @group comment hover card provider
 
 import * as assert from 'assert';
+import { parseLanguageSpecificComments } from '../../src/utils/commentParser';
 import { GroupHoverProvider } from '../../src/utils/hoverProvider';
 import { MockTextDocument, Position, Range, CancellationTokenSource } from '../mocks/vscode';
 import { CodeGroup } from '../../src/groupDefinition';
@@ -152,16 +153,38 @@ describe('GroupHoverProvider', () => {
             assert.ok(result?.contents[0].value.includes('routes.ts'), 'Should include file basename');
         });
 
-        it('hover content should show occurrence count', () => {
-            const groups = [makeGroup('Logging', '/src/logger.ts', [1, 5, 10])];
+        function hoverForSource(lines: string[]): string {
+            const doc = new MockTextDocument(lines.join('\n'), 'javascript', '/src/logger.js');
+            const groups = parseLanguageSpecificComments(doc as any);
             const provider = new GroupHoverProvider(new MockCodeGroupProvider(groups) as any);
-            const doc = new MockTextDocument(
+            const hover = provider.provideHover(doc as any, new Position(0, 10) as any, makeCancelToken()) as any;
+            return hover?.contents[0].value ?? '';
+        }
+
+        it('counts one annotation above seven lines of code as one occurrence', () => {
+            const content = hoverForSource([
                 '// @group Logging: Log utilities',
-                'javascript',
-                '/test/file.js'
-            );
-            const result = provider.provideHover(doc as any, new Position(0, 10) as any, makeCancelToken()) as any;
-            assert.ok(result?.contents[0].value.includes('3'), 'Should mention 3 occurrences');
+                'function log(message) {',
+                '    if (message) {',
+                '        console.log(message);',
+                '    } else {',
+                '        console.log("empty");',
+                '    }',
+                '}'
+            ]);
+            assert.match(content, /\*\*1\*\* file\b/);
+            assert.match(content, /\*\*1\*\* occurrence\b/);
+        });
+
+        it('counts two annotations for the same group in one file as two occurrences', () => {
+            const content = hoverForSource([
+                '// @group Logging: Info messages',
+                'function info(message) { console.info(message); }',
+                '// @group Logging: Error messages',
+                'function error(message) { console.error(message); }'
+            ]);
+            assert.match(content, /\*\*1\*\* file\b/);
+            assert.match(content, /\*\*2\*\* occurrences\b/);
         });
 
         it('hover content should handle groups with no workspace occurrences', () => {

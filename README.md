@@ -32,7 +32,7 @@ This Visual Studio Code extension helps you navigate and organize your codebase 
 - **Performance Optimizations**: Smart file filtering and efficient workspace scanning
 - **Quick Add Group**: Quickly add code groups to selected code via right-click context menu
 - **AI-Assisted Group Creation**: Get AI-powered suggestions for group names and descriptions
-- **Hover Annotations**: Rich hover cards on `@group` comments showing hierarchy, description, file counts, and sub-groups
+- **Hover Annotations** — Hover over an `@group` comment to see its hierarchy, description, sub-groups, and how many files and annotations match. Each tag counts once, even above a multiline function.
 - **Functionality Tree Views**: Browse the same hierarchy in the Group Code panel or the Explorer sidebar, and click a source entry to jump to its annotation
 - **Advanced Filter UI**: Visual search/clear filter buttons in view title bars with real-time filter status, synchronized across both hierarchy views
 

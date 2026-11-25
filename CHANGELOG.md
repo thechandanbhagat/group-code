@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-11-25
+
+### Fixed
+
+- Hover cards count each `@group` annotation once, regardless of how many source lines it covers.
+
 ## [1.10.1] - 2026-11-19
 
 ### Fixed
